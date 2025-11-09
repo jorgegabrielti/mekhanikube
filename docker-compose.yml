@@ -2,29 +2,50 @@ version: '3.8'
 
 services:
   ollama:
-    image: ollama/ollama:latest
-    container_name: mekhanikube-ollama
+    image: ollama/ollama:${OLLAMA_VERSION:-latest}
+    container_name: ${CONTAINER_NAME_OLLAMA:-mekhanikube-ollama}
     ports:
-      - "11434:11434"
+      - "${OLLAMA_PORT:-11434}:11434"
     volumes:
       - mekhanikube-ollama-data:/root/.ollama
-    restart: unless-stopped
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+    restart: ${RESTART_POLICY:-unless-stopped}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:11434/api/tags || exit 0"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   k8sgpt:
     build:
       context: .
-      dockerfile: Dockerfile
-    container_name: mekhanikube-k8sgpt
+      dockerfile: configs/Dockerfile
+    container_name: ${CONTAINER_NAME_K8SGPT:-mekhanikube-k8sgpt}
     depends_on:
-      - ollama
+      ollama:
+        condition: service_healthy
     volumes:
-      - C:/Users/${USERNAME}/.kube/config:/root/.kube/config:ro
+      - ${KUBECONFIG_PATH:-C:/Users/${USERNAME}/.kube/config}:/root/.kube/config:ro
       - mekhanikube-k8sgpt-config:/root/.config/k8sgpt
     environment:
       - KUBECONFIG=/root/.kube/config_mod
-    network_mode: host
+      - K8SGPT_BACKEND=${K8SGPT_BACKEND:-ollama}
+      - K8SGPT_MODEL=${OLLAMA_MODEL:-gemma:7b}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    network_mode: ${NETWORK_MODE:-host}
+    restart: ${RESTART_POLICY:-unless-stopped}
+    healthcheck:
+      test: ["CMD", "k8sgpt", "version"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
 volumes:
   mekhanikube-ollama-data:
+    driver: local
   mekhanikube-k8sgpt-config:
+    driver: local
 

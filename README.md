@@ -1,154 +1,448 @@
-# Mekhanikube 🔧
+<div align="center"><div align="center">
 
-**Your Kubernetes AI Mechanic**
 
-Análise inteligente de clusters Kubernetes usando K8sGPT com IA local (Ollama). Diagnostica problemas, explica causas e sugere soluções automaticamente.
 
-## 🚀 Quick Start
+# Mekhanikube 🔧# Mekhanikube 🔧
 
-```powershell
-# 1. Subir os serviços (Ollama + K8sGPT)
-docker-compose up -d
 
-# 2. Aguardar containers iniciarem
-Start-Sleep -Seconds 5
 
-# 3. Baixar o modelo Gemma (apenas primeira vez - ~5GB)
-docker exec mekhanikube-ollama ollama pull gemma:7b
+**Your Kubernetes AI Mechanic****Your Kubernetes AI Mechanic**
 
-# 4. Analisar cluster com explicações da IA (configuração é automática!)
-docker exec mekhanikube-k8sgpt k8sgpt analyze --explain
+
+
+[![Docker Build](https://github.com/jorgegabrielti/mekhanikube/actions/workflows/docker-build.yml/badge.svg)](https://github.com/jorgegabrielti/mekhanikube/actions)[![Docker Build](https://github.com/jorgegabrielti/mekhanikube/actions/workflows/docker-build.yml/badge.svg)](https://github.com/jorgegabrielti/mekhanikube/actions)
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/jorgegabrielti/mekhanikube/releases)[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/jorgegabrielti/mekhanikube/releases)
+
+[![K8sGPT](https://img.shields.io/badge/K8sGPT-latest-brightgreen.svg)](https://github.com/k8sgpt-ai/k8sgpt)[![K8sGPT](https://img.shields.io/badge/K8sGPT-latest-brightgreen.svg)](https://github.com/k8sgpt-ai/k8sgpt)
+
+[![Ollama](https://img.shields.io/badge/Ollama-latest-orange.svg)](https://ollama.ai/)[![Ollama](https://img.shields.io/badge/Ollama-latest-orange.svg)](https://ollama.ai/)
+
+
+
+AI-powered Kubernetes cluster analysis using K8sGPT with local LLM (Ollama). Automatically diagnoses problems, explains causes, and suggests solutions.Análise inteligente de clusters Kubernetes usando K8sGPT com IA local (Ollama). Diagnostica problemas, explica causas e sugere soluções automaticamente.
+
+
+
+[Quick Start](#-quick-start) •[Quick Start](#-quick-start) •
+
+[Documentation](docs/) •[Documentation](docs/) •
+
+[Contributing](CONTRIBUTING.md) •[Contributing](CONTRIBUTING.md) •
+
+[Changelog](CHANGELOG.md)[Changelog](CHANGELOG.md)
+
+
+
+</div></div>
+
+
+
+------
+
+
+
+## ✨ Features## 🚀 Quick Start
+
+
+
+- 🤖 **AI-Powered Analysis** - Local LLM explains Kubernetes issues in plain language### Prerequisites
+
+- 🔒 **Privacy First** - All data stays local, no external API calls
+
+- 🐳 **Easy Setup** - Single command installation with Docker Compose- [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/install/)
+
+- ⚡ **Fast Diagnostics** - Quickly identify and understand cluster problems- Active Kubernetes cluster with configured kubeconfig
+
+- 🎯 **Actionable Solutions** - Get concrete steps to fix issues- At least 8GB of free disk space for AI models
+
+- 📦 **No Kubernetes Modification** - Read-only cluster access
+
+- 🔄 **Multiple Models** - Support for various LLM models (Gemma, Mistral, Llama2)### Installation
+
+
+
+## 🚀 Quick Start```bash
+
+# Clone the repository
+
+### Prerequisitesgit clone https://github.com/jorgegabrielti/mekhanikube.git
+
+cd mekhanikube
+
+- [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/install/)
+
+- Active Kubernetes cluster with configured kubeconfig# (Optional) Copy and customize environment variables
+
+- At least 8GB of free disk space for AI modelscp .env.example .env
+
+
+
+### Installation# Complete setup: build, start services, and install AI model
+
+make setup
+
+```bash
+
+# Clone the repository# Or step by step:
+
+git clone https://github.com/jorgegabrielti/mekhanikube.gitmake build          # Build Docker images
+
+cd mekhanikubemake up             # Start services
+
+make install-model  # Download AI model (gemma:7b ~5GB)
+
+# (Optional) Copy and customize environment variables```
+
+cp .env.example .env
+
+### Quick Analysis
+
+# Complete setup: build, start services, and install AI model
+
+make setup```bash
+
+```# Analyze your cluster with AI explanations
+
+make analyze
+
+### Quick Analysis
+
+# Or using docker-compose directly:
+
+```bashdocker exec mekhanikube-k8sgpt k8sgpt analyze --explain
+
+# Analyze your cluster with AI explanations```
+
+make analyze
+
+```### Makefile Commands
+
+
+
+### Available Commands```bash
+
+make help           # Show all available commands
+
+```bashmake status         # Check service status
+
+make help           # Show all available commandsmake logs           # View logs
+
+make status         # Check service statusmake health         # Run health checks
+
+make logs           # View logsmake analyze-pods   # Analyze only Pods
+
+make health         # Run health checksmake test           # Run integration tests
+
+make test           # Run integration tests```
+
 ```
 
 ## 📋 Comandos K8sGPT
 
+## 📋 Usage Examples
+
 ```powershell
-# Analisar cluster (sem IA)
+
+### Basic Analysis# Analisar cluster (sem IA)
+
 docker exec mekhanikube-k8sgpt k8sgpt analyze
 
-# Analisar com explicações da IA
-docker exec mekhanikube-k8sgpt k8sgpt analyze --explain
+```bash
 
-# Analisar namespace específico
-docker exec mekhanikube-k8sgpt k8sgpt analyze -n kube-system --explain
+# Full cluster analysis# Analisar com explicações da IA
 
-# Filtrar por tipo de recurso
-docker exec mekhanikube-k8sgpt k8sgpt analyze --filter=Pod --explain
+make analyzedocker exec mekhanikube-k8sgpt k8sgpt analyze --explain
+
+
+
+# Analyze specific namespace# Analisar namespace específico
+
+make analyze-ns NAMESPACE=kube-systemdocker exec mekhanikube-k8sgpt k8sgpt analyze -n kube-system --explain
+
+
+
+# Analyze only Pods# Filtrar por tipo de recurso
+
+make analyze-podsdocker exec mekhanikube-k8sgpt k8sgpt analyze --filter=Pod --explain
+
 docker exec mekhanikube-k8sgpt k8sgpt analyze --filter=Service --explain
 
-# Listar filtros disponíveis
-docker exec mekhanikube-k8sgpt k8sgpt filters list
+# Analyze only Services
 
-# Verificar configuração
+make analyze-services# Listar filtros disponíveis
+
+```docker exec mekhanikube-k8sgpt k8sgpt filters list
+
+
+
+### Model Management# Verificar configuração
+
 docker exec mekhanikube-k8sgpt k8sgpt auth list
-```
 
-## 🛠️ Configuração
+```bash```
 
-### Modelos Ollama Recomendados
+# List installed models
+
+make list-models## 🛠️ Configuração
+
+
+
+# Install a different model### Modelos Ollama Recomendados
+
+make install-model MODEL=mistral
 
 ```powershell
-# Gemma 7B (recomendado - boa qualidade)
-docker exec mekhanikube-ollama ollama pull gemma:7b
+
+# Switch active model# Gemma 7B (recomendado - boa qualidade)
+
+make change-model MODEL=mistraldocker exec mekhanikube-ollama ollama pull gemma:7b
+
+```
 
 # Mistral (alternativa)
-docker exec mekhanikube-ollama ollama pull mistral
 
-# TinyLlama (mais rápido, qualidade inferior)
-docker exec mekhanikube-ollama ollama pull tinyllama
-```
+### Troubleshootingdocker exec mekhanikube-ollama ollama pull mistral
 
-### Trocar modelo
+
+
+```bash# TinyLlama (mais rápido, qualidade inferior)
+
+# Check system healthdocker exec mekhanikube-ollama ollama pull tinyllama
+
+make health```
+
+
+
+# View logs### Trocar modelo
+
+make logs
 
 ```powershell
-# Remover backend atual
-docker exec mekhanikube-k8sgpt k8sgpt auth remove --backend localai
+
+# Restart services# Remover backend atual
+
+make restartdocker exec mekhanikube-k8sgpt k8sgpt auth remove --backend localai
+
+```
 
 # Adicionar com novo modelo
-docker exec mekhanikube-k8sgpt k8sgpt auth add --backend localai --model mistral --baseurl http://localhost:11434/v1
+
+## 🛠️ Configurationdocker exec mekhanikube-k8sgpt k8sgpt auth add --backend localai --model mistral --baseurl http://localhost:11434/v1
+
 docker exec mekhanikube-k8sgpt k8sgpt auth default -p localai
-```
 
-## 📊 Arquitetura
+Mekhanikube can be configured via environment variables. Copy `.env.example` to `.env` and customize:```
 
-```
-┌─────────────────┐
+
+
+```bash## 📊 Arquitetura
+
+# AI Model Configuration
+
+OLLAMA_MODEL=gemma:7b```
+
+OLLAMA_PORT=11434┌─────────────────┐
+
 │   Kubernetes    │
-│     Cluster     │
-│   (em VM/Host)  │
+
+# Kubernetes Configuration│     Cluster     │
+
+KUBECONFIG_PATH=C:/Users/${USERNAME}/.kube/config│   (em VM/Host)  │
+
 └────────┬────────┘
-         │ kubeconfig (montado em /root/.kube/)
-         │
-    ┌────▼──────────────┐
-    │  k8sgpt container │
+
+# Container Configuration         │ kubeconfig (montado em /root/.kube/)
+
+CONTAINER_NAME_OLLAMA=mekhanikube-ollama         │
+
+CONTAINER_NAME_K8SGPT=mekhanikube-k8sgpt    ┌────▼──────────────┐
+
+```    │  k8sgpt container │
+
     │  - Ajusta config  │
-    │    automaticamente│
+
+### Recommended Models    │    automaticamente│
+
     │  - Roda análises  │
-    └────────┬──────────┘
-             │ API calls (http://localhost:11434/v1)
-             │
-    ┌────────▼──────────┐
-    │ ollama container  │
-    │  - Gemma:7b model │
+
+| Model | Size | Speed | Quality | Best For |    └────────┬──────────┘
+
+|-------|------|-------|---------|----------|             │ API calls (http://localhost:11434/v1)
+
+| **gemma:7b** | 4.8GB | Medium | Good | General use (recommended) |             │
+
+| **mistral** | 4.1GB | Medium | Good | Detailed explanations |    ┌────────▼──────────┐
+
+| **tinyllama** | 1.1GB | Fast | Basic | Quick scans |    │ ollama container  │
+
+| **llama2:13b** | 7.4GB | Slow | Excellent | Best quality |    │  - Gemma:7b model │
+
     │  - Gera explicações│
-    └───────────────────┘
+
+## 📖 Documentation    └───────────────────┘
+
 ```
 
-## 🔧 Troubleshooting
+- 📖 **[Architecture](docs/ARCHITECTURE.md)** - System design and components
 
-### K8sGPT não consegue acessar cluster
+- 🔧 **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and solutions## 🔧 Troubleshooting
 
-```powershell
-# Verificar se kubeconfig está montado
+- ❓ **[FAQ](docs/FAQ.md)** - Frequently asked questions
+
+- 📂 **[Project Structure](docs/PROJECT_STRUCTURE.md)** - File organization### K8sGPT não consegue acessar cluster
+
+- 🤝 **[Contributing](CONTRIBUTING.md)** - How to contribute
+
+- 🔒 **[Security](SECURITY.md)** - Security policy```powershell
+
+- 📝 **[Changelog](CHANGELOG.md)** - Version history# Verificar se kubeconfig está montado
+
 docker exec mekhanikube-k8sgpt ls -la /root/.kube/
 
-# Verificar se config_mod foi criado pelo entrypoint
-docker exec mekhanikube-k8sgpt cat /root/.kube/config_mod
+## 🔍 How It Works
 
-# Testar conexão manual
-docker exec mekhanikube-k8sgpt kubectl get nodes
+# Verificar se config_mod foi criado pelo entrypoint
+
+1. **Automatic Configuration**: Container startup script adjusts kubeconfig and configures K8sGPT backenddocker exec mekhanikube-k8sgpt cat /root/.kube/config_mod
+
+2. **Cluster Analysis**: K8sGPT scans your Kubernetes cluster and detects issues
+
+3. **AI Explanation**: For each issue, K8sGPT sends context to Ollama for analysis# Testar conexão manual
+
+4. **Results**: Clear, actionable output with explanations and solutionsdocker exec mekhanikube-k8sgpt kubectl get nodes
+
 ```
+
+## 🏗️ Architecture
 
 ### Ollama não responde
 
-```powershell
-# Ver logs
-docker logs mekhanikube-ollama
-
-# Verificar modelos instalados
-docker exec mekhanikube-ollama ollama list
-
-# Testar API
-Invoke-RestMethod -Uri http://localhost:11434/v1/models | ConvertTo-Json
-
-# Baixar modelo novamente
-docker exec mekhanikube-ollama ollama pull gemma:7b
 ```
 
-### Container k8sgpt não inicia
+┌─────────────────────────────────────────────────────────────┐```powershell
 
-```powershell
-# Ver logs
-docker logs mekhanikube-k8sgpt
+│                      Host Machine                            │# Ver logs
+
+│                                                              │docker logs mekhanikube-ollama
+
+│  ┌────────────────────┐         ┌────────────────────┐     │
+
+│  │  Kubernetes Cluster│         │   Docker Host      │     │# Verificar modelos instalados
+
+│  │  - Pods            │◄────────┤                    │     │docker exec mekhanikube-ollama ollama list
+
+│  │  - Services        │ K8s API │  ┌──────────────┐ │     │
+
+│  │  - Deployments     │         │  │   Ollama     │ │     │# Testar API
+
+│  └────────────────────┘         │  │   Container  │ │     │Invoke-RestMethod -Uri http://localhost:11434/v1/models | ConvertTo-Json
+
+│           ▲                      │  │  - Gemma:7b  │ │     │
+
+│           │ kubeconfig           │  └──────┬───────┘ │     │# Baixar modelo novamente
+
+│           │                      │         │ HTTP    │     │docker exec mekhanikube-ollama ollama pull gemma:7b
+
+│  ┌────────┴────────┐             │  ┌──────▼───────┐ │     │```
+
+│  │  ~/.kube/config │             │  │   K8sGPT     │ │     │
+
+│  └─────────────────┘             │  │   Container  │ │     │### Container k8sgpt não inicia
+
+│                                  │  │  - Analysis  │ │     │
+
+│                                  │  └──────────────┘ │     │```powershell
+
+│                                  └────────────────────┘     │# Ver logs
+
+└─────────────────────────────────────────────────────────────┘docker logs mekhanikube-k8sgpt
+
+```
 
 # Reconstruir imagem
-docker-compose build k8sgpt
+
+## 🤝 Contributingdocker-compose build k8sgpt
+
 docker-compose up -d k8sgpt
-```
 
-## 📚 Recursos
+Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md).```
 
-- [K8sGPT Docs](https://docs.k8sgpt.ai/)
-- [Ollama Models](https://ollama.com/library)
-- [K8sGPT GitHub](https://github.com/k8sgpt-ai/k8sgpt)
 
-## 🔍 Como Funciona
 
-1. **Entrypoint automático**: O container k8sgpt executa `/entrypoint.sh` ao iniciar, que:
-   - Copia o kubeconfig montado de `/root/.kube/config`
-   - Substitui `127.0.0.1` por `host.docker.internal` para acessar o cluster na VM/Host
-   - Salva em `/root/.kube/config_mod`
-   - Define `KUBECONFIG=/root/.kube/config_mod`
+1. Fork the repository## 📚 Recursos
+
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+
+3. Make your changes and test: `make test`- [K8sGPT Docs](https://docs.k8sgpt.ai/)
+
+4. Commit: `git commit -m 'Add amazing feature'`- [Ollama Models](https://ollama.com/library)
+
+5. Push: `git push origin feature/amazing-feature`- [K8sGPT GitHub](https://github.com/k8sgpt-ai/k8sgpt)
+
+6. Open a Pull Request
+
+## � Documentation
+
+## 📝 License
+
+- 📖 **[Architecture](docs/ARCHITECTURE.md)** - System design and components
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.- 🔧 **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and solutions
+
+- ❓ **[FAQ](docs/FAQ.md)** - Frequently asked questions
+
+## 🙏 Acknowledgments- 📂 **[Project Structure](docs/PROJECT_STRUCTURE.md)** - File organization
+
+- 🤝 **[Contributing](CONTRIBUTING.md)** - How to contribute
+
+- [K8sGPT](https://github.com/k8sgpt-ai/k8sgpt) - AI-powered Kubernetes diagnostics- 🔒 **[Security](SECURITY.md)** - Security policy
+
+- [Ollama](https://ollama.ai/) - Local LLM inference- 📝 **[Changelog](CHANGELOG.md)** - Version history
+
+- All contributors who help improve this project
+
+## 🔍 How It Works
+
+## 📬 Contact & Support
+
+1. **Automatic Configuration**: The k8sgpt container runs `/entrypoint.sh` at startup:
+
+- 🐛 **Bug Reports**: [GitHub Issues](https://github.com/jorgegabrielti/mekhanikube/issues)   - Copies the mounted kubeconfig from `/root/.kube/config`
+
+- 💡 **Feature Requests**: [GitHub Issues](https://github.com/jorgegabrielti/mekhanikube/issues)   - Replaces `127.0.0.1` with `host.docker.internal` for container networking
+
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/jorgegabrielti/mekhanikube/discussions)   - Saves modified config to `/root/.kube/config_mod`
+
+   - Sets `KUBECONFIG=/root/.kube/config_mod`
+
+---   - Configures K8sGPT backend with Ollama
+
+
+
+<div align="center">2. **Cluster Analysis**: K8sGPT scans your Kubernetes cluster:
+
+   - Detects issues across Pods, Services, Deployments, etc.
+
+Made with ❤️ for the Kubernetes community   - Identifies misconfigurations and errors
+
+   - Collects relevant context
+
+**[⬆ Back to Top](#mekhanikube-)**
+
+3. **AI Explanation**: For each issue found:
+
+</div>   - K8sGPT sends problem context to Ollama
+
+   - LLM generates human-readable explanation
+   - Suggests potential solutions
+
+4. **Results**: Clear, actionable output with:
+   - Problem description
+   - AI-generated explanation
+   - Suggested remediation steps
 
 2. **Análise**: K8sGPT escaneia o cluster e identifica problemas (ConfigMaps não usados, Pods com erro, etc)
 
