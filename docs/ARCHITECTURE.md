@@ -1,252 +1,150 @@
-# Architecture
+# Arquitetura
 
-## System Overview
+## Visão Geral do Sistema
 
-Mekhanikube is a containerized solution that combines K8sGPT and Ollama to provide AI-powered Kubernetes cluster analysis.
+Mekhanikube é uma solução containerizada que combina K8sGPT e Ollama para fornecer análise de clusters Kubernetes alimentada por IA.
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      Host Machine                            │
-│                                                              │
-│  ┌────────────────────┐         ┌────────────────────┐     │
-│  │  Kubernetes Cluster│         │   Docker Host      │     │
-│  │                    │         │                    │     │
-│  │  - Pods            │         │  ┌──────────────┐ │     │
-│  │  - Services        │         │  │   Ollama     │ │     │
-│  │  - Deployments     │◄────────┼──┤   Container  │ │     │
-│  │  - etc.            │ K8s API │  │              │ │     │
-│  │                    │         │  │  - Gemma:7b  │ │     │
-│  └────────────────────┘         │  │  - Models    │ │     │
-│           ▲                      │  └──────┬───────┘ │     │
-│           │                      │         │         │     │
-│           │ kubeconfig           │         │ HTTP    │     │
-│           │ (mounted)            │         │ API     │     │
-│           │                      │         │         │     │
-│  ┌────────┴────────┐             │  ┌──────▼───────┐ │     │
-│  │  ~/.kube/config │             │  │   K8sGPT     │ │     │
-│  └─────────────────┘             │  │   Container  │ │     │
-│                                  │  │              │ │     │
-│                                  │  │  - Analysis  │ │     │
-│                                  │  │  - Filtering │ │     │
-│                                  │  └──────────────┘ │     │
-│                                  └────────────────────┘     │
-└─────────────────────────────────────────────────────────────┘
-```
+## Componentes Principais
 
-## Component Details
+### Contêiner K8sGPT
 
-### K8sGPT Container
+**Função**: Analisa o cluster Kubernetes e identifica problemas
 
-**Base Image**: Alpine Linux  
-**Build Process**: Multi-stage build from official K8sGPT source  
-**Purpose**: Analyzes Kubernetes cluster and identifies issues
+**Recursos Principais**:
+- Lê kubeconfig do volume montado
+- Ajusta automaticamente configuração para rede do contêiner  
+- Suporta múltiplos tipos de recursos (Pods, Services, Deployments, etc.)
+- Análise com filtros e escopo de namespace
+- Comunica com Ollama para explicações de IA
 
-**Key Features**:
-- Reads kubeconfig from mounted volume
-- Automatically adjusts configuration for container networking
-- Supports multiple resource types (Pods, Services, Deployments, etc.)
-- Filters and namespace-scoped analysis
-- Communicates with Ollama for AI explanations
+### Contêiner Ollama
 
-**Configuration**:
-- `/root/.kube/config`: Original kubeconfig (read-only mount)
-- `/root/.kube/config_mod`: Modified kubeconfig for container
-- `/root/.config/k8sgpt`: Persistent K8sGPT configuration
+**Função**: Executa modelos LLM localmente para gerar explicações
 
-### Ollama Container
+**Recursos Principais**:
+- API REST na porta 11434
+- Armazenamento persistente de modelos
+- Suporta múltiplos modelos (Gemma, Mistral, Llama2, etc.)
+- Compatível com formato de API OpenAI
 
-**Base Image**: Official Ollama image  
-**Purpose**: Runs LLM models locally for generating explanations
+## Fluxo de Dados
 
-**Key Features**:
-- REST API on port 11434
-- Persistent model storage
-- Supports multiple models (Gemma, Mistral, Llama2, etc.)
-- Compatible with OpenAI API format
+1. **Solicitação de Análise**: Usuário → K8sGPT
+2. **Varredura do Cluster**: K8sGPT → API Kubernetes → Dados de Recursos
+3. **Detecção de Problemas**: K8sGPT → Analisadores → Identificação de Problemas
+4. **Explicação IA**: K8sGPT → API Ollama → Modelo LLM → Explicação
+5. **Exibição de Resultados**: K8sGPT → Console → Usuário
 
-**Storage**:
-- `/root/.ollama`: Model storage (~5-10GB per model)
-- Persistent Docker volume
+## Arquitetura de Rede
 
-## Data Flow
+### Modo Rede Host (Padrão)
 
-1. **Analysis Request**:
-   ```
-   User → make analyze → K8sGPT container
-   ```
-
-2. **Cluster Scan**:
-   ```
-   K8sGPT → Kubernetes API → Resource Data
-   ```
-
-3. **Issue Detection**:
-   ```
-   K8sGPT → Built-in analyzers → Problem identification
-   ```
-
-4. **AI Explanation**:
-   ```
-   K8sGPT → Ollama API → LLM Model → Explanation
-   ```
-
-5. **Result Display**:
-   ```
-   K8sGPT → Console → User
-   ```
-
-## Network Architecture
-
-### Host Network Mode (Default)
-
-```
-┌──────────────────────────────────────┐
-│           Host Network               │
-│                                      │
-│  ┌────────────┐    ┌──────────────┐│
-│  │  Ollama    │    │   K8sGPT     ││
-│  │  :11434    │◄───┤  localhost   ││
-│  └────────────┘    └──────────────┘│
-│         ▲                           │
-│         │                           │
-│         ├───────────────────────────┤
-│         │     host.docker.internal  │
-│         ▼                           │
-│  ┌────────────┐                    │
-│  │ Kubernetes │                    │
-│  │    API     │                    │
-│  └────────────┘                    │
-└──────────────────────────────────────┘
+```yaml
+network_mode: host
 ```
 
-**Benefits**:
-- Simplified networking
-- Direct access to localhost services
-- No port mapping conflicts
-- Kubernetes API accessible via host.docker.internal
+**Vantagens**:
+- Acesso direto ao host (ex: `localhost:11434`)
+- Mais simples de configurar
+- Melhor performance
 
-### Bridge Network Mode (Alternative)
+**Desvantagens**:
+- Compartilha stack de rede do host
+- Não funciona em todos os ambientes
 
-```
-┌──────────────────────────────────────┐
-│       Docker Bridge Network          │
-│                                      │
-│  ┌────────────┐    ┌──────────────┐│
-│  │  Ollama    │◄───┤   K8sGPT     ││
-│  │  :11434    │    │              ││
-│  └────┬───────┘    └──────────────┘│
-│       │                             │
-└───────┼─────────────────────────────┘
-        │ Port 11434
-        ▼
-┌──────────────┐
-│     Host     │
-└──────────────┘
+### Modo Rede Bridge (Alternativa)
+
+```yaml
+network_mode: bridge
+ports:
+  - "11434:11434"
 ```
 
-## Volume Management
+**Vantagens**:
+- Isolamento de rede melhor
+- Funciona em qualquer ambiente
+- Mapeamento explícito de portas
 
-### Persistent Volumes
+## Gerenciamento de Volumes
 
-1. **mekhanikube-ollama-data**
-   - Stores LLM models
-   - Size: 5-20GB depending on models
-   - Location: Docker managed volume
-   - Backup: `docker run --rm -v mekhanikube-ollama-data:/data -v $(pwd):/backup alpine tar czf /backup/ollama-backup.tar.gz /data`
+### Volumes Persistentes
 
-2. **mekhanikube-k8sgpt-config**
-   - Stores K8sGPT configuration
-   - Size: <10MB
-   - Contains: Auth tokens, backend configuration
-   - Location: Docker managed volume
+1. **mekhanikube-ollama-data**: Armazena modelos LLM
+2. **mekhanikube-k8sgpt-config**: Armazena configuração K8sGPT
+3. **~/.kube/config**: Kubeconfig montado como somente leitura
 
-## Security Considerations
+## Considerações de Segurança
 
-### Kubeconfig Access
+### Acesso ao Kubeconfig
+- Montado como **somente leitura**
+- Nunca modificado
+- Isolado dentro do contêiner
 
-- Mounted as **read-only** to prevent modification
-- Original config preserved, working copy created in container
-- Never exposed externally
+### Segurança de Rede
+- Recomendado: usar rede host para simplicidade
+- Alternativa: rede bridge com portas explícitas
+- Nunca expor publicamente
 
-### Network Security
+### Privacidade de Dados
+- Todos os dados permanecem locais
+- Nenhuma chamada de API externa (exceto downloads de modelos)
+- Sem telemetria
 
-- No external API calls (fully local)
-- Ollama API not exposed to internet by default
-- Container-to-container communication only
+## Escalabilidade e Performance
 
-### Data Privacy
+### Requisitos de Recursos
 
-- All data stays local
-- No telemetry or external connections
-- Cluster data never leaves your infrastructure
+**Mínimo**:
+- 2 núcleos de CPU
+- 4GB RAM
+- 10GB disco
 
-## Scaling and Performance
+**Recomendado**:
+- 4+ núcleos de CPU
+- 8GB+ RAM
+- 20GB+ disco
 
-### Resource Requirements
+### Performance do Modelo
 
-**Minimum**:
-- CPU: 2 cores
-- RAM: 4GB
-- Disk: 10GB
+| Modelo | Tamanho | Velocidade | Qualidade |
+|--------|---------|------------|-----------|
+| tinyllama | 1.1GB | Rápido | Básica |
+| gemma:7b | 4.8GB | Médio | Boa |
+| mistral | 4.1GB | Médio | Boa |
+| llama2:13b | 7.4GB | Lento | Excelente |
 
-**Recommended**:
-- CPU: 4+ cores
-- RAM: 8GB+
-- Disk: 20GB+
+### Dicas de Otimização
 
-### Model Performance
+1. Use modelos menores para análises rápidas
+2. Limite o escopo com filtros e namespaces
+3. Aloque mais recursos para modelos maiores
+4. Use aceleração GPU quando disponível
 
-| Model | Size | Speed | Quality | RAM Usage |
-|-------|------|-------|---------|-----------|
-| TinyLlama | 1.1GB | Fast | Basic | ~2GB |
-| Gemma:7b | 4.8GB | Medium | Good | ~8GB |
-| Mistral | 4.1GB | Medium | Good | ~8GB |
-| Llama2:13b | 7.4GB | Slow | Excellent | ~16GB |
+## Pontos de Integração
 
-### Optimization Tips
+### Integração CI/CD
 
-1. **Model Selection**: Use smaller models for faster responses
-2. **Namespace Filtering**: Analyze specific namespaces to reduce scope
-3. **Resource Filtering**: Focus on specific resource types
-4. **Caching**: K8sGPT caches backend configuration
-
-## Integration Points
-
-### CI/CD Integration
-
-```bash
-# GitLab CI example
+```yaml
+# GitLab CI
 k8s-analysis:
   script:
-    - make analyze > analysis.txt
-    - make test
+    - docker-compose up -d
+    - docker exec mekhanikube-k8sgpt k8sgpt analyze --explain > report.txt
   artifacts:
     paths:
-      - analysis.txt
+      - report.txt
 ```
 
-### Monitoring Integration
+### Integração de Monitoramento
 
-```bash
-# Export metrics to monitoring system
-make analyze --output json | jq '.problems | length' | \
-  curl -X POST -d @- http://prometheus-pushgateway:9091/metrics/job/k8sgpt
-```
+Mekhanikube complementa ferramentas de monitoramento existentes:
+- Prometheus/Grafana: métricas
+- Mekhanikube: detecção e explicação de problemas
 
-### Alerting Integration
+### Integração de Alertas
 
-```bash
-# Fail pipeline if critical issues found
-ISSUES=$(make analyze --filter=Pod | grep -c "Error")
-if [ $ISSUES -gt 0 ]; then
-  exit 1
-fi
-```
+Use Mekhanikube em resposta a alertas para diagnóstico automatizado.
 
-## Troubleshooting Architecture
+## Solução de Problemas de Arquitetura
 
-See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for common issues and solutions related to:
-- Network connectivity
-- Volume permissions
-- Kubeconfig mounting
-- Model loading issues
+Para problemas comuns, consulte [TROUBLESHOOTING.md](TROUBLESHOOTING.md).

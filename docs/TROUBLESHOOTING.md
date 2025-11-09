@@ -2,340 +2,337 @@
 
 ## Problemas Comuns e Soluções
 
-### 1. K8sGPT Cannot Connect to Kubernetes API
+### 1. K8sGPT Não Consegue Conectar à API Kubernetes
 
-**Symptoms**:
+**Sintomas**:
 ```
 Error: unable to connect to Kubernetes cluster
 ```
 
-**Causes and Solutions**:
+**Causas e Soluções**:
 
-#### A. Kubeconfig Not Found or Invalid
+#### A. Kubeconfig Não Encontrado ou Inválido
 
 ```bash
-# Check if kubeconfig exists
+# Verificar se o kubeconfig existe
 ls ~/.kube/config
 
-# Verify kubeconfig is valid
+# Verificar se o kubeconfig é válido
 kubectl cluster-info
 
-# Check container can see the file
+# Verificar se o contêiner pode ver o arquivo
 docker exec mekhanikube-k8sgpt ls -l /root/.kube/config
 ```
 
-**Fix**: Ensure kubeconfig path in `docker-compose.yml` is correct:
+**Correção**: Garantir que o caminho do kubeconfig no `docker-compose.yml` está correto:
 ```yaml
 volumes:
   - C:/Users/${USERNAME}/.kube/config:/root/.kube/config:ro
 ```
 
-#### B. Wrong API Server Address
+#### B. Endereço Incorreto do Servidor API
 
-**Issue**: Kubeconfig uses `127.0.0.1` which doesn't work in containers.
+**Problema**: Kubeconfig usa `127.0.0.1` que não funciona em contêineres.
 
-**Fix**: The entrypoint.sh automatically fixes this, but verify:
+**Correção**: O entrypoint.sh corrige isso automaticamente, mas verifique:
 ```bash
 docker exec mekhanikube-k8sgpt cat /root/.kube/config_mod
 ```
 
-Should show `host.docker.internal` instead of `127.0.0.1`.
+Deve mostrar `host.docker.internal` em vez de `127.0.0.1`.
 
-#### C. Kubernetes API Not Accessible
+#### C. API Kubernetes Não Acessível
 
 ```bash
-# Test from K8sGPT container
+# Testar do contêiner K8sGPT
 docker exec mekhanikube-k8sgpt kubectl cluster-info
 
-# Test DNS resolution
+# Testar resolução DNS
 docker exec mekhanikube-k8sgpt nslookup host.docker.internal
 ```
 
-**Fix**: Ensure your Kubernetes cluster is running:
+**Correção**: Garantir que seu cluster Kubernetes está rodando:
 ```bash
-# For Docker Desktop Kubernetes
+# Para Kubernetes do Docker Desktop
 docker info | grep -i kubernetes
 
-# For Minikube
+# Para Minikube
 minikube status
 ```
 
 ---
 
-### 2. Ollama API Not Responding
+### 2. API Ollama Não Responde
 
-**Symptoms**:
+**Sintomas**:
 ```
 Error: failed to connect to Ollama API
 Connection refused on localhost:11434
 ```
 
-**Diagnosis**:
+**Diagnóstico**:
 ```bash
-# Check Ollama container status
+# Verificar status do contêiner Ollama
 docker ps | grep ollama
 
-# Check Ollama logs
+# Verificar logs do Ollama
 docker logs mekhanikube-ollama
 
-# Test Ollama API
+# Testar API Ollama
 curl http://localhost:11434/api/tags
 ```
 
-**Solutions**:
+**Soluções**:
 
-#### A. Container Not Running
+#### A. Contêiner Não Está Rodando
 ```bash
-# Restart Ollama
+# Reiniciar Ollama
 docker-compose restart ollama
 
-# Check health
+# Verificar saúde
 docker inspect mekhanikube-ollama | grep Health -A 10
 ```
 
-#### B. Model Not Loaded
+#### B. Modelo Não Carregado
 ```bash
-# List installed models
+# Listar modelos instalados
 docker exec mekhanikube-ollama ollama list
 
-# Install model if missing
-make install-model MODEL=gemma:7b
+# Instalar modelo se estiver faltando
+docker exec mekhanikube-ollama ollama pull gemma:7b
 ```
 
-#### C. Port Conflict
+#### C. Conflito de Porta
 ```bash
-# Check if port 11434 is in use
+# Verificar se a porta 11434 está em uso
 netstat -ano | findstr :11434  # Windows
 lsof -i :11434                  # Linux/Mac
 
-# Change port in .env:
+# Mudar porta no .env:
 OLLAMA_PORT=11435
 ```
 
 ---
 
-### 3. K8sGPT Backend Not Configured
+### 3. Backend K8sGPT Não Configurado
 
-**Symptoms**:
+**Sintomas**:
 ```
 Error: no backend configured
 ```
 
-**Diagnosis**:
+**Diagnóstico**:
 ```bash
-# Check K8sGPT auth status
+# Verificar status de autenticação do K8sGPT
 docker exec mekhanikube-k8sgpt k8sgpt auth list
 ```
 
-**Fix**:
+**Correção**:
 ```bash
-# Reconfigure backend
-make change-model MODEL=gemma:7b
-
-# Or manually:
+# Reconfigurar backend
 docker exec mekhanikube-k8sgpt k8sgpt auth add --backend ollama --model gemma:7b --baseurl http://localhost:11434
 docker exec mekhanikube-k8sgpt k8sgpt auth default -p ollama
 ```
 
 ---
 
-### 4. Model Download Fails
+### 4. Falha no Download do Modelo
 
-**Symptoms**:
+**Sintomas**:
 ```
 Error: failed to pull model
 ```
 
-**Causes**:
+**Causas**:
 
-#### A. No Internet Connection
+#### A. Sem Conexão com Internet
 ```bash
-# Test connectivity
+# Testar conectividade
 docker exec mekhanikube-ollama ping -c 3 ollama.ai
 ```
 
-#### B. Insufficient Disk Space
+#### B. Espaço em Disco Insuficiente
 ```bash
-# Check Docker disk usage
+# Verificar uso de disco do Docker
 docker system df
 
-# Check volume size
+# Verificar tamanho do volume
 docker volume inspect mekhanikube-ollama-data
 ```
 
-**Fix**:
+**Correção**:
 ```bash
-# Clean up unused resources
-make prune
+# Limpar recursos não utilizados
+docker system prune
 
-# Or more aggressive:
+# Ou mais agressivo:
 docker system prune -a --volumes
 ```
 
-#### C. Model Name Typo
+#### C. Erro de Digitação no Nome do Modelo
 ```bash
-# List available models at: https://ollama.ai/library
+# Listar modelos disponíveis em: https://ollama.ai/library
 
-# Correct examples:
-make install-model MODEL=gemma:7b
-make install-model MODEL=mistral
-make install-model MODEL=llama2
+# Exemplos corretos:
+docker exec mekhanikube-ollama ollama pull gemma:7b
+docker exec mekhanikube-ollama ollama pull mistral
+docker exec mekhanikube-ollama ollama pull llama2
 ```
 
 ---
 
-### 5. Container Won't Start
+### 5. Contêiner Não Inicia
 
-**Symptoms**:
+**Sintomas**:
 ```
 Error response from daemon: container exited immediately
 ```
 
-**Diagnosis**:
+**Diagnóstico**:
 ```bash
-# Check logs
+# Verificar logs
 docker-compose logs
 
-# Specific container logs
+# Logs de contêiner específico
 docker logs mekhanikube-k8sgpt
 docker logs mekhanikube-ollama
 
-# Check Docker Compose config
+# Verificar configuração do Docker Compose
 docker-compose config
 ```
 
-**Common Fixes**:
+**Correções Comuns**:
 
-#### A. Syntax Error in docker-compose.yml
+#### A. Erro de Sintaxe no docker-compose.yml
 ```bash
-# Validate configuration
+# Validar configuração
 docker-compose config -q
 ```
 
-#### B. Volume Mount Fails
+#### B. Falha na Montagem de Volume
 ```bash
-# Windows: Check path format
-# Correct: C:/Users/username/.kube/config
-# Wrong: C:\Users\username\.kube\config
+# Windows: Verificar formato do caminho
+# Correto: C:/Users/username/.kube/config
+# Errado: C:\Users\username\.kube\config
 
-# Linux/Mac: Check permissions
+# Linux/Mac: Verificar permissões
 chmod 644 ~/.kube/config
 ```
 
-#### C. Port Already in Use
+#### C. Porta Já em Uso
 ```bash
-# Find what's using the port
+# Encontrar o que está usando a porta
 netstat -ano | findstr :11434  # Windows
 sudo lsof -i :11434            # Linux/Mac
 
-# Kill the process or change port
+# Matar o processo ou mudar a porta
 ```
 
 ---
 
-### 6. Analysis Returns No Issues
+### 6. Análise Não Retorna Problemas
 
-**Symptoms**:
+**Sintomas**:
 ```
 No problems detected
 ```
 
-**This might be normal!** But verify:
+**Isso pode ser normal!** Mas verifique:
 
-#### A. Check Specific Namespaces
+#### A. Verificar Namespaces Específicos
 ```bash
-# List all namespaces
+# Listar todos os namespaces
 docker exec mekhanikube-k8sgpt kubectl get namespaces
 
-# Analyze specific namespace
-make analyze-ns NAMESPACE=kube-system
+# Analisar namespace específico
+docker exec mekhanikube-k8sgpt k8sgpt analyze --namespace kube-system --explain
 ```
 
-#### B. Check Available Filters
+#### B. Verificar Filtros Disponíveis
 ```bash
-# List all analyzers
-make filters
+# Listar todos os analisadores
+docker exec mekhanikube-k8sgpt k8sgpt filters list
 
-# Try specific resources
-make analyze-pods
-make analyze-services
+# Tentar recursos específicos
+docker exec mekhanikube-k8sgpt k8sgpt analyze --filter=Pod --explain
+docker exec mekhanikube-k8sgpt k8sgpt analyze --filter=Service --explain
 ```
 
-#### C. Verify Cluster Has Resources
+#### C. Verificar se o Cluster Tem Recursos
 ```bash
-# Check if cluster has workloads
+# Verificar se o cluster tem cargas de trabalho
 docker exec mekhanikube-k8sgpt kubectl get all --all-namespaces
 ```
 
 ---
 
-### 7. AI Explanations Not Working
+### 7. Explicações de IA Não Funcionam
 
-**Symptoms**:
+**Sintomas**:
 ```
 Issues detected but no AI explanations
 ```
 
-**Checks**:
+**Verificações**:
 
-#### A. Verify --explain Flag
+#### A. Verificar Flag --explain
 ```bash
-# Must include --explain
-make analyze  # Includes --explain
+# Deve incluir --explain
+docker exec mekhanikube-k8sgpt k8sgpt analyze --explain
 
-# Or manually:
+# Ou manualmente:
 docker exec mekhanikube-k8sgpt k8sgpt analyze --explain
 ```
 
-#### B. Check Backend Connection
+#### B. Verificar Conexão do Backend
 ```bash
-# Verify backend is active
+# Verificar se o backend está ativo
 docker exec mekhanikube-k8sgpt k8sgpt auth list
 
-# Should show:
+# Deve mostrar:
 # Active: true
 # Provider: ollama
 ```
 
-#### C. Model Compatibility
+#### C. Compatibilidade do Modelo
 ```bash
-# Some models may not work well
-# Recommended models:
-make change-model MODEL=gemma:7b
-make change-model MODEL=mistral
+# Alguns modelos podem não funcionar bem
+# Modelos recomendados:
+docker exec mekhanikube-ollama ollama pull gemma:7b
+docker exec mekhanikube-ollama ollama pull mistral
 ```
 
 ---
 
-### 8. Slow Performance
+### 8. Performance Lenta
 
-**Symptoms**:
-- Analysis takes >5 minutes
-- System becomes unresponsive
+**Sintomas**:
+- Análise leva >5 minutos
+- Sistema fica sem resposta
 
-**Optimizations**:
+**Otimizações**:
 
-#### A. Use Smaller Model
+#### A. Usar Modelo Menor
 ```bash
-# Faster but less accurate
-make change-model MODEL=tinyllama
+# Mais rápido mas menos preciso
+docker exec mekhanikube-ollama ollama pull tinyllama
 
-# Balanced
-make change-model MODEL=gemma:7b
+# Balanceado
+docker exec mekhanikube-ollama ollama pull gemma:7b
 ```
 
-#### B. Limit Scope
+#### B. Limitar Escopo
 ```bash
-# Analyze one namespace
-make analyze-ns NAMESPACE=default
+# Analisar um namespace
+docker exec mekhanikube-k8sgpt k8sgpt analyze --namespace default --explain
 
-# Analyze specific resource type
-make analyze-pods
+# Analisar tipo de recurso específico
+docker exec mekhanikube-k8sgpt k8sgpt analyze --filter=Pod --explain
 ```
 
-#### C. Allocate More Resources
+#### C. Alocar Mais Recursos
 ```yaml
-# In docker-compose.yml, add:
+# No docker-compose.yml, adicione:
 services:
   ollama:
     deploy:
@@ -347,131 +344,130 @@ services:
 
 ---
 
-### 9. Volume Permission Issues
+### 9. Problemas de Permissão de Volume
 
-**Symptoms** (Linux/Mac):
+**Sintomas** (Linux/Mac):
 ```
 Error: permission denied
 ```
 
-**Fix**:
+**Correção**:
 ```bash
-# Check volume ownership
+# Verificar propriedade do volume
 docker volume inspect mekhanikube-ollama-data
 
-# Reset permissions
+# Resetar permissões
 docker-compose down -v
 docker-compose up -d
 ```
 
 ---
 
-### 10. Network Issues on Windows
+### 10. Problemas de Rede no Windows
 
-**Symptoms**:
+**Sintomas**:
 ```
 Error: cannot resolve host.docker.internal
 ```
 
-**Fix**:
+**Correção**:
 ```bash
-# Ensure Docker Desktop is using WSL 2
+# Garantir que o Docker Desktop está usando WSL 2
 wsl --set-default-version 2
 
-# Or switch to bridge network mode in docker-compose.yml:
+# Ou mudar para modo de rede bridge no docker-compose.yml:
 network_mode: bridge
 
-# And update ports:
+# E atualizar portas:
 ports:
   - "11434:11434"
 ```
 
 ---
 
-## Debugging Commands
+## Comandos de Depuração
 
-### Check Overall Health
+### Verificar Saúde Geral
 ```bash
-make health
+docker-compose ps
 ```
 
-### View All Logs
+### Ver Todos os Logs
 ```bash
-make logs
+docker-compose logs
 ```
 
-### Interactive Shell Access
+### Acesso Shell Interativo
 ```bash
-# K8sGPT container
-make shell-k8sgpt
+# Contêiner K8sGPT
+docker exec -it mekhanikube-k8sgpt /bin/sh
 
-# Ollama container
-make shell-ollama
+# Contêiner Ollama
+docker exec -it mekhanikube-ollama /bin/sh
 ```
 
-### Test Connectivity
+### Testar Conectividade
 ```bash
-# From K8sGPT to Ollama
+# De K8sGPT para Ollama
 docker exec mekhanikube-k8sgpt curl -f http://localhost:11434/api/tags
 
-# From K8sGPT to Kubernetes
+# De K8sGPT para Kubernetes
 docker exec mekhanikube-k8sgpt kubectl get nodes
 ```
 
-### Reset Everything
+### Resetar Tudo
 ```bash
-# Nuclear option - removes all data
-make clean
-make clean-models
+# Opção nuclear - remove todos os dados
+docker-compose down -v
 
-# Then rebuild
-make setup
+# Então reconstrua
+docker-compose up -d
 ```
 
 ---
 
-## Getting Help
+## Obtendo Ajuda
 
-If you're still stuck:
+Se ainda estiver travado:
 
-1. **Check Logs**: `make logs`
-2. **Run Health Check**: `make health`
-3. **Run Tests**: `make test`
-4. **Search Issues**: [GitHub Issues](https://github.com/jorgegabrielti/mekhanikube/issues)
-5. **Open New Issue**: Include:
-   - OS and Docker version
-   - Output of `make health`
-   - Relevant logs
-   - Steps to reproduce
+1. **Verificar Logs**: `docker-compose logs`
+2. **Executar Verificação de Saúde**: `docker-compose ps`
+3. **Executar Testes**: Verificar conectividade básica
+4. **Pesquisar Issues**: [GitHub Issues](https://github.com/jorgegabrielti/mekhanikube/issues)
+5. **Abrir Nova Issue**: Incluir:
+   - SO e versão do Docker
+   - Saída de `docker-compose ps`
+   - Logs relevantes
+   - Passos para reproduzir
 
 ---
 
-## Prevention Tips
+## Dicas de Prevenção
 
-### Before Starting
+### Antes de Iniciar
 
-- [ ] Ensure Docker Desktop is running
-- [ ] Verify Kubernetes cluster is accessible
-- [ ] Check available disk space (min 10GB)
-- [ ] Confirm kubeconfig path is correct
+- [ ] Garantir que o Docker Desktop está rodando
+- [ ] Verificar que o cluster Kubernetes está acessível
+- [ ] Verificar espaço em disco disponível (mín 10GB)
+- [ ] Confirmar que o caminho do kubeconfig está correto
 
-### Best Practices
+### Melhores Práticas
 
-- Use `make setup` for initial installation
-- Run `make health` regularly
-- Keep Docker Desktop updated
-- Don't modify volumes manually
-- Back up important configurations
+- Use `docker-compose up -d` para instalação inicial
+- Execute `docker-compose ps` regularmente
+- Mantenha o Docker Desktop atualizado
+- Não modifique volumes manualmente
+- Faça backup de configurações importantes
 
-### Regular Maintenance
+### Manutenção Regular
 
 ```bash
-# Weekly
-make prune              # Clean unused resources
+# Semanalmente
+docker system prune              # Limpar recursos não utilizados
 
-# Monthly
-docker system prune -a  # Deep clean
+# Mensalmente
+docker system prune -a           # Limpeza profunda
 
-# Before updates
-make clean              # Full reset
+# Antes de atualizações
+docker-compose down -v           # Reset completo
 ```

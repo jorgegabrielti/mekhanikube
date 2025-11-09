@@ -1,213 +1,185 @@
-# Project Structure
+# Estrutura do Projeto
+
+## Visão Geral
+
+Este documento descreve a organização e propósito dos arquivos e diretórios no projeto Mekhanikube.
+
+## Estrutura de Diretórios
 
 ```
 mekhanikube/
-├── .devcontainer/          # VS Code Dev Container configuration
-│   └── devcontainer.json   # Container development environment
-├── .github/                # GitHub configuration
-│   └── workflows/          # CI/CD workflows
-│       └── docker-build.yml # Build, test, and release pipeline
-├── configs/                # Configuration files
-│   ├── Dockerfile          # K8sGPT container image
-│   └── entrypoint.sh       # Container startup script
-├── docs/                   # Documentation
-│   ├── ARCHITECTURE.md     # System architecture details
-│   ├── FAQ.md              # Frequently asked questions
-│   └── TROUBLESHOOTING.md  # Common issues and solutions
-├── scripts/                # Utility scripts
-│   ├── analyze.sh          # Quick analysis script
-│   ├── change-model.sh     # Model switching script
-│   ├── healthcheck.sh      # Health check script
-│   ├── release.sh          # Release automation
-│   └── test.sh             # Integration tests
-├── tests/                  # Test files
-│   └── (future test files)
-├── .env.example            # Environment variables template
-├── .gitignore              # Git ignore rules
-├── CHANGELOG.md            # Version history
-├── CODE_OF_CONDUCT.md      # Community guidelines
-├── CONTRIBUTING.md         # Contribution guidelines
-├── docker-compose.yml      # Service orchestration
-├── LICENSE                 # MIT License
-├── Makefile                # Build automation
-├── README.md               # Main documentation
-├── SECURITY.md             # Security policy
-└── VERSION                 # Current version number
+├── docs/                    # Documentação
+│   ├── ARCHITECTURE.md
+│   ├── FAQ.md
+│   ├── TROUBLESHOOTING.md
+│   ├── PROJECT_STRUCTURE.md
+│   └── PROJECT_IMPROVEMENTS.md
+│
+├── scripts/                 # Scripts utilitários
+│   ├── analyze.sh
+│   ├── change-model.sh
+│   ├── healthcheck.sh
+│   ├── release.sh
+│   └── test.sh
+│
+├── configs/                 # Configurações
+│   └── entrypoint.sh
+│
+├── tests/                   # Testes
+│   └── integration/
+│
+├── .github/                 # GitHub workflows
+│   └── workflows/
+│       └── docker-build.yml
+│
+├── .devcontainer/           # Configuração Dev Container
+│   └── devcontainer.json
+│
+├── docker-compose.yml       # Configuração principal
+├── Dockerfile              # Build K8sGPT
+├── .env.example            # Template de variáveis de ambiente
+├── Makefile                # Comandos automatizados
+│
+├── README.md               # Documentação principal
+├── LICENSE                 # Licença MIT
+├── CHANGELOG.md            # Histórico de mudanças
+├── CONTRIBUTING.md         # Guia de contribuição
+├── CODE_OF_CONDUCT.md      # Código de conduta
+├── SECURITY.md             # Política de segurança
+└── VERSION                 # Número da versão
+
 ```
 
-## Directory Purposes
+## Propósito dos Diretórios
 
-### Root Level Files
+### Arquivos Raiz
 
-- **README.md**: Main entry point with quick start and overview
-- **Makefile**: Convenient commands for all operations
-- **docker-compose.yml**: Service definitions and orchestration
-- **VERSION**: Semantic version number
-- **.env.example**: Template for environment configuration
-
-### `.devcontainer/`
-
-Development container configuration for VS Code:
-- Pre-configured environment
-- Includes Docker, kubectl, and necessary tools
-- Consistent development setup across team
-
-### `.github/`
-
-GitHub-specific configuration:
-- **workflows/**: CI/CD automation
-  - Build and test on push
-  - Security scanning
-  - Release automation
-
-### `configs/`
-
-Core configuration files for containers:
-- **Dockerfile**: Multi-stage build for K8sGPT
-- **entrypoint.sh**: Container initialization logic
+- **docker-compose.yml**: Orquestração dos serviços Ollama e K8sGPT
+- **Dockerfile**: Build multi-estágio do K8sGPT
+- **.env.example**: Template para configuração personalizada
+- **Makefile**: Automação de comandos comuns
 
 ### `docs/`
 
-Comprehensive documentation:
-- **ARCHITECTURE.md**: System design and components
-- **FAQ.md**: Common questions and answers
-- **TROUBLESHOOTING.md**: Problem-solving guide
+Documentação completa do projeto:
+- **ARCHITECTURE.md**: Arquitetura do sistema
+- **FAQ.md**: Perguntas frequentes
+- **TROUBLESHOOTING.md**: Guia de solução de problemas
+- **PROJECT_STRUCTURE.md**: Este arquivo
+- **PROJECT_IMPROVEMENTS.md**: Histórico de melhorias
 
 ### `scripts/`
 
-Utility scripts for common operations:
-- **analyze.sh**: Simplified analysis
-- **change-model.sh**: Model management
-- **healthcheck.sh**: System diagnostics
-- **release.sh**: Version release automation
-- **test.sh**: Integration testing
+Scripts utilitários para automação:
+- **analyze.sh**: Script de análise
+- **change-model.sh**: Trocar modelos Ollama
+- **healthcheck.sh**: Verificação de saúde
+- **release.sh**: Automação de releases
+- **test.sh**: Testes automatizados
 
-### `tests/`
+### `configs/`
 
-Test files and fixtures (for future expansion):
-- Unit tests
-- Integration tests
-- End-to-end tests
+Arquivos de configuração:
+- **entrypoint.sh**: Script de inicialização do K8sGPT
+  - Ajusta kubeconfig para Docker
+  - Configura backend Ollama
+  - Aguarda Ollama estar pronto
 
-## File Descriptions
+### `.github/`
 
-### Configuration Files
+Workflows GitHub Actions:
+- **docker-build.yml**: Build e teste automatizados
+- CI/CD para imagens Docker
+- Validação de PRs
 
-| File | Purpose |
-|------|---------|
-| `.env.example` | Environment variable template |
-| `.gitignore` | Files to exclude from git |
-| `docker-compose.yml` | Container orchestration |
-| `Makefile` | Task automation |
+## Descrições de Arquivos
 
-### Documentation Files
+### Arquivos de Configuração
 
-| File | Purpose |
-|------|---------|
-| `README.md` | Main documentation |
-| `CHANGELOG.md` | Version history |
-| `CONTRIBUTING.md` | How to contribute |
-| `CODE_OF_CONDUCT.md` | Community standards |
-| `SECURITY.md` | Security policy |
-| `LICENSE` | MIT license terms |
+- **.env.example**: Template de variáveis de ambiente (copiar para `.env`)
+- **docker-compose.yml**: Define serviços, volumes, redes
+- **Dockerfile**: Build multi-estágio otimizado
+- **Makefile**: Interface simplificada para comandos Docker
 
-### Container Files
+### Arquivos de Documentação
 
-| File | Purpose |
-|------|---------|
-| `configs/Dockerfile` | K8sGPT image build |
-| `configs/entrypoint.sh` | Container startup |
+- **README.md**: Início rápido e visão geral
+- **CHANGELOG.md**: Histórico de versões
+- **CONTRIBUTING.md**: Como contribuir
+- **CODE_OF_CONDUCT.md**: Padrões da comunidade
+- **SECURITY.md**: Política de segurança
 
-### Automation Files
+### Arquivos de Container
 
-| File | Purpose |
-|------|---------|
-| `.github/workflows/docker-build.yml` | CI/CD pipeline |
-| `Makefile` | Build automation |
-| `scripts/*.sh` | Utility scripts |
+- **Dockerfile**: Build do K8sGPT da fonte oficial
+- **configs/entrypoint.sh**: Configuração inicial do contêiner
+- **docker-compose.yml**: Orquestração de serviços
 
-## Key Design Decisions
+## Decisões de Design Principais
 
-### 1. Separation of Concerns
+### 1. Separação de Responsabilidades
 
-- **configs/**: Container-specific files
-- **scripts/**: Reusable automation
-- **docs/**: User-facing documentation
+- Configurações em `configs/`
+- Scripts em `scripts/`
+- Documentação em `docs/`
+- Testes em `tests/`
 
-### 2. Makefile as Primary Interface
+### 2. Makefile como Interface Principal
 
-Users interact via `make` commands rather than remembering docker commands:
-```bash
-make setup    # Instead of: docker-compose build && docker-compose up && ...
-make analyze  # Instead of: docker exec mekhanikube-k8sgpt k8sgpt analyze --explain
-```
+Makefile fornece interface uniforme em todas as plataformas.
 
-### 3. Environment Flexibility
+### 3. Flexibilidade de Ambiente
 
-`.env.example` provides template while `.env` (git-ignored) allows customization.
+Arquivo `.env` permite personalização sem modificar código.
 
-### 4. Comprehensive Documentation
+### 4. Documentação Abrangente
 
-Multiple docs for different audiences:
-- Beginners → README.md
-- Troubleshooters → TROUBLESHOOTING.md
-- Curious users → FAQ.md
-- Architects → ARCHITECTURE.md
+Documentação extensa em `docs/` para diferentes níveis de usuários.
 
-### 5. Developer Experience
+### 5. Experiência do Desenvolvedor
 
-- `.devcontainer/` for consistent dev environment
-- `scripts/` for common operations
-- `Makefile` for task automation
-- CI/CD for quality assurance
+- Dev containers para ambiente consistente
+- Scripts automatizados
+- CI/CD para garantir qualidade
 
-## Adding New Components
+## Adicionando Novos Componentes
 
-### New Script
+### Novo Script
 
-1. Create in `scripts/` directory
-2. Make executable: `chmod +x scripts/new-script.sh`
-3. Add to Makefile if needed
-4. Document in README.md
+1. Criar em `scripts/`
+2. Tornar executável: `chmod +x scripts/seu-script.sh`
+3. Documentar no README.md
 
-### New Documentation
+### Nova Documentação
 
-1. Create in `docs/` directory
-2. Link from README.md
-3. Update table of contents
+1. Criar em `docs/`
+2. Adicionar link no README.md
 
-### New Test
+### Novo Teste
 
-1. Create in `tests/` directory
-2. Add to `scripts/test.sh`
-3. Include in CI/CD pipeline
+1. Criar em `tests/`
+2. Integrar no CI/CD
 
-### New Configuration
+### Nova Configuração
 
-1. Add to `configs/` directory
-2. Reference in `docker-compose.yml`
-3. Document in relevant docs
+1. Adicionar em `configs/`
+2. Documentar uso no README.md
 
-## File Naming Conventions
+## Convenções de Nomenclatura de Arquivos
 
-- **Markdown files**: UPPERCASE.md (e.g., README.md)
-- **Config files**: lowercase or .extension (e.g., Dockerfile, .env)
-- **Scripts**: lowercase-with-dashes.sh (e.g., health-check.sh)
-- **Docs**: UPPERCASE.md in root, lowercase.md in docs/
+- Scripts: `kebab-case.sh`
+- Documentação: `UPPERCASE.md`
+- Configuração: `lowercase` ou `kebab-case.yml`
 
-## Git Workflow
+## Fluxo Git
 
-```
-main (protected)
-  ↑
-  └─ Pull Requests (require review)
-       ↑
-       └─ Feature branches
-```
+1. `main`: Branch principal (protegida)
+2. `feature/*`: Novas funcionalidades
+3. `fix/*`: Correções de bugs
+4. `docs/*`: Atualizações de documentação
 
-## Version Control
+## Controle de Versão
 
-- **VERSION file**: Single source of truth
-- **CHANGELOG.md**: Human-readable history
-- **Git tags**: `v1.0.0` format
-- **GitHub Releases**: Automated from tags
+- **VERSION**: Versionamento semântico (MAJOR.MINOR.PATCH)
+- **CHANGELOG.md**: Histórico detalhado de mudanças
+- **Git tags**: Tags de release (v1.0.0, v1.1.0, etc.)
