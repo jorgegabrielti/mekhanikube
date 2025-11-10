@@ -209,9 +209,3 @@ Licença MIT - consulte o arquivo [LICENSE](LICENSE) para mais detalhes.
 - [Ollama](https://ollama.ai/) - Plataforma de modelos de linguagem locais
 
 ---
-
-<div align="center">
-
-**Feito com  para a comunidade Kubernetes**
-
-</div>
