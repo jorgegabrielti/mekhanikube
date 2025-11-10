@@ -4,7 +4,6 @@
 BINARY_NAME=mekhanikube
 GO_FILES=$(shell find . -name '*.go' -type f)
 DOCKER_COMPOSE=docker-compose
-DOCKER_COMPOSE_LEGACY=$(DOCKER_COMPOSE) --profile k8sgpt
 
 # Colors for output
 CYAN=\033[0;36m
@@ -87,16 +86,10 @@ docker-up:
 	@echo "$(GREEN)✓ Services started$(NC)"
 	@echo "$(YELLOW)Run 'make analyze' to analyze your cluster$(NC)"
 
-## docker-up-legacy: Start with K8sGPT legacy mode
-docker-up-legacy:
-	@echo "$(CYAN)Starting with K8sGPT legacy mode...$(NC)"
-	@$(DOCKER_COMPOSE_LEGACY) up -d
-	@echo "$(GREEN)✓ Services started (legacy mode)$(NC)"
-
 ## docker-down: Stop all services
 docker-down:
 	@echo "$(CYAN)Stopping services...$(NC)"
-	@$(DOCKER_COMPOSE) --profile k8sgpt down
+	@$(DOCKER_COMPOSE) down
 	@echo "$(GREEN)✓ Services stopped$(NC)"
 
 ## docker-restart: Restart all services

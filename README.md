@@ -96,22 +96,6 @@ docker exec mekhanikube-ollama ollama list
 docker-compose ps
 ```
 
-### 🆚 Usando K8sGPT (modo legado)
-
-Se preferir usar o K8sGPT original, ative o profile:
-
-```bash
-# Iniciar com K8sGPT
-docker-compose --profile k8sgpt up -d
-
-# Configurar K8sGPT
-docker exec mekhanikube-k8sgpt k8sgpt auth add --backend ollama --model llama3.1:8b --baseurl http://localhost:11434
-docker exec mekhanikube-k8sgpt k8sgpt auth default -p ollama
-
-# Usar K8sGPT
-docker exec mekhanikube-k8sgpt k8sgpt analyze --explain --language Portuguese
-```
-
 ---
 
 ##  Modelos Disponíveis
@@ -128,23 +112,22 @@ docker exec mekhanikube-k8sgpt k8sgpt analyze --explain --language Portuguese
 
 **Trocar modelo:**
 ```bash
-# Instalar outro modelo
+# Instalar outro modelo no Ollama
 docker exec mekhanikube-ollama ollama pull gemma2:9b
 
-# Reconfigurar K8sGPT
-docker exec mekhanikube-k8sgpt k8sgpt auth remove --backend ollama
-docker exec mekhanikube-k8sgpt k8sgpt auth add --backend ollama --model gemma2:9b --baseurl http://localhost:11434
-docker exec mekhanikube-k8sgpt k8sgpt auth default -p ollama
+# Atualizar variável de ambiente e reiniciar
+# Edite .env e mude OLLAMA_MODEL=gemma2:9b
+docker-compose restart mekhanikube
 ```
 
 ---
 
 ##  Por que Mekhanikube próprio?
 
-Desenvolvemos nossa própria solução substituindo o K8sGPT por diversos motivos:
+Desenvolvemos nossa própria solução nativa em Go por diversos motivos:
 
-| Aspecto | K8sGPT (antes) | Mekhanikube (agora) | Benefício |
-|---------|----------------|---------------------|-----------|
+| Aspecto | Antes | Agora | Benefício |
+|---------|-------|-------|-----------|
 | **Performance** | Startup 30s | Startup <10s | ⚡ 3x mais rápido |
 | **Tamanho** | ~200MB | ~80MB | 💾 60% menor |
 | **Configuração** | 3 passos | Automática | 🎯 Plug & play |
@@ -205,7 +188,7 @@ Licença MIT - consulte o arquivo [LICENSE](LICENSE) para mais detalhes.
 
 ##  Créditos
 
-- [K8sGPT](https://github.com/k8sgpt-ai/k8sgpt) - Ferramenta de análise de clusters Kubernetes
 - [Ollama](https://ollama.ai/) - Plataforma de modelos de linguagem locais
+- [Kubernetes](https://kubernetes.io/) - Sistema de orquestração de contêineres
 
 ---

@@ -127,9 +127,9 @@ docker exec mekhanikube mekhanikube analyze
 
 ---
 
-## 🔄 K8sGPT (Modo Legado)
+##  Problemas Gerais do Sistema
 
-### 1. K8sGPT Não Consegue Conectar à API Kubernetes
+### 1. Mekhanikube Não Consegue Conectar à API Kubernetes
 
 **Sintomas**:
 ```

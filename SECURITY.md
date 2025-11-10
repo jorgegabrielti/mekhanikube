@@ -6,9 +6,8 @@ As seguintes versões do Mekhanikube estão atualmente recebendo atualizações 
 
 | Versão  | Suportada          | Observações |
 | ------- | ------------------ | ----------- |
-| 2.0.x   | :white_check_mark: | Engine próprio Go (recomendado) |
-| 1.0.x   | :white_check_mark: | K8sGPT legacy (manutenção) |
-| < 1.0   | :x:                | Não suportado |
+| 2.0.x   | :white_check_mark: | Engine nativo Go (recomendado) |
+| < 2.0   | :x:                | Não suportado |
 
 ## Considerações de Segurança
 
@@ -230,7 +229,7 @@ O Mekhanikube foi projetado para privacidade:
 Para fins de conformidade:
 ```bash
 # Todas as ações são registradas
-docker logs mekhanikube-k8sgpt
+docker logs mekhanikube
 
 # Logs de auditoria da API Kubernetes (no seu cluster)
 kubectl logs -n kube-system kube-apiserver-*
@@ -240,7 +239,6 @@ kubectl logs -n kube-system kube-apiserver-*
 
 - [Melhores Práticas de Segurança do Docker](https://docs.docker.com/engine/security/)
 - [Segurança do Kubernetes](https://kubernetes.io/docs/concepts/security/)
-- [Segurança do K8sGPT](https://docs.k8sgpt.ai/)
 - [Segurança do Ollama](https://github.com/ollama/ollama/blob/main/docs/security.md)
 
 ## Contato

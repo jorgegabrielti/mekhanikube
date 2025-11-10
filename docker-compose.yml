@@ -18,33 +18,6 @@ services:
       retries: 5
       start_period: 30s
 
-  k8sgpt:
-    build:
-      context: .
-      dockerfile: configs/Dockerfile.k8sgpt
-    container_name: ${CONTAINER_NAME_K8SGPT:-mekhanikube-k8sgpt}
-    depends_on:
-      ollama:
-        condition: service_healthy
-    volumes:
-      - ${KUBECONFIG_PATH:-C:/Users/${USERNAME}/.kube/config}:/root/.kube/config:ro
-      - mekhanikube-k8sgpt-config:/root/.config/k8sgpt
-    environment:
-      - KUBECONFIG=/root/.kube/config_mod
-      - K8SGPT_BACKEND=${K8SGPT_BACKEND:-ollama}
-      - K8SGPT_MODEL=${OLLAMA_MODEL:-llama3.1:8b}
-      - LOG_LEVEL=${LOG_LEVEL:-info}
-    network_mode: ${NETWORK_MODE:-host}
-    restart: ${RESTART_POLICY:-unless-stopped}
-    healthcheck:
-      test: ["CMD", "k8sgpt", "version"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
-    profiles:
-      - k8sgpt
-
   mekhanikube:
     build:
       context: .
@@ -68,7 +41,5 @@ services:
 
 volumes:
   mekhanikube-ollama-data:
-    driver: local
-  mekhanikube-k8sgpt-config:
     driver: local
 
