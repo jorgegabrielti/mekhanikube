@@ -2,8 +2,6 @@
 
 <img src="assets/logo.png" alt="Mekhanikube Logo" width="800"/>
 
-#  Mekhanikube
-
 **Seu mecânico de Kubernetes com IA**
 
 [![Licença: MIT](https://img.shields.io/badge/Licen%C3%A7a-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
