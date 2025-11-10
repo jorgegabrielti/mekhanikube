@@ -13,6 +13,11 @@ import (
 	"github.com/jorgegabrielti/mekhanikube/pkg/types"
 )
 
+const (
+	// Version do Mekhanikube
+	Version = "2.0.0"
+)
+
 var (
 	// Flags globais
 	namespace string
@@ -21,10 +26,24 @@ var (
 	language  string
 	noCache   bool
 
-	// Configurações Ollama
-	ollamaURL   = "http://host.docker.internal:11434"
-	ollamaModel = "llama3.1:8b"
+	// Configurações Ollama (podem ser sobrescritas por variáveis de ambiente)
+	ollamaURL   string
+	ollamaModel string
 )
+
+func init() {
+	// Configurações padrão com suporte a variáveis de ambiente
+	ollamaURL = getEnv("OLLAMA_HOST", "http://host.docker.internal:11434")
+	ollamaModel = getEnv("OLLAMA_MODEL", "llama3.1:8b")
+}
+
+// getEnv retorna o valor de uma variável de ambiente ou o valor padrão
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
+}
 
 var rootCmd = &cobra.Command{
 	Use:   "mekhanikube",
@@ -45,16 +64,19 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Mostra a versão do Mekhanikube",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Mekhanikube v1.0.0")
+		fmt.Printf("Mekhanikube v%s\n", Version)
+		fmt.Printf("Engine: Go (nativo)\n")
+		fmt.Printf("Ollama URL: %s\n", ollamaURL)
+		fmt.Printf("Ollama Model: %s\n", ollamaModel)
 	},
 }
 
-func init() {
+func initCommands() {
 	// Flags do comando analyze
-	analyzeCmd.Flags().StringVarP(&namespace, "namespace", "n", "", "Namespace específico (vazio = todos)")
+	analyzeCmd.Flags().StringVarP(&namespace, "namespace", "n", getEnv("MEKHANIKUBE_DEFAULT_NAMESPACE", ""), "Namespace específico (vazio = todos)")
 	analyzeCmd.Flags().StringSliceVarP(&filter, "filter", "f", []string{}, "Filtrar por tipo de recurso (Pod, ConfigMap, etc)")
-	analyzeCmd.Flags().BoolVarP(&explain, "explain", "e", false, "Explicar problemas usando IA")
-	analyzeCmd.Flags().StringVarP(&language, "language", "l", "Portuguese", "Idioma das explicações (Portuguese, English)")
+	analyzeCmd.Flags().BoolVarP(&explain, "explain", "e", getEnv("MEKHANIKUBE_EXPLAIN", "false") == "true", "Explicar problemas usando IA")
+	analyzeCmd.Flags().StringVarP(&language, "language", "l", getEnv("MEKHANIKUBE_DEFAULT_LANGUAGE", "Portuguese"), "Idioma das explicações (Portuguese, English)")
 	analyzeCmd.Flags().BoolVar(&noCache, "no-cache", false, "Forçar análise sem cache")
 
 	// Adiciona comandos à raiz
@@ -130,7 +152,12 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 }
 
 func main() {
+	// Inicializa comandos
+	initCommands()
+
+	// Executa comando raiz
 	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintf(os.Stderr, "Erro: %v\n", err)
 		os.Exit(1)
 	}
 }

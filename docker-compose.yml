@@ -21,7 +21,7 @@ services:
   k8sgpt:
     build:
       context: .
-      dockerfile: configs/Dockerfile
+      dockerfile: configs/Dockerfile.k8sgpt
     container_name: ${CONTAINER_NAME_K8SGPT:-mekhanikube-k8sgpt}
     depends_on:
       ollama:

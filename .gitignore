@@ -47,6 +47,31 @@ secrets/
 *.p12
 *.pfx
 
+# Go
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+mekhanikube
+/cmd/mekhanikube/mekhanikube
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+coverage.txt
+coverage.html
+
+# Dependency directories (vendoring)
+vendor/
+
+# Go workspace file
+go.work
+go.work.sum
+
 # Python (se adicionar scripts)
 __pycache__/
 *.py[cod]

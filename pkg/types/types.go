@@ -10,6 +10,11 @@ type Problem struct {
 	Details     []string `json:"details"`     // Detalhes adicionais
 }
 
+// String retorna uma representação em string do problema
+func (p Problem) String() string {
+	return p.Kind + " " + p.Namespace + "/" + p.Name + ": " + p.Error
+}
+
 // AnalyzeOptions define as opções para análise
 type AnalyzeOptions struct {
 	Namespace string   // Namespace específico (vazio = todos)
