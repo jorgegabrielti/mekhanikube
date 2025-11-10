@@ -1,6 +1,6 @@
 ﻿<div align="center">
 
-<img src="assets/logo.png" alt="Mekhanikube Logo" width="200"/>
+<img src="assets/logo.png" alt="Mekhanikube Logo" width="400"/>
 
 #  Mekhanikube
 
