@@ -43,26 +43,6 @@ services:
       retries: 3
       start_period: 30s
 
-  k8sgpt-mcp:
-    build:
-      context: .
-      dockerfile: configs/Dockerfile.mcp
-    container_name: ${CONTAINER_NAME_K8SGPT_MCP:-mekhanikube-k8sgpt-mcp}
-    volumes:
-      - ${KUBECONFIG_PATH:-C:/Users/${USERNAME}/.kube/config}:/root/.kube/config:ro
-    environment:
-      - KUBECONFIG=/root/.kube/config_mod
-    restart: "no"
-    command: ["sleep", "infinity"]
-    healthcheck:
-      test: ["CMD", "k8sgpt", "version"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 5s
-    profiles:
-      - mcp
-
 volumes:
   mekhanikube-ollama-data:
     driver: local
