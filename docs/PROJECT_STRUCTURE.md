@@ -8,63 +8,125 @@ Este documento descreve a organização e propósito dos arquivos e diretórios 
 
 ```
 mekhanikube/
+├── cmd/                     # 🆕 Aplicações Go
+│   └── mekhanikube/
+│       └── main.go          # Entry point CLI (Cobra)
+│
+├── internal/                # 🆕 Código interno Go
+│   ├── scanner/
+│   │   └── scanner.go       # Scanner de recursos K8s
+│   ├── analyzer/
+│   │   └── analyzer.go      # Coordenador de análise
+│   └── ollama/
+│       └── client.go        # Cliente HTTP Ollama
+│
+├── pkg/                     # 🆕 Bibliotecas públicas Go
+│   └── types/
+│       └── types.go         # Estruturas compartilhadas
+│
+├── configs/                 # Configurações e Dockerfiles
+│   ├── Dockerfile.mekhanikube
+│   ├── entrypoint-mekhanikube.sh
+│   ├── Dockerfile.k8sgpt    # Legacy
+│   └── entrypoint.sh        # Legacy
+│
+├── assets/                  # 🆕 Recursos estáticos
+│   └── logo.png             # Logo oficial Mekhanikube
+│
 ├── docs/                    # Documentação
-│   ├── ARCHITECTURE.md
-│   ├── FAQ.md
-│   ├── TROUBLESHOOTING.md
-│   ├── PROJECT_STRUCTURE.md
+│   ├── ARCHITECTURE.md      # ✅ Atualizado para v2.0
+│   ├── DEVELOPMENT.md       # 🆕 Guia de desenvolvimento Go
+│   ├── FAQ.md               # ✅ Atualizado para v2.0
+│   ├── TROUBLESHOOTING.md   # ✅ Atualizado para v2.0
+│   ├── PROJECT_STRUCTURE.md # Este arquivo
 │   └── PROJECT_IMPROVEMENTS.md
 │
-├── scripts/                 # Scripts utilitários
+├── scripts/                 # Scripts utilitários (legacy)
 │   ├── analyze.sh
 │   ├── change-model.sh
 │   ├── healthcheck.sh
-│   ├── release.sh
-│   └── test.sh
-│
-├── configs/                 # Configurações
-│   └── entrypoint.sh
-│
-├── tests/                   # Testes
-│   └── integration/
+│   └── release.sh
 │
 ├── .github/                 # GitHub workflows
 │   └── workflows/
 │       └── docker-build.yml
 │
-├── .devcontainer/           # Configuração Dev Container
-│   └── devcontainer.json
+├── go.mod                   # 🆕 Dependências Go
+├── go.sum                   # 🆕 Checksums de módulos Go
+├── docker-compose.yml       # Configuração principal (profiles)
 │
-├── docker-compose.yml       # Configuração principal
-├── Dockerfile              # Build K8sGPT
-├── .env.example            # Template de variáveis de ambiente
-├── Makefile                # Comandos automatizados
-│
-├── README.md               # Documentação principal
-├── LICENSE                 # Licença MIT
-├── CHANGELOG.md            # Histórico de mudanças
-├── CONTRIBUTING.md         # Guia de contribuição
-├── CODE_OF_CONDUCT.md      # Código de conduta
-├── SECURITY.md             # Política de segurança
-└── VERSION                 # Número da versão
+├── README.md                # Documentação principal (v2.0)
+├── LICENSE                  # Licença MIT
+├── CHANGELOG.md             # ✅ Histórico de mudanças (v2.0.0)
+├── CONTRIBUTING.md          # ✅ Guia de contribuição (Go)
+├── CODE_OF_CONDUCT.md       # Código de conduta
+└── SECURITY.md              # Política de segurança
 
 ```
 
-## Propósito dos Diretórios
+## Propósito dos Diretórios (v2.0)
+
+### 🆕 Código Go
+
+#### `cmd/mekhanikube/`
+**Entry point da aplicação**
+- `main.go`: CLI usando Cobra framework
+- Define comandos: `analyze`, `version`
+- Configura flags e parâmetros
+
+#### `internal/scanner/`
+**Scanner de recursos Kubernetes**
+- Conecta à API K8s via client-go
+- Detecta problemas em Pods (CrashLoopBackOff, ImagePullBackOff, etc.)
+- Detecta ConfigMaps não utilizados
+- Retorna lista de `Problem`
+
+#### `internal/analyzer/`
+**Coordenador de análise**
+- Orquestra scanning de recursos
+- Aplica filtros por tipo de recurso
+- Integra com Ollama para explicações
+- Retorna resultados formatados
+
+#### `internal/ollama/`
+**Cliente HTTP para Ollama**
+- Comunica com API Ollama (port 11434)
+- Envia prompts otimizados para português
+- Processa respostas da IA
+- Health check do serviço
+
+#### `pkg/types/`
+**Estruturas compartilhadas**
+- `Problem`: Representa problema detectado
+- `AnalyzeOptions`: Opções de análise (namespace, filter, explain, language)
+- `OllamaRequest/Response`: Estruturas de comunicação
 
 ### Arquivos Raiz
 
-- **docker-compose.yml**: Orquestração dos serviços Ollama e K8sGPT
-- **Dockerfile**: Build multi-estágio do K8sGPT
-- **.env.example**: Template para configuração personalizada
-- **Makefile**: Automação de comandos comuns
+- **go.mod / go.sum**: Gerenciamento de dependências Go (Cobra, client-go, etc.)
+- **docker-compose.yml**: Orquestração com profiles (default: v2, legacy: k8sgpt)
+- **README.md**: Documentação principal com v2.0
+
+### `configs/`
+
+**Dockerfiles e entrypoints**:
+- **Dockerfile.mekhanikube**: Multi-stage build Go (~80MB)
+- **entrypoint-mekhanikube.sh**: Init script com health checks
+- **Dockerfile.k8sgpt**: Build K8sGPT legacy (~200MB)
+- **entrypoint.sh**: Init script K8sGPT legacy
+
+### `assets/`
+
+**Recursos estáticos**:
+- **logo.png**: Logo oficial Mekhanikube (954KB, 800px width)
 
 ### `docs/`
 
 Documentação completa do projeto:
-- **ARCHITECTURE.md**: Arquitetura do sistema
-- **FAQ.md**: Perguntas frequentes
-- **TROUBLESHOOTING.md**: Guia de solução de problemas
+- **ARCHITECTURE.md**: Arquitetura v2.0 com Go components
+- **DEVELOPMENT.md**: Guia para desenvolvedores (Go + Docker)
+- **FAQ.md**: Perguntas frequentes (v1 vs v2)
+- **TROUBLESHOOTING.md**: Soluções para Mekhanikube v2 e K8sGPT legacy
 - **PROJECT_STRUCTURE.md**: Este arquivo
 - **PROJECT_IMPROVEMENTS.md**: Histórico de melhorias
 

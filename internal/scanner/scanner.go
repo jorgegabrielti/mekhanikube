@@ -49,7 +49,7 @@ func getKubeConfig() (*rest.Config, error) {
 		// Fallback para kubeconfig padrão
 		kubeconfigPath = filepath.Join(homedir.HomeDir(), ".kube", "config")
 	}
-	
+
 	config, err = clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 	if err != nil {
 		return nil, err

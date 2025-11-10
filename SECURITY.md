@@ -4,10 +4,11 @@
 
 As seguintes versões do Mekhanikube estão atualmente recebendo atualizações de segurança:
 
-| Versão  | Suportada          |
-| ------- | ------------------ |
-| 1.0.x   | :white_check_mark: |
-| < 1.0   | :x:                |
+| Versão  | Suportada          | Observações |
+| ------- | ------------------ | ----------- |
+| 2.0.x   | :white_check_mark: | Engine próprio Go (recomendado) |
+| 1.0.x   | :white_check_mark: | K8sGPT legacy (manutenção) |
+| < 1.0   | :x:                | Não suportado |
 
 ## Considerações de Segurança
 
