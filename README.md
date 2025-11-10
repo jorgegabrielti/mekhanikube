@@ -2,16 +2,16 @@
 
 <img src="assets/logo.png" alt="NautiKube Logo" width="800"/>
 
-**Seu mecânico de Kubernetes com IA**
+**Seu navegador de diagnÃ³sticos Kubernetes com IA**
 
-[![Licença: MIT](https://img.shields.io/badge/Licen%C3%A7a-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Versão](https://img.shields.io/badge/vers%C3%A3o-2.0.0-blue.svg)](https://github.com/jorgegabrielti/NautiKube/releases)
+[![LicenÃ§a: MIT](https://img.shields.io/badge/Licen%C3%A7a-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Versï¿½o](https://img.shields.io/badge/vers%C3%A3o-2.0.0-blue.svg)](https://github.com/jorgegabrielti/NautiKube/releases)
 [![Go](https://img.shields.io/badge/Go-1.21-00ADD8.svg)](https://golang.org/)
 
-Ferramenta própria de análise de clusters Kubernetes com **IA local**  
-Totalmente local • Privado • Performance otimizada • 100% em português
+Ferramenta prï¿½pria de anï¿½lise de clusters Kubernetes com **IA local**  
+Totalmente local ï¿½ Privado ï¿½ Performance otimizada ï¿½ 100% em portuguï¿½s
 
-[Começar](#-início-rápido) • [Documentação](docs/) • [Contribuir](CONTRIBUTING.md)
+[Comeï¿½ar](#-inï¿½cio-rï¿½pido) ï¿½ [Documentaï¿½ï¿½o](docs/) ï¿½ [Contribuir](CONTRIBUTING.md)
 
 </div>
 
@@ -22,38 +22,38 @@ Totalmente local • Privado • Performance otimizada • 100% em português
 Escaneia seu cluster Kubernetes, identifica problemas e **explica em linguagem simples** usando IA local via Ollama.
 
 ```bash
-# Execute uma análise
+# Execute uma anï¿½lise
 docker exec NautiKube NautiKube analyze --explain --language Portuguese
 ```
 
-**Exemplo de saída:**
+**Exemplo de saï¿½da:**
 ```
 ?? Encontrados 2 problema(s):
 
 0: Pod default/nginx-5d5d5d5d-xxx
 - Error: Container nginx in CrashLoopBackOff
-- IA: Este container está reiniciando continuamente. Isso geralmente acontece 
+- IA: Este container estï¿½ reiniciando continuamente. Isso geralmente acontece 
   quando o processo principal dentro do container falha. Verifique os logs com 
-  'kubectl logs nginx-5d5d5d5d-xxx' para identificar o erro específico.
+  'kubectl logs nginx-5d5d5d5d-xxx' para identificar o erro especï¿½fico.
 ```
 
 ---
 
-##  Início Rápido
+##  Inï¿½cio Rï¿½pido
 
-### Pré-requisitos
+### Prï¿½-requisitos
 - Docker & Docker Compose
 - Cluster Kubernetes ativo
-- ~8GB de espaço livre
+- ~8GB de espaï¿½o livre
 
-### Instalação
+### Instalaï¿½ï¿½o
 
 ```bash
-# 1. Clone o repositório
+# 1. Clone o repositï¿½rio
 git clone https://github.com/jorgegabrielti/NautiKube.git
 cd NautiKube
 
-# 2. Inicie os serviços
+# 2. Inicie os serviï¿½os
 docker-compose up -d
 
 # 3. Baixe o modelo de IA (primeira vez - ~4.7GB)
@@ -63,30 +63,30 @@ docker exec NautiKube-ollama ollama pull llama3.1:8b
 docker exec NautiKube NautiKube analyze --explain --language Portuguese
 ```
 
-> ?? **Novo!** Não é mais necessário configurar backend. O NautiKube detecta e conecta automaticamente ao Ollama!
+> ?? **Novo!** Nï¿½o ï¿½ mais necessï¿½rio configurar backend. O NautiKube detecta e conecta automaticamente ao Ollama!
 
 ---
 
-##  Comandos Úteis
+##  Comandos ï¿½teis
 
 ```bash
-# Análise rápida (sem IA)
+# Anï¿½lise rï¿½pida (sem IA)
 docker exec NautiKube NautiKube analyze
 
-# Análise completa em português com explicações da IA
+# Anï¿½lise completa em portuguï¿½s com explicaï¿½ï¿½es da IA
 docker exec NautiKube NautiKube analyze --explain --language Portuguese
 
-# Análise completa em inglês
+# Anï¿½lise completa em inglï¿½s
 docker exec NautiKube NautiKube analyze --explain --language English
 
-# Analisar namespace específico
+# Analisar namespace especï¿½fico
 docker exec NautiKube NautiKube analyze -n kube-system --explain --language Portuguese
 
 # Filtrar por tipo de recurso
 docker exec NautiKube NautiKube analyze --filter Pod --explain --language Portuguese
 docker exec NautiKube NautiKube analyze --filter ConfigMap
 
-# Ver versão
+# Ver versï¿½o
 docker exec NautiKube NautiKube version
 
 # Listar modelos Ollama instalados
@@ -98,97 +98,97 @@ docker-compose ps
 
 ---
 
-##  Modelos Disponíveis
+##  Modelos Disponï¿½veis
 
-| Modelo | Tamanho | Velocidade | Qualidade | Português | Recomendado para |
+| Modelo | Tamanho | Velocidade | Qualidade | Portuguï¿½s | Recomendado para |
 |--------|---------|------------|-----------|-----------|------------------|
 | **llama3.1:8b** ? | 4.7GB | Bom | Excelente | ????? | **Recomendado (PT-BR)** |
-| **gemma2:9b** | 5.4GB | Médio | Excelente | ????? | Melhor qualidade |
-| **qwen2.5:7b** | 4.7GB | Rápido | Muito Boa | ???? | Velocidade |
-| **mistral** | 4.1GB | Médio | Boa | ??? | Uso geral |
-| **tinyllama** | 1.1GB | Muito Rápido | Básica | ?? | Scans rápidos |
+| **gemma2:9b** | 5.4GB | Mï¿½dio | Excelente | ????? | Melhor qualidade |
+| **qwen2.5:7b** | 4.7GB | Rï¿½pido | Muito Boa | ???? | Velocidade |
+| **mistral** | 4.1GB | Mï¿½dio | Boa | ??? | Uso geral |
+| **tinyllama** | 1.1GB | Muito Rï¿½pido | Bï¿½sica | ?? | Scans rï¿½pidos |
 
-> ?? **llama3.1:8b** é o modelo padrão por oferecer excelente suporte ao português brasileiro
+> ?? **llama3.1:8b** ï¿½ o modelo padrï¿½o por oferecer excelente suporte ao portuguï¿½s brasileiro
 
 **Trocar modelo:**
 ```bash
 # Instalar outro modelo no Ollama
 docker exec NautiKube-ollama ollama pull gemma2:9b
 
-# Atualizar variável de ambiente e reiniciar
+# Atualizar variï¿½vel de ambiente e reiniciar
 # Edite .env e mude OLLAMA_MODEL=gemma2:9b
 docker-compose restart NautiKube
 ```
 
 ---
 
-##  Por que NautiKube próprio?
+##  Por que NautiKube prï¿½prio?
 
-Desenvolvemos nossa própria solução nativa em Go por diversos motivos:
+Desenvolvemos nossa prï¿½pria soluï¿½ï¿½o nativa em Go por diversos motivos:
 
-| Aspecto | Antes | Agora | Benefício |
+| Aspecto | Antes | Agora | Benefï¿½cio |
 |---------|-------|-------|-----------|
-| **Performance** | Startup 30s | Startup <10s | ? 3x mais rápido |
+| **Performance** | Startup 30s | Startup <10s | ? 3x mais rï¿½pido |
 | **Tamanho** | ~200MB | ~80MB | ?? 60% menor |
-| **Configuração** | 3 passos | Automática | ?? Plug & play |
-| **Código** | Dependência externa | Código próprio | ?? Controle total |
-| **Features** | Limitadas | Customizáveis | ?? Expansível |
-| **Manutenção** | Dependente upstream | Independente | ? Autonomia |
+| **Configuraï¿½ï¿½o** | 3 passos | Automï¿½tica | ?? Plug & play |
+| **Cï¿½digo** | Dependï¿½ncia externa | Cï¿½digo prï¿½prio | ?? Controle total |
+| **Features** | Limitadas | Customizï¿½veis | ?? Expansï¿½vel |
+| **Manutenï¿½ï¿½o** | Dependente upstream | Independente | ? Autonomia |
 
 **Principais vantagens:**
-- ???? Suporte nativo ao português (não precisa flag --language)
+- ???? Suporte nativo ao portuguï¿½s (nï¿½o precisa flag --language)
 - ?? Interface CLI mais simples e direta
-- ? Detecção automática do Ollama (sem configuração manual)
-- ?? Performance otimizada para clusters pequenos e médios
-- ?? Facilidade para adicionar novos tipos de análise
+- ? Detecï¿½ï¿½o automï¿½tica do Ollama (sem configuraï¿½ï¿½o manual)
+- ?? Performance otimizada para clusters pequenos e mï¿½dios
+- ?? Facilidade para adicionar novos tipos de anï¿½lise
 
 ---
 
-##  Solução de Problemas
+##  Soluï¿½ï¿½o de Problemas
 
-**Container não inicia?**
+**Container nï¿½o inicia?**
 ```bash
 docker-compose logs NautiKube
 ```
 
-**Ollama não responde?**
+**Ollama nï¿½o responde?**
 ```bash
 docker logs NautiKube-ollama
 docker exec NautiKube-ollama ollama list
 ```
 
-**NautiKube não acessa o cluster?**
+**NautiKube nï¿½o acessa o cluster?**
 ```bash
 docker exec NautiKube kubectl get nodes
 docker exec NautiKube cat /root/.kube/config_mod
 ```
 
 **Erro "connection refused"?**
-Certifique-se que seu cluster Kubernetes está rodando:
+Certifique-se que seu cluster Kubernetes estï¿½ rodando:
 ```bash
 kubectl cluster-info
 ```
 
 ---
 
-##  Documentação
+##  Documentaï¿½ï¿½o
 
 -  [Arquitetura](docs/ARCHITECTURE.md) - Como funciona internamente
--  [Solução de Problemas](docs/TROUBLESHOOTING.md) - Problemas comuns e soluções
--  [Perguntas Frequentes](docs/FAQ.md) - Dúvidas mais comuns
--  [Como Contribuir](CONTRIBUTING.md) - Guia para contribuições
+-  [Soluï¿½ï¿½o de Problemas](docs/TROUBLESHOOTING.md) - Problemas comuns e soluï¿½ï¿½es
+-  [Perguntas Frequentes](docs/FAQ.md) - Dï¿½vidas mais comuns
+-  [Como Contribuir](CONTRIBUTING.md) - Guia para contribuiï¿½ï¿½es
 
 ---
 
-##  Licença
+##  Licenï¿½a
 
-Licença MIT - consulte o arquivo [LICENSE](LICENSE) para mais detalhes.
+Licenï¿½a MIT - consulte o arquivo [LICENSE](LICENSE) para mais detalhes.
 
 ---
 
-##  Créditos
+##  Crï¿½ditos
 
 - [Ollama](https://ollama.ai/) - Plataforma de modelos de linguagem locais
-- [Kubernetes](https://kubernetes.io/) - Sistema de orquestração de contêineres
+- [Kubernetes](https://kubernetes.io/) - Sistema de orquestraï¿½ï¿½o de contï¿½ineres
 
 ---
