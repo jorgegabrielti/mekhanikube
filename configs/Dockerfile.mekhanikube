@@ -1,0 +1,43 @@
+# Build stage
+FROM golang:1.21-alpine AS builder
+
+WORKDIR /build
+
+# Instala dependências de build
+RUN apk add --no-cache git ca-certificates
+
+# Copia go.mod e go.sum primeiro (cache de dependências)
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copia o código fonte
+COPY cmd/ ./cmd/
+COPY internal/ ./internal/
+COPY pkg/ ./pkg/
+
+# Build estático
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -a -installsuffix cgo \
+    -ldflags="-w -s" \
+    -o /mekhanikube \
+    ./cmd/mekhanikube
+
+# Runtime stage
+FROM alpine:latest
+
+# Instala certificados e kubectl
+RUN apk --no-cache add ca-certificates curl && \
+    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
+    chmod +x kubectl && \
+    mv kubectl /usr/local/bin/ && \
+    rm -rf /var/cache/apk/*
+
+WORKDIR /root
+
+# Copia binário do build stage
+COPY --from=builder /mekhanikube /usr/local/bin/mekhanikube
+COPY configs/entrypoint-mekhanikube.sh /entrypoint.sh
+
+RUN chmod +x /entrypoint.sh /usr/local/bin/mekhanikube
+
+ENTRYPOINT ["/entrypoint.sh"]

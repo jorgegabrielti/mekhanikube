@@ -42,6 +42,29 @@ services:
       timeout: 5s
       retries: 3
       start_period: 30s
+    profiles:
+      - k8sgpt
+
+  mekhanikube:
+    build:
+      context: .
+      dockerfile: configs/Dockerfile.mekhanikube
+    container_name: ${CONTAINER_NAME_MEKHANIKUBE:-mekhanikube}
+    depends_on:
+      ollama:
+        condition: service_healthy
+    volumes:
+      - ${KUBECONFIG_PATH:-C:/Users/${USERNAME}/.kube/config}:/root/.kube/config:ro
+    environment:
+      - KUBECONFIG=/root/.kube/config_mod
+    network_mode: ${NETWORK_MODE:-host}
+    restart: ${RESTART_POLICY:-unless-stopped}
+    healthcheck:
+      test: ["CMD", "mekhanikube", "version"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
 volumes:
   mekhanikube-ollama-data:
