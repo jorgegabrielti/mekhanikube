@@ -53,10 +53,10 @@ services:
     environment:
       - KUBECONFIG=/root/.kube/config_mod
     ports:
-      - "${MCP_PORT:-3000}:3000"
+      - "${MCP_PORT:-8080}:8080"
     restart: ${RESTART_POLICY:-unless-stopped}
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider -q http://localhost:3000/health || exit 1"]
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8080/ || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
