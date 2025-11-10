@@ -1,0 +1,12 @@
+FROM ghcr.io/k8sgpt-ai/k8sgpt:latest
+
+# Instalar dependências necessárias
+RUN apk add --no-cache curl
+
+# Copiar entrypoint MCP
+COPY configs/entrypoint-mcp.sh /entrypoint-mcp.sh
+RUN chmod +x /entrypoint-mcp.sh
+
+EXPOSE 3000
+
+ENTRYPOINT ["/entrypoint-mcp.sh"]

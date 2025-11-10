@@ -114,6 +114,44 @@ docker exec mekhanikube-k8sgpt k8sgpt auth default -p ollama
 
 ---
 
+## 🚀 Feature Experimental: Integração MCP
+
+> **Novidade!** Conecte o **GitHub Copilot** diretamente ao seu cluster Kubernetes
+
+### O que é?
+
+Converse com o GitHub Copilot sobre seu cluster em **tempo real**:
+
+```
+Você: "Quais problemas existem no meu cluster?"
+Copilot: "Encontrei 3 problemas: Pod nginx em CrashLoopBackOff..."
+```
+
+### Como ativar?
+
+```powershell
+# 1. Ativar serviço MCP
+docker-compose --profile mcp up -d
+
+# 2. Configurar GitHub Copilot
+.\scripts\setup-mcp.ps1
+
+# 3. Reiniciar VS Code
+
+# 4. Conversar com Copilot!
+```
+
+### Benefícios
+
+- 💬 Conversação natural sobre o cluster
+- 🔄 Dados em tempo real
+- 🇧🇷 Respostas em português
+- 🔒 100% local e privado
+
+📖 **[Documentação completa da integração MCP →](docs/MCP.md)**
+
+---
+
 ##  Solução de Problemas
 
 **Container não inicia?**
@@ -137,6 +175,7 @@ docker exec mekhanikube-k8sgpt cat /root/.kube/config_mod
 
 ##  Documentação
 
+-  [🚀 Integração MCP (GitHub Copilot)](docs/MCP.md) - Conecte Copilot ao cluster
 -  [Arquitetura](docs/ARCHITECTURE.md) - Como funciona internamente
 -  [Solução de Problemas](docs/TROUBLESHOOTING.md) - Problemas comuns e soluções
 -  [Perguntas Frequentes](docs/FAQ.md) - Dúvidas mais comuns
