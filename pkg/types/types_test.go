@@ -116,7 +116,7 @@ func TestOllamaResponse(t *testing.T) {
 
 // Helper function
 func contains(s, substr string) bool {
-	return len(s) >= len(substr) && s[:len(substr)] == substr || 
+	return len(s) >= len(substr) && s[:len(substr)] == substr ||
 		len(s) > len(substr) && findSubstring(s, substr)
 }
 
