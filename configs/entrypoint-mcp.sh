@@ -1,35 +1,32 @@
 #!/bin/sh
 
+echo "🚀 Iniciando K8sGPT MCP Server..."
+
 # Ajusta o kubeconfig substituindo 127.0.0.1 por host.docker.internal
 if [ -f /root/.kube/config ]; then
+    echo "📝 Ajustando kubeconfig..."
     sed 's/127\.0\.0\.1/host.docker.internal/g' /root/.kube/config > /root/.kube/config_mod
     export KUBECONFIG=/root/.kube/config_mod
 fi
 
-# Aguardar Ollama estar disponível
-echo "Aguardando Ollama estar disponível..."
-until curl -f ${OLLAMA_URL:-http://host.docker.internal:11434}/api/tags >/dev/null 2>&1; do
-    echo "Ollama não está pronto ainda. Tentando novamente em 5 segundos..."
-    sleep 5
-done
-echo "Ollama está pronto!"
-
-# Configura K8sGPT com Ollama se ainda não estiver configurado
-if ! k8sgpt auth list | grep -A1 "Active:" | grep -q "ollama"; then
-    echo "Configurando K8sGPT com Ollama para MCP..."
-    
-    # Remove configurações anteriores se existirem
-    k8sgpt auth remove --backends localai 2>/dev/null || true
-    k8sgpt auth remove --backends ollama 2>/dev/null || true
-    
-    # Adiciona backend Ollama e configura como padrão
-    k8sgpt auth add --backend ollama --model ${K8SGPT_MODEL:-llama3.1:8b} --baseurl ${OLLAMA_URL:-http://host.docker.internal:11434}
-    k8sgpt auth default -p ollama
-    echo "K8sGPT configurado para MCP!"
+# Verificar conexão com cluster Kubernetes
+echo "🔍 Verificando conexão com cluster Kubernetes..."
+if kubectl cluster-info >/dev/null 2>&1; then
+    echo "✅ Cluster Kubernetes acessível!"
 else
-    echo "K8sGPT já está configurado com ollama ativo"
+    echo "⚠️  Aviso: Não foi possível conectar ao cluster Kubernetes"
+    echo "   Verifique se o kubeconfig está correto"
 fi
 
-# Inicia o servidor MCP
-echo "Iniciando servidor MCP na porta 3000..."
-exec k8sgpt serve --mcp --port 3000
+# Configurar backend fake (K8sGPT exige, mas MCP não usará - Copilot fará a IA)
+echo "⚙️  Configurando backend fake (apenas para validação do K8sGPT)..."
+k8sgpt auth add --backend openai --model gpt-3.5-turbo --password fake-key-not-used 2>/dev/null || true
+k8sgpt auth default -p openai 2>/dev/null || true
+echo "✅ Backend configurado (não será usado - Copilot fará todo o trabalho de IA)"
+
+# Inicia o servidor MCP (sem backend de IA - Copilot fará o trabalho)
+echo "🎯 Iniciando servidor MCP na porta 3000..."
+echo "💡 GitHub Copilot será responsável pela inteligência artificial"
+echo ""
+
+exec k8sgpt serve --mcp

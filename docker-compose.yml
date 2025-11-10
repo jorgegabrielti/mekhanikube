@@ -48,27 +48,19 @@ services:
       context: .
       dockerfile: configs/Dockerfile.mcp
     container_name: ${CONTAINER_NAME_K8SGPT_MCP:-mekhanikube-k8sgpt-mcp}
-    depends_on:
-      ollama:
-        condition: service_healthy
     volumes:
       - ${KUBECONFIG_PATH:-C:/Users/${USERNAME}/.kube/config}:/root/.kube/config:ro
-      - mekhanikube-k8sgpt-config:/root/.config/k8sgpt
     environment:
       - KUBECONFIG=/root/.kube/config_mod
-      - K8SGPT_BACKEND=${K8SGPT_BACKEND:-ollama}
-      - K8SGPT_MODEL=${OLLAMA_MODEL:-llama3.1:8b}
-      - LOG_LEVEL=${LOG_LEVEL:-info}
-      - OLLAMA_URL=http://host.docker.internal:11434
     ports:
       - "${MCP_PORT:-3000}:3000"
     restart: ${RESTART_POLICY:-unless-stopped}
     healthcheck:
-      test: ["CMD", "k8sgpt", "version"]
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:3000/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 30s
+      start_period: 10s
     profiles:
       - mcp
 

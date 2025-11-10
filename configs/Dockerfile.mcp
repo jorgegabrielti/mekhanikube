@@ -1,11 +1,15 @@
-FROM ghcr.io/k8sgpt-ai/k8sgpt:latest
+FROM golang:1.23-alpine AS builder
 
-# Instalar dependências necessárias
-RUN apk add --no-cache curl
+WORKDIR /build
+RUN apk add --no-cache git make
+RUN git clone https://github.com/k8sgpt-ai/k8sgpt.git .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o k8sgpt .
 
-# Copiar entrypoint MCP
+FROM alpine:latest
+RUN apk --no-cache add ca-certificates curl wget kubectl
+COPY --from=builder /build/k8sgpt /usr/local/bin/k8sgpt
 COPY configs/entrypoint-mcp.sh /entrypoint-mcp.sh
-RUN chmod +x /entrypoint-mcp.sh
+RUN mkdir -p /root/.kube && chmod +x /entrypoint-mcp.sh
 
 EXPOSE 3000
 
