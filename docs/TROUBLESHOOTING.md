@@ -1,6 +1,133 @@
 # Guia de Solução de Problemas
 
-## Problemas Comuns e Soluções
+## 🆕 Mekhanikube v2.0
+
+### 1. Mekhanikube Não Consegue Conectar ao Cluster
+
+**Sintomas**:
+```
+Error: unable to connect to Kubernetes cluster
+```
+
+**Diagnóstico**:
+```bash
+# Verificar conexão do container
+docker exec mekhanikube kubectl get nodes
+
+# Ver logs do container
+docker logs mekhanikube
+
+# Verificar kubeconfig
+docker exec mekhanikube cat /root/.kube/config_mod
+```
+
+**Soluções**:
+
+#### A. Cluster Kubernetes não está rodando
+```bash
+# Verificar cluster local
+kubectl cluster-info
+
+# Docker Desktop - verificar se Kubernetes está habilitado
+# Settings → Kubernetes → Enable Kubernetes
+```
+
+#### B. Kubeconfig inválido
+```bash
+# Verificar no host
+kubectl get nodes
+
+# Verificar montagem no container
+docker inspect mekhanikube | grep -A 10 Mounts
+```
+
+**Correção**: Garantir que `~/.kube/config` existe e está montado corretamente em `docker-compose.yml`.
+
+---
+
+### 2. Mekhanikube Não Consegue Conectar ao Ollama
+
+**Sintomas**:
+```
+Error: failed to connect to Ollama API
+dial tcp: lookup host.docker.internal: no such host
+```
+
+**Diagnóstico**:
+```bash
+# Verificar Ollama
+docker ps | grep ollama
+docker logs mekhanikube-ollama
+
+# Testar conectividade
+docker exec mekhanikube curl -s http://host.docker.internal:11434/api/tags
+```
+
+**Soluções**:
+
+#### A. Ollama não está rodando
+```bash
+# Verificar status
+docker-compose ps
+
+# Reiniciar serviço
+docker-compose restart ollama
+```
+
+#### B. Modelo não instalado
+```bash
+# Listar modelos
+docker exec mekhanikube-ollama ollama list
+
+# Instalar llama3.1:8b (padrão)
+docker exec mekhanikube-ollama ollama pull llama3.1:8b
+```
+
+---
+
+### 3. Análise Sem Explicação da IA
+
+**Sintomas**:
+Problemas encontrados mas sem explicações da IA.
+
+**Causas**:
+- Flag `--explain` não foi usada
+- Ollama não está respondendo
+
+**Correção**:
+```bash
+# Usar flag --explain
+docker exec mekhanikube mekhanikube analyze --explain --language Portuguese
+
+# Verificar saúde do Ollama
+docker exec mekhanikube-ollama ollama list
+```
+
+---
+
+### 4. Performance Lenta
+
+**Sintomas**:
+Análise demorando muito.
+
+**Soluções**:
+
+#### A. Primeira execução (normal)
+- Ollama carrega modelo em memória (~5-10s)
+- Execuções subsequentes são mais rápidas
+
+#### B. Modelo muito grande
+```bash
+# Usar modelo mais leve
+docker exec mekhanikube-ollama ollama pull tinyllama
+
+# Ou desativar explicações
+docker exec mekhanikube mekhanikube analyze
+```
+
+---
+
+## 🔄 K8sGPT (Modo Legado)
 
 ### 1. K8sGPT Não Consegue Conectar à API Kubernetes
 
