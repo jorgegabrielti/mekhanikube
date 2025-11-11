@@ -8,8 +8,13 @@ services:
       - "${OLLAMA_PORT:-11434}:11434"
     volumes:
       - nautikube-ollama-data:/root/.ollama
+      - ${CORPORATE_CERT_PATH:-~/corporate-certs.pem}:/etc/ssl/certs/corporate-certs.pem:ro
     environment:
       - OLLAMA_HOST=0.0.0.0:11434
+      - HTTP_PROXY=${HTTP_PROXY:-}
+      - HTTPS_PROXY=${HTTPS_PROXY:-}
+      - NO_PROXY=${NO_PROXY:-localhost,127.0.0.1}
+      - SSL_CERT_FILE=/etc/ssl/certs/corporate-certs.pem
     restart: ${RESTART_POLICY:-unless-stopped}
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:11434/api/tags || exit 0"]
@@ -28,8 +33,10 @@ services:
         condition: service_healthy
     volumes:
       - ${HOME}/.kube/config:/root/.kube/config:ro
+      - ${HOME}/.aws:/root/.aws:rw
     environment:
       - KUBECONFIG=/root/.kube/config_mod
+      - AWS_PROFILE=${AWS_PROFILE:-default}
     network_mode: ${NETWORK_MODE:-host}
     restart: ${RESTART_POLICY:-unless-stopped}
     healthcheck:

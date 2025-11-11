@@ -25,11 +25,12 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
 # Runtime stage
 FROM alpine:latest
 
-# Instala certificados e kubectl
-RUN apk --no-cache add ca-certificates curl && \
+# Instala certificados, kubectl e AWS CLI
+RUN apk --no-cache add ca-certificates curl python3 py3-pip && \
     curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
     chmod +x kubectl && \
     mv kubectl /usr/local/bin/ && \
+    pip3 install --no-cache-dir awscli --break-system-packages && \
     rm -rf /var/cache/apk/*
 
 WORKDIR /root
