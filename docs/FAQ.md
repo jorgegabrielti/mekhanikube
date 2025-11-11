@@ -125,13 +125,13 @@ Sim! Use filtros:
 **NautiKube v2.0**:
 ```bash
 # Analisar apenas Pods
-docker exec NautiKube NautiKube analyze --filter Pod --explain --language Portuguese
+docker exec nautikube nautikube analyze --filter Pod --explain
 
 # Analisar apenas ConfigMaps
-docker exec NautiKube NautiKube analyze --filter ConfigMap --explain --language Portuguese
+docker exec nautikube nautikube analyze --filter ConfigMap --explain
 
 # Namespace específico
-docker exec NautiKube NautiKube analyze -n production --explain --language Portuguese
+docker exec nautikube nautikube analyze -n production --explain
 ```
 
 **K8sGPT (legado)**:
@@ -143,7 +143,7 @@ docker exec NautiKube-k8sgpt k8sgpt analyze --filter=Pod --explain --language Po
 docker exec NautiKube-k8sgpt k8sgpt filters list
 ```
 
-> 💡 NautiKube v2 tem suporte nativo ao português, mas você pode especificar `--language Portuguese` ou `--language English`.
+> 💡 NautiKube v2 sempre responde em português brasileiro - simples e direto!
 
 ### Que tipos de problemas ele pode detectar?
 
@@ -208,7 +208,7 @@ Sim! Exemplo:
 k8s-analysis:
   script:
     - docker-compose up -d
-    - docker exec NautiKube NautiKube analyze --explain --language Portuguese > report.txt
+    - docker exec nautikube nautikube analyze --explain > report.txt
   artifacts:
     paths:
       - report.txt
@@ -225,23 +225,18 @@ k8s-analysis-legacy:
 
 ### As análises são sempre em português?
 
-**NautiKube v2.0**: Suporte nativo ao português! Basta usar `--language Portuguese` (ou omitir para inglês).
+**Sim!** NautiKube v2.0+ é 100% focado no público brasileiro com explicações em português.
 
 ```bash
-# Português (recomendado)
-docker exec NautiKube NautiKube analyze --explain --language Portuguese
-
-# Inglês
-docker exec NautiKube NautiKube analyze --explain --language English
+# Análise com explicações em português
+docker exec nautikube nautikube analyze --explain
 ```
 
 **K8sGPT (legado)**: Requer flag `--language Portuguese` explicitamente.
 
-**Idiomas suportados**: English, Portuguese
-
 > ⭐ O modelo **llama3.1:8b** oferece excelente qualidade em português brasileiro!
 > 
-> ⚠️ **Nota sobre idiomas**: O modelo llama3.1:8b tem forte viés para português. Mesmo quando solicitado `--language English`, ele pode responder em português em alguns casos. Isso é uma característica do modelo LLM, não um bug do NautiKube. Para respostas consistentes em inglês, considere usar modelos como `mistral` ou `qwen2.5:7b`.
+> 💡 **Design decision**: Optamos por focar exclusivamente em português para entregar a melhor experiência possível. A internacionalização adicionava complexidade sem benefício real, já que o modelo llama3.1:8b tem forte viés para PT mesmo com instruções em inglês.
 
 ### Posso exportar resultados?
 
@@ -249,7 +244,7 @@ Sim! Redirecione a saída:
 
 ```bash
 # NautiKube v2 - Salvar em arquivo
-docker exec NautiKube NautiKube analyze --explain --language Portuguese > analysis.txt
+docker exec nautikube nautikube analyze --explain > analysis.txt
 
 # K8sGPT - JSON
 docker exec NautiKube-k8sgpt k8sgpt analyze --explain --output json --language Portuguese > analysis.json
