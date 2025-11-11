@@ -23,7 +23,6 @@ var (
 	namespace string
 	filter    []string
 	explain   bool
-	language  string
 	noCache   bool
 
 	// Configurações Ollama (podem ser sobrescritas por variáveis de ambiente)
@@ -76,7 +75,6 @@ func initCommands() {
 	analyzeCmd.Flags().StringVarP(&namespace, "namespace", "n", getEnv("NAUTIKUBE_DEFAULT_NAMESPACE", ""), "Namespace específico (vazio = todos)")
 	analyzeCmd.Flags().StringSliceVarP(&filter, "filter", "f", []string{}, "Filtrar por tipo de recurso (Pod, ConfigMap, etc)")
 	analyzeCmd.Flags().BoolVarP(&explain, "explain", "e", getEnv("NAUTIKUBE_EXPLAIN", "false") == "true", "Explicar problemas usando IA")
-	analyzeCmd.Flags().StringVarP(&language, "language", "l", getEnv("NAUTIKUBE_DEFAULT_LANGUAGE", "Portuguese"), "Idioma das explicações (Portuguese, English)")
 	analyzeCmd.Flags().BoolVar(&noCache, "no-cache", false, "Forçar análise sem cache")
 
 	// Adiciona comandos à raiz
@@ -112,7 +110,7 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 		Namespace: namespace,
 		Filter:    filter,
 		Explain:   explain,
-		Language:  language,
+		Language:  "Portuguese", // Sempre em português
 		NoCache:   noCache,
 	}
 

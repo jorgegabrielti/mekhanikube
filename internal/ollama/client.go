@@ -71,37 +71,8 @@ func (c *Client) Explain(ctx context.Context, problem *types.Problem, language s
 	return ollamaResp.Response, nil
 }
 
-// buildPrompt constrói o prompt para o LLM baseado no problema e idioma
+// buildPrompt constrói o prompt para o LLM baseado no problema
 func (c *Client) buildPrompt(problem *types.Problem, language string) string {
-	var languageInstruction, expertIntro, resourceTypeLabel, namespaceLabel, nameLabel, errorLabel, provideLabel string
-
-	switch language {
-	case "Portuguese", "pt", "pt-BR":
-		languageInstruction = "IMPORTANTE: Responda EXCLUSIVAMENTE em português brasileiro. Não use inglês."
-		expertIntro = "Você é um especialista em Kubernetes. Explique o seguinte problema de forma simples e forneça uma solução prática."
-		resourceTypeLabel = "Tipo de recurso"
-		namespaceLabel = "Namespace"
-		nameLabel = "Nome"
-		errorLabel = "Erro"
-		provideLabel = "Forneça:\n1. Uma explicação simplificada do problema\n2. Passos claros para resolver\n\nSeja conciso e direto."
-	case "English", "en":
-		languageInstruction = "IMPORTANT: Answer EXCLUSIVELY in English. Do NOT use Portuguese."
-		expertIntro = "You are a Kubernetes expert. Explain the following problem in a simple way and provide a practical solution."
-		resourceTypeLabel = "Resource type"
-		namespaceLabel = "Namespace"
-		nameLabel = "Name"
-		errorLabel = "Error"
-		provideLabel = "Provide:\n1. A simplified explanation of the problem\n2. Clear steps to resolve\n\nBe concise and direct."
-	default:
-		languageInstruction = "IMPORTANT: Answer EXCLUSIVELY in English. Do NOT use other languages."
-		expertIntro = "You are a Kubernetes expert. Explain the following problem in a simple way and provide a practical solution."
-		resourceTypeLabel = "Resource type"
-		namespaceLabel = "Namespace"
-		nameLabel = "Name"
-		errorLabel = "Error"
-		provideLabel = "Provide:\n1. A simplified explanation of the problem\n2. Clear steps to resolve\n\nBe concise and direct."
-	}
-
 	detailsStr := ""
 	if len(problem.Details) > 0 {
 		detailsStr = "\nDetalhes adicionais:\n"
@@ -110,28 +81,23 @@ func (c *Client) buildPrompt(problem *types.Problem, language string) string {
 		}
 	}
 
-	return fmt.Sprintf(`%s
+	return fmt.Sprintf(`Você é um especialista em Kubernetes. Explique o seguinte problema de forma simples e forneça uma solução prática em português brasileiro.
 
-%s
+Tipo de recurso: %s
+Namespace: %s
+Nome: %s
+Erro: %s%s
 
-%s: %s
-%s: %s
-%s: %s
-%s: %s%s
+Forneça:
+1. Uma explicação simplificada do problema
+2. Passos claros para resolver
 
-%s`,
-		languageInstruction,
-		expertIntro,
-		resourceTypeLabel,
+Seja conciso e direto.`,
 		problem.Kind,
-		namespaceLabel,
 		problem.Namespace,
-		nameLabel,
 		problem.Name,
-		errorLabel,
 		problem.Error,
 		detailsStr,
-		provideLabel,
 	)
 }
 

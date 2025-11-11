@@ -23,7 +23,7 @@ Escaneia seu cluster Kubernetes, identifica problemas e **explica em linguagem s
 
 ```bash
 # Execute uma análise
-docker exec NautiKube NautiKube analyze --explain --language Portuguese
+docker exec nautikube nautikube analyze --explain
 ```
 
 **Exemplo de saída:**
@@ -57,10 +57,10 @@ cd NautiKube
 docker-compose up -d
 
 # 3. Baixe o modelo de IA (primeira vez - ~4.7GB)
-docker exec NautiKube-ollama ollama pull llama3.1:8b
+docker exec nautikube-ollama ollama pull llama3.1:8b
 
 # 4. Pronto! Analisar cluster
-docker exec NautiKube NautiKube analyze --explain --language Portuguese
+docker exec nautikube nautikube analyze --explain
 ```
 
 > 💡 **Novo!** Não é mais necessário configurar backend. O NautiKube detecta e conecta automaticamente ao Ollama!
@@ -71,26 +71,23 @@ docker exec NautiKube NautiKube analyze --explain --language Portuguese
 
 ```bash
 # Análise rápida (sem IA)
-docker exec NautiKube NautiKube analyze
+docker exec nautikube nautikube analyze
 
-# Análise completa em português com explicações da IA
-docker exec NautiKube NautiKube analyze --explain --language Portuguese
-
-# Análise completa em inglês
-docker exec NautiKube NautiKube analyze --explain --language English
+# Análise completa com explicações da IA (sempre em português)
+docker exec nautikube nautikube analyze --explain
 
 # Analisar namespace específico
-docker exec NautiKube NautiKube analyze -n kube-system --explain --language Portuguese
+docker exec nautikube nautikube analyze -n kube-system --explain
 
 # Filtrar por tipo de recurso
-docker exec NautiKube NautiKube analyze --filter Pod --explain --language Portuguese
-docker exec NautiKube NautiKube analyze --filter ConfigMap
+docker exec nautikube nautikube analyze --filter Pod --explain
+docker exec nautikube nautikube analyze --filter ConfigMap
 
 # Ver versão
-docker exec NautiKube NautiKube version
+docker exec nautikube nautikube version
 
 # Listar modelos Ollama instalados
-docker exec NautiKube-ollama ollama list
+docker exec nautikube-ollama ollama list
 
 # Ver status dos containers
 docker-compose ps
@@ -136,7 +133,7 @@ Desenvolvemos nossa própria solução nativa em Go por diversos motivos:
 | **Manutenção** | Dependente upstream | Independente | ✅ Autonomia |
 
 **Principais vantagens:**
-- 🇧🇷 Suporte nativo ao português (não precisa flag --language)
+- 🇧🇷 **100% em português brasileiro** - explicações naturais e claras
 - 🎯 Interface CLI mais simples e direta
 - ⚡ Detecção automática do Ollama (sem configuração manual)
 - 💪 Performance otimizada para clusters pequenos e médios
