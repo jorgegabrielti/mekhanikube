@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/logo.png" alt="NautiKube Logo" width="800"/>
+<img src="assets/logo.png" alt="NautiKube Logo" width="600"/>
 
 **Diagnóstico inteligente para Kubernetes**
 
