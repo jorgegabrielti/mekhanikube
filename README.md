@@ -47,8 +47,6 @@ docker exec nautikube nautikube analyze --explain
 - ~8GB de espaço livre
 - kubeconfig configurado em `~/.kube/config`
 
-> 📋 **Ambientes Especiais**: Usando EKS ou proxy corporativo? Veja o [Guia de Configuração de Ambientes](docs/SETUP-ENVIRONMENTS.md)
-
 ### Instalação
 
 ```bash
