@@ -240,6 +240,8 @@ docker exec NautiKube NautiKube analyze --explain --language English
 **Idiomas suportados**: English, Portuguese
 
 > ⭐ O modelo **llama3.1:8b** oferece excelente qualidade em português brasileiro!
+> 
+> ⚠️ **Nota sobre idiomas**: O modelo llama3.1:8b tem forte viés para português. Mesmo quando solicitado `--language English`, ele pode responder em português em alguns casos. Isso é uma característica do modelo LLM, não um bug do NautiKube. Para respostas consistentes em inglês, considere usar modelos como `mistral` ou `qwen2.5:7b`.
 
 ### Posso exportar resultados?
 
