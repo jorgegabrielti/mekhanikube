@@ -5,7 +5,7 @@
 **Diagnóstico inteligente para o seu Cluster Kubernetes**
 
 [![Licença: MIT](https://img.shields.io/badge/Licen%C3%A7a-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Versão](https://img.shields.io/badge/vers%C3%A3o-2.0.0-blue.svg)](https://github.com/jorgegabrielti/nautikube/releases)
+[![Versão](https://img.shields.io/badge/vers%C3%A3o-2.0.2-blue.svg?cacheSeconds=0)](https://github.com/jorgegabrielti/nautikube/releases)
 [![Go](https://img.shields.io/badge/Go-1.21-00ADD8.svg)](https://golang.org/)
 
 Ferramenta própria de análise de clusters Kubernetes com **IA local**  
