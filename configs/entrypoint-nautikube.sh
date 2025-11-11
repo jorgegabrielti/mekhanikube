@@ -6,9 +6,11 @@ echo ""
 
 # Detectar tipo de ambiente
 CLUSTER_TYPE="local"
-if [ -d "/root/.aws" ] && [ -f "/usr/bin/aws" ]; then
-    CLUSTER_TYPE="eks"
-    echo "🔍 Ambiente detectado: EKS (AWS)"
+if [ -d "/root/.aws" ] && [ "$(ls -A /root/.aws 2>/dev/null)" ]; then
+    if [ -f "/usr/bin/aws" ]; then
+        CLUSTER_TYPE="eks"
+        echo "🔍 Ambiente detectado: EKS (AWS)"
+    fi
 else
     echo "🔍 Ambiente detectado: Kubernetes Local"
 fi
@@ -26,11 +28,7 @@ if [ -f "/root/.kube/config" ]; then
     
     # Se EKS, verifica credenciais AWS
     if [ "$CLUSTER_TYPE" = "eks" ]; then
-        if [ -d "/root/.aws" ]; then
-            echo "✅ Credenciais AWS disponíveis"
-        else
-            echo "⚠️  Credenciais AWS não encontradas (monte ~/.aws)"
-        fi
+        echo "✅ Credenciais AWS disponíveis"
     fi
 else
     echo "⚠️  Kubeconfig não encontrado em /root/.kube/config"

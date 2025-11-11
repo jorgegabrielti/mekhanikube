@@ -8,14 +8,11 @@ services:
       - "${OLLAMA_PORT:-11434}:11434"
     volumes:
       - nautikube-ollama-data:/root/.ollama
-      # Corporate cert (optional - mount only if exists)
-      - ${CORPORATE_CERT_PATH:-./docker-compose.yml}:/etc/ssl/certs/corporate-certs.pem:ro
     environment:
       - OLLAMA_HOST=0.0.0.0:11434
       - HTTP_PROXY=${HTTP_PROXY:-}
       - HTTPS_PROXY=${HTTPS_PROXY:-}
       - NO_PROXY=${NO_PROXY:-localhost,127.0.0.1}
-      - SSL_CERT_FILE=${CORPORATE_CERT_PATH:+/etc/ssl/certs/corporate-certs.pem}
     restart: ${RESTART_POLICY:-unless-stopped}
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:11434/api/tags || exit 0"]
@@ -34,8 +31,7 @@ services:
         condition: service_healthy
     volumes:
       - ${HOME}/.kube/config:/root/.kube/config:ro
-      # AWS credentials (optional - mount only if exists)
-      - ${AWS_CREDENTIALS_PATH:-./docker-compose.yml}:/root/.aws:rw
+      - ${HOME}/.aws:/root/.aws:ro
     environment:
       - KUBECONFIG=/root/.kube/config_mod
       - AWS_PROFILE=${AWS_PROFILE:-default}

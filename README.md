@@ -52,46 +52,20 @@ docker exec nautikube nautikube analyze --explain
 ### Instalação
 
 ```bash
-# 1. Clone o repositório
+# Clone e rode!
 git clone https://github.com/jorgegabrielti/nautikube.git
 cd nautikube
-
-# 2. Inicie os containers (detecção automática de ambiente)
 docker-compose up -d
 
-# 3. Baixe o modelo de IA (primeira vez - ~4.7GB)
+# Baixe o modelo (primeira vez)
 docker exec nautikube-ollama ollama pull llama3.1:8b
 
-# 4. Pronto! Analisar cluster
+# Analise seu cluster
 docker exec nautikube nautikube analyze --explain
 ```
 
-> 🔥 **Automático!** Funciona direto em Kubernetes local (minikube, kind, k3s, Docker Desktop).
-
-**⚠️ Ambiente Corporativo (EKS/Proxy)?**
-Se você está atrás de proxy corporativo ou usando EKS:
-- ❌ **Erro de certificado** ao baixar modelos?
-- ❌ **Erro de AWS credentials**?
-
-👉 **[Configure o .env primeiro](docs/CORPORATE-ENVIRONMENT.md)** antes de rodar `docker-compose up -d`
-
-<details>
-<summary>📖 Configuração rápida para EKS/Proxy</summary>
-
-```bash
-# 1. Exporte certificados corporativos (macOS)
-security find-certificate -a -p /System/Library/Keychains/SystemRootCertificates.keychain > ~/corporate-certs.pem
-
-# 2. Configure o .env
-cp .env.example .env
-# Edite e descomente: CORPORATE_CERT_PATH e/ou AWS_CREDENTIALS_PATH
-
-# 3. Suba os containers
-docker-compose up -d
-```
-
-Veja [documentação completa](docs/SETUP-ENVIRONMENTS.md) para detalhes.
-</details>
+**❌ Erro de certificado ao baixar modelo?**  
+👉 Você está atrás de proxy corporativo. [Solução rápida aqui](docs/CORPORATE-ENVIRONMENT.md)
 
 > 💡 **Novo!** Não é mais necessário configurar backend. O nautikube detecta e conecta automaticamente ao Ollama!
 
