@@ -1,0 +1,141 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Dispara em qualquer tag que comece com 'v' (ex: v2.0.2)
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Necessário para git describe
+      
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+      
+      - name: Get version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+      
+      - name: Verify VERSION file matches tag
+        run: |
+          FILE_VERSION=$(cat VERSION)
+          TAG_VERSION=${{ steps.version.outputs.version }}
+          if [ "$FILE_VERSION" != "$TAG_VERSION" ]; then
+            echo "❌ Erro: VERSION file ($FILE_VERSION) não corresponde à tag ($TAG_VERSION)"
+            exit 1
+          fi
+          echo "✅ Versões correspondem: $TAG_VERSION"
+      
+      - name: Build binaries
+        run: |
+          mkdir -p dist
+          
+          # Linux AMD64
+          GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build \
+            -ldflags="-w -s -X main.Version=${{ steps.version.outputs.version }}" \
+            -o dist/nautikube-linux-amd64 \
+            ./cmd/nautikube
+          
+          # Linux ARM64
+          GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build \
+            -ldflags="-w -s -X main.Version=${{ steps.version.outputs.version }}" \
+            -o dist/nautikube-linux-arm64 \
+            ./cmd/nautikube
+          
+          # macOS AMD64
+          GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build \
+            -ldflags="-w -s -X main.Version=${{ steps.version.outputs.version }}" \
+            -o dist/nautikube-darwin-amd64 \
+            ./cmd/nautikube
+          
+          # macOS ARM64 (Apple Silicon)
+          GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build \
+            -ldflags="-w -s -X main.Version=${{ steps.version.outputs.version }}" \
+            -o dist/nautikube-darwin-arm64 \
+            ./cmd/nautikube
+          
+          # Windows AMD64
+          GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build \
+            -ldflags="-w -s -X main.Version=${{ steps.version.outputs.version }}" \
+            -o dist/nautikube-windows-amd64.exe \
+            ./cmd/nautikube
+          
+          # Criar checksums
+          cd dist
+          sha256sum * > checksums.txt
+          cat checksums.txt
+      
+      - name: Extract changelog for this version
+        id: changelog
+        run: |
+          # Extrai a seção do CHANGELOG para esta versão
+          VERSION=${{ steps.version.outputs.version }}
+          
+          # Tenta extrair entre [VERSION] e a próxima versão ou fim
+          CHANGELOG=$(awk "/## \[${VERSION}\]/,/## \[.*\]/ {
+            if (/## \[${VERSION}\]/) { found=1; next }
+            if (/## \[.*\]/ && found) { exit }
+            if (found) print
+          }" CHANGELOG.md)
+          
+          if [ -z "$CHANGELOG" ]; then
+            CHANGELOG="Veja [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) para detalhes."
+          fi
+          
+          # Salva em arquivo para evitar problemas com multiline
+          echo "$CHANGELOG" > release-notes.md
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: NautiKube ${{ steps.version.outputs.tag }}
+          body_path: release-notes.md
+          draft: false
+          prerelease: false
+          files: |
+            dist/nautikube-linux-amd64
+            dist/nautikube-linux-arm64
+            dist/nautikube-darwin-amd64
+            dist/nautikube-darwin-arm64
+            dist/nautikube-windows-amd64.exe
+            dist/checksums.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Build and push Docker images
+        run: |
+          # Login no GitHub Container Registry
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          
+          VERSION=${{ steps.version.outputs.version }}
+          IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/nautikube
+          
+          # Build para múltiplas plataformas
+          docker buildx create --use || true
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --file configs/Dockerfile.nautikube \
+            --tag ${IMAGE_NAME}:${VERSION} \
+            --tag ${IMAGE_NAME}:latest \
+            --push \
+            .
+          
+          echo "✅ Docker images publicadas:"
+          echo "   ${IMAGE_NAME}:${VERSION}"
+          echo "   ${IMAGE_NAME}:latest"
