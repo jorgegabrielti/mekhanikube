@@ -2,30 +2,65 @@
 
 Obrigado pelo seu interesse em contribuir com o NautiKube!
 
-## Como Contribuir
+## 📋 Índice
 
-### Reportando Problemas
-- Use GitHub Issues para reportar bugs
-- Inclua seu SO, versão do Docker e versão do Kubernetes
-- Especifique se está usando NautiKube v2 ou K8sGPT legacy
-- Forneça passos para reproduzir o problema
-- Inclua logs relevantes:
-  - `docker logs NautiKube` (v2)
-  - `docker logs NautiKube-k8sgpt` (legacy)
-  - `docker logs NautiKube-ollama`
+- [Como Contribuir](#como-contribuir)
+- [Workflow de Desenvolvimento](#workflow-de-desenvolvimento)
+- [Padrões de Código](#padrões-de-código)
+- [Testes](#testes)
+- [Documentação](#documentação)
 
-### Sugerindo Funcionalidades
-- Abra uma GitHub Issue com o rótulo "enhancement"
-- Descreva o caso de uso e o comportamento esperado
-- Explique como isso beneficiaria os usuários
+---
 
-### Pull Requests
-1. Faça fork do repositório
-2. Crie uma branch de funcionalidade (`git checkout -b feature/funcionalidade-incrivel`)
-3. Teste suas alterações localmente
-4. Faça commit com mensagens claras (`git commit -m 'Adiciona funcionalidade incrível'`)
-5. Envie para seu fork (`git push origin feature/funcionalidade-incrivel`)
-6. Abra um Pull Request
+## 🤝 Como Contribuir
+
+### Reportando Bugs
+
+Use o [template de bug report](.github/ISSUE_TEMPLATE/bug_report.md) e inclua:
+- ✅ Sistema operacional e versão
+- ✅ Versão do NautiKube (`docker exec nautikube nautikube version`)
+- ✅ Versão do Docker e Kubernetes
+- ✅ Passos para reproduzir
+- ✅ Logs relevantes:
+  ```bash
+  docker logs nautikube
+  docker logs nautikube-ollama
+  ```
+
+### Sugerindo Features
+
+Use o [template de feature request](.github/ISSUE_TEMPLATE/feature_request.md) e descreva:
+- 💡 O problema que a feature resolve
+- 🎯 Casos de uso práticos
+- 📋 Comportamento esperado
+
+### Enviando Pull Requests
+
+**Leia primeiro:** [docs/WORKFLOW.md](docs/WORKFLOW.md) - GitHub Flow completo
+
+**Resumo rápido:**
+
+1. **Fork** o repositório
+2. **Clone** seu fork:
+   ```bash
+   git clone https://github.com/SEU_USUARIO/nautikube.git
+   cd nautikube
+   ```
+3. **Crie branch** a partir da `main`:
+   ```bash
+   git checkout -b feature/minha-feature
+   ```
+4. **Desenvolva** seguindo os padrões
+5. **Teste** localmente
+6. **Commit** usando [Conventional Commits](https://www.conventionalcommits.org/):
+   ```bash
+   git commit -m "feat: adicionar suporte para X"
+   ```
+7. **Push** para seu fork:
+   ```bash
+   git push origin feature/minha-feature
+   ```
+8. **Abra PR** usando o [template](.github/PULL_REQUEST_TEMPLATE.md)
 
 ### Configuração de Desenvolvimento
 
