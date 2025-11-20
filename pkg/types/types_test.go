@@ -144,3 +144,159 @@ func BenchmarkProblemString(b *testing.B) {
 		_ = problem.String()
 	}
 }
+
+// TestSeverityEnum testa os valores do enum Severity
+func TestSeverityEnum(t *testing.T) {
+	tests := []struct {
+		severity Severity
+		expected string
+	}{
+		{Critical, "CRITICAL"},
+		{High, "HIGH"},
+		{Medium, "MEDIUM"},
+		{Low, "LOW"},
+		{Info, "INFO"},
+	}
+
+	for _, tt := range tests {
+		t.Run(string(tt.severity), func(t *testing.T) {
+			if string(tt.severity) != tt.expected {
+				t.Errorf("Expected %s, got %s", tt.expected, string(tt.severity))
+			}
+		})
+	}
+}
+
+// TestCalculateScore testa o cálculo de score
+func TestCalculateScore(t *testing.T) {
+	tests := []struct {
+		name          string
+		problem       Problem
+		expectedScore int
+	}{
+		{
+			name: "Critical sem contexto",
+			problem: Problem{
+				Kind:      "Pod",
+				Name:      "test-pod",
+				Namespace: "production",
+				Error:     "Error",
+				Severity:  Critical,
+			},
+			expectedScore: 90,
+		},
+		{
+			name: "Critical em kube-system",
+			problem: Problem{
+				Kind:      "Pod",
+				Name:      "kube-dns",
+				Namespace: "kube-system",
+				Error:     "Error",
+				Severity:  Critical,
+			},
+			expectedScore: 100,
+		},
+		{
+			name: "High com CrashLoopBackOff",
+			problem: Problem{
+				Kind:      "Pod",
+				Name:      "app-pod",
+				Namespace: "default",
+				Error:     "CrashLoopBackOff",
+				Severity:  High,
+			},
+			expectedScore: 90, // 70 + 10 (default) + 10 (CrashLoopBackOff)
+		},
+		{
+			name: "Medium sem contexto",
+			problem: Problem{
+				Kind:      "ConfigMap",
+				Name:      "config",
+				Namespace: "app",
+				Error:     "Not found",
+				Severity:  Medium,
+			},
+			expectedScore: 50,
+		},
+		{
+			name: "Low sem contexto",
+			problem: Problem{
+				Kind:      "Pod",
+				Name:      "test",
+				Namespace: "test",
+				Error:     "Warning",
+				Severity:  Low,
+			},
+			expectedScore: 30,
+		},
+		{
+			name: "Info sem contexto",
+			problem: Problem{
+				Kind:      "Service",
+				Name:      "svc",
+				Namespace: "app",
+				Error:     "Info message",
+				Severity:  Info,
+			},
+			expectedScore: 10,
+		},
+		{
+			name: "Service sem endpoints",
+			problem: Problem{
+				Kind:      "Service",
+				Name:      "api-svc",
+				Namespace: "default",
+				Error:     "Service has no endpoints available",
+				Severity:  High,
+			},
+			expectedScore: 90, // 70 + 10 (default) + 10 (no endpoints)
+		},
+		{
+			name: "Pod OOMKilled em kube-system",
+			problem: Problem{
+				Kind:      "Pod",
+				Name:      "metrics-server",
+				Namespace: "kube-system",
+				Error:     "Container OOMKilled",
+				Severity:  Critical,
+			},
+			expectedScore: 100, // 90 + 10 (kube-system) + 10 (OOMKilled) = 110, capped at 100
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.problem.CalculateScore()
+			if tt.problem.Score != tt.expectedScore {
+				t.Errorf("Expected score %d, got %d", tt.expectedScore, tt.problem.Score)
+			}
+		})
+	}
+}
+
+// TestCalculateScoreRange testa que o score está sempre entre 0-100
+func TestCalculateScoreRange(t *testing.T) {
+	severities := []Severity{Critical, High, Medium, Low, Info}
+	namespaces := []string{"default", "kube-system", "production", "test"}
+	errors := []string{"CrashLoopBackOff", "ImagePullBackOff", "OOMKilled", "no endpoints", "Normal error"}
+
+	for _, sev := range severities {
+		for _, ns := range namespaces {
+			for _, err := range errors {
+				problem := Problem{
+					Kind:      "Pod",
+					Name:      "test",
+					Namespace: ns,
+					Error:     err,
+					Severity:  sev,
+				}
+				problem.CalculateScore()
+
+				if problem.Score < 0 || problem.Score > 100 {
+					t.Errorf("Score out of range [0-100]: %d for severity=%s, namespace=%s, error=%s",
+						problem.Score, sev, ns, err)
+				}
+			}
+		}
+	}
+}

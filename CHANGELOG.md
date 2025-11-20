@@ -5,6 +5,30 @@ Todas as mudanças notáveis do NautiKube serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 e este projeto segue [Versionamento Semântico](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1] - 2025-11-20
+
+### ✨ Adicionado
+
+- **Sistema de Severidade:** Enum `Severity` com 5 níveis (CRITICAL, HIGH, MEDIUM, LOW, INFO)
+- **Score Numérico:** Campo `Score` em `Problem` com range 0-100
+- **Cálculo Inteligente:** Método `CalculateScore()` com ajustes contextuais:
+  - Score base por severidade (Critical=90, High=70, Medium=50, Low=30, Info=10)
+  - +10 pontos para namespaces críticos (kube-system, default)
+  - +10 pontos para problemas críticos de Pod (CrashLoopBackOff, ImagePullBackOff, OOMKilled)
+  - +10 pontos para Services sem endpoints
+  - Cap automático em 100 pontos
+- **Testes Unitários:** 23 testes passando cobrindo enum, cálculo de score e ranges
+
+### 📝 Documentação
+
+- Godoc para enum `Severity` e método `CalculateScore()`
+- Exemplos de uso no código
+- Cobertura de testes para todos os cenários
+
+### 🎯 Sprint 1 - Issue #9
+
+Feature desenvolvida em 3 horas conforme planejamento (20-22 Nov).
+
 ## [0.9.0] - 2025-11-20
 
 ### 🔄 BREAKING CHANGE: Reset Brutal de Versionamento

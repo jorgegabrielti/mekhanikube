@@ -17,7 +17,7 @@ func TestNew(t *testing.T) {
 		t.Error("Scanner should not be nil when no error")
 	}
 
-	if scanner.clientset == nil {
+	if scanner.Client == nil {
 		t.Error("Clientset should be initialized")
 	}
 }
