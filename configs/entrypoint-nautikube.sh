@@ -8,87 +8,24 @@ echo ""
 configure_kubeconfig() {
     if [ ! -f "/root/.kube/config" ]; then
         echo "⚠️  Kubeconfig não encontrado em /root/.kube/config"
-        echo "   O container pode não conseguir acessar o cluster"
         return 1
     fi
     
-    echo "🔧 Configurando acesso agnóstico ao cluster..."
-    
-    # Cria cópia do kubeconfig para modificações
+    echo "🔧 Configurando acesso ao cluster..."
     cp /root/.kube/config /root/.kube/config_mod
     
-    # Extrai informações do kubeconfig
-    SERVER_URL=$(grep -m 1 "server:" /root/.kube/config | awk '{print $2}')
-    
-    if [ -z "$SERVER_URL" ]; then
-        echo "⚠️  Servidor não detectado no kubeconfig"
-        return 1
-    fi
-    
-    echo "🔍 Servidor: $SERVER_URL"
-    
-    # Detecção inteligente e ajustes automáticos
-    case "$SERVER_URL" in
-        https://127.0.0.1:* | https://localhost:*)
-            # Clusters locais: Kind, Minikube, Docker Desktop, k3d
-            echo "   📍 Tipo: Cluster Local"
-            echo "   🔄 Ajustando para host.docker.internal..."
-            
-            # Substitui localhost/127.0.0.1 por host.docker.internal
-            sed -i 's|https://127.0.0.1|https://host.docker.internal|g; \
-                    s|https://localhost|https://host.docker.internal|g' \
-                /root/.kube/config_mod
-            
-            # Para clusters locais, o certificado não contém host.docker.internal
-            # Sempre remove CA e usa insecure-skip-tls-verify (desenvolvimento local)
-            echo "   🔓 Usando insecure-skip-tls-verify (cluster local)"
-            
-            # Remove certificate-authority-data
-            sed -i '/certificate-authority-data:/d' /root/.kube/config_mod
-            
-            # Adiciona insecure-skip-tls-verify em cada cluster
-            sed -i '/server: https:\/\/host.docker.internal/a\    insecure-skip-tls-verify: true' \
-                /root/.kube/config_mod
-            ;;
-            
-        https://*.eks.amazonaws.com*)
-            # AWS EKS
-            echo "   ☁️  Tipo: AWS EKS"
-            echo "   ✓ Usando configuração nativa (sem ajustes)"
-            # EKS usa autenticação via AWS CLI - mantém configuração original
-            ;;
-            
-        https://*.azmk8s.io*)
-            # Azure AKS
-            echo "   ☁️  Tipo: Azure AKS"
-            echo "   ✓ Usando configuração nativa (sem ajustes)"
-            # AKS usa autenticação via Azure CLI - mantém configuração original
-            ;;
-            
-        https://*.container.googleapis.com* | https://*.pkg.dev*)
-            # Google GKE
-            echo "   ☁️  Tipo: Google GKE"
-            echo "   ✓ Usando configuração nativa (sem ajustes)"
-            # GKE usa autenticação via gcloud - mantém configuração original
-            ;;
-            
-        https://*:6443 | https://*:443)
-            # Clusters customizados/bare-metal (porta comum do Kubernetes)
-            echo "   🔧 Tipo: Cluster Customizado"
-            echo "   ✓ Usando configuração direta"
-            # Mantém como está - assume que já está configurado corretamente
-            ;;
-            
-        *)
-            # Qualquer outro tipo - abordagem genérica
-            echo "   🌐 Tipo: Cluster Genérico"
-            echo "   ✓ Usando configuração padrão"
-            # Tenta usar como está, confiando na configuração do usuário
-            ;;
-    esac
+    # Ajuste simples para clusters locais (localhost -> host.docker.internal)
+    sed -i 's|https://127.0.0.1|https://host.docker.internal|g; \
+            s|https://localhost|https://host.docker.internal|g' \
+        /root/.kube/config_mod
+        
+    # Remove CA e adiciona insecure-skip-tls-verify para desenvolvimento local
+    sed -i '/certificate-authority-data:/d' /root/.kube/config_mod
+    sed -i '/server: https:\/\/host.docker.internal/a\    insecure-skip-tls-verify: true' \
+        /root/.kube/config_mod
     
     export KUBECONFIG=/root/.kube/config_mod
-    echo "✅ Kubeconfig configurado e pronto"
+    echo "✅ Kubeconfig configurado"
     return 0
 }
 

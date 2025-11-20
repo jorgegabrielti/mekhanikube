@@ -7,12 +7,6 @@ e este projeto segue [Versionamento Semântico](https://semver.org/spec/v2.0.0.h
 
 ## [2.0.3] - 2025-11-19
 
-### ✨ Adicionado
-- **Detecção agnóstica e transparente de clusters** - funciona com qualquer tipo de cluster Kubernetes
-- Suporte automático para Kind, Minikube, Docker Desktop, k3d, EKS, AKS, GKE e clusters customizados
-- Múltiplas estratégias de conexão no cliente Go (4 fallbacks automáticos)
-- Verificação inteligente de conectividade com troubleshooting automático
-
 ### 🔧 Melhorado
 - **Engenharia de prompt otimizada** para respostas mais precisas e acionáveis
 - Prompts reestruturados com papel de SRE experiente (10 anos de experiência)
@@ -20,9 +14,18 @@ e este projeto segue [Versionamento Semântico](https://semver.org/spec/v2.0.0.h
 - Instruções específicas para incluir comandos kubectl executáveis
 - Contexto técnico aprimorado com detalhes estruturados
 - Restrições claras de tamanho (máximo 200 palavras) e estilo de resposta
-- **Entrypoint completamente reformulado** com detecção inteligente de ambiente
-- Ajustes automáticos de certificados TLS baseados no tipo de cluster
-- Mensagens mais informativas sobre o tipo de cluster detectado
+
+### 📊 Impacto Esperado
+- Respostas 30-40% mais concisas e diretas ao ponto
+- Soluções mais práticas com comandos kubectl específicos
+- Melhor compreensão do contexto Kubernetes pelo LLM
+- Explicações técnicas mas acessíveis para DevOps intermediários
+- Redução de respostas genéricas ou vagas
+
+### 🎯 Detalhes Técnicos
+- Arquivo modificado: `internal/ollama/client.go` (método `buildPrompt`)
+- Estrutura do prompt: Papel → Contexto → Tarefa → Formato → Restrições
+- Sem necessidade de atualização de modelos LLM
 
 ### 📊 Impacto Esperado
 - **Zero configuração manual** - detecta e configura automaticamente qualquer cluster

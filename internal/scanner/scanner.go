@@ -36,52 +36,26 @@ func New() (*Scanner, error) {
 	return &Scanner{clientset: clientset}, nil
 }
 
-// getKubeConfig tenta obter a configuração do Kubernetes de forma agnóstica
-// Tenta múltiplas estratégias para garantir compatibilidade com qualquer tipo de cluster
+// getKubeConfig obtém a configuração do Kubernetes
 func getKubeConfig() (*rest.Config, error) {
-	// Estratégia 1: In-cluster config (quando rodando como Pod dentro do cluster)
+	// Se estiver rodando dentro do cluster
 	config, err := rest.InClusterConfig()
 	if err == nil {
 		return config, nil
 	}
 
-	// Estratégia 2: Kubeconfig modificado pelo entrypoint (prioritário para Docker)
-	kubeconfigPath := "/root/.kube/config_mod"
-	if _, err := os.Stat(kubeconfigPath); err == nil {
-		config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
-		if err == nil {
-			// Configurações adicionais para melhor compatibilidade
-			config.Timeout = 30 * 1e9 // 30 segundos
-			config.QPS = 50           // Aumenta taxa de requisições
-			config.Burst = 100        // Aumenta burst de requisições
-			return config, nil
-		}
-	}
-
-	// Estratégia 3: Kubeconfig padrão do sistema
-	kubeconfigPath = filepath.Join(homedir.HomeDir(), ".kube", "config")
-	if _, err := os.Stat(kubeconfigPath); err == nil {
-		config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
-		if err == nil {
-			config.Timeout = 30 * 1e9
-			config.QPS = 50
-			config.Burst = 100
-			return config, nil
-		}
-	}
-
-	// Estratégia 4: Variável de ambiente KUBECONFIG
+	// Se tiver variável de ambiente KUBECONFIG
 	if kubeconfigEnv := os.Getenv("KUBECONFIG"); kubeconfigEnv != "" {
-		config, err := clientcmd.BuildConfigFromFlags("", kubeconfigEnv)
-		if err == nil {
-			config.Timeout = 30 * 1e9
-			config.QPS = 50
-			config.Burst = 100
-			return config, nil
-		}
+		return clientcmd.BuildConfigFromFlags("", kubeconfigEnv)
 	}
 
-	return nil, fmt.Errorf("não foi possível obter configuração do Kubernetes: tentou in-cluster, config_mod, config padrão e KUBECONFIG")
+	// Padrão: ~/.kube/config
+	kubeconfigPath := filepath.Join(homedir.HomeDir(), ".kube", "config")
+	if _, err := os.Stat(kubeconfigPath); err == nil {
+		return clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+	}
+
+	return nil, fmt.Errorf("não foi possível obter configuração do Kubernetes")
 }
 
 // ScanPods escaneia todos os pods e retorna problemas encontrados

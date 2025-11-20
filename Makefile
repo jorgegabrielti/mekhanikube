@@ -161,6 +161,13 @@ dev: install
 	@echo "$(GREEN)✓ Development environment ready$(NC)"
 	@echo "$(YELLOW)Edit .env file with your configuration$(NC)"
 
+## dev-eks: Start local EKS simulation
+dev-eks:
+	@echo "$(CYAN)Starting LocalStack EKS simulation...$(NC)"
+	@chmod +x scripts/setup-local-eks.sh
+	@./scripts/setup-local-eks.sh
+	@echo "$(GREEN)✓ EKS simulation running$(NC)"
+
 ## version: Show NautiKube version
 version:
 	@docker exec nautikube $(BINARY_NAME) version 2>/dev/null || ./$(BINARY_NAME) version 2>/dev/null || echo "$(YELLOW)Build first: make build$(NC)"
