@@ -15,7 +15,7 @@ import (
 
 const (
 	// Version do NautiKube
-	Version = "2.0.3"
+	Version = "2.0.5"
 )
 
 var (
