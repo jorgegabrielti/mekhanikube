@@ -54,9 +54,8 @@ secrets/
 *.dll
 *.so
 *.dylib
-nautikube
-mekhanikube
-/cmd/mekhanikube/mekhanikube
+/nautikube
+/mekhanikube
 
 # Test binary, built with `go test -c`
 *.test
