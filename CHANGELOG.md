@@ -5,6 +5,23 @@ Todas as mudanças notáveis do NautiKube serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 e este projeto segue [Versionamento Semântico](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.4] - 2025-11-20
+
+### 🐛 Corrigido
+- **Correção crítica na manipulação de kubeconfig** - Substituído `sed` por Python/PyYAML para garantir YAML válido
+- Resolvido problema de conectividade com clusters locais (Kind, Minikube, Docker Desktop)
+- Eliminados erros de "mapping values are not allowed in this context"
+
+### 🔧 Melhorado
+- Manipulação robusta de kubeconfig usando PyYAML
+- Adicionada dependência `pyyaml` no Dockerfile
+- Melhor tratamento de múltiplos clusters no mesmo kubeconfig
+
+### 🎯 Detalhes Técnicos
+- Arquivo modificado: `configs/entrypoint-nautikube.sh` (substituição de sed por Python)
+- Arquivo modificado: `configs/Dockerfile.nautikube` (adição de PyYAML)
+- Garantia de YAML válido em todas as operações de modificação
+
 ## [2.0.3] - 2025-11-19
 
 ### 🔧 Melhorado

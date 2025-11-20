@@ -14,15 +14,36 @@ configure_kubeconfig() {
     echo "🔧 Configurando acesso ao cluster..."
     cp /root/.kube/config /root/.kube/config_mod
     
-    # Ajuste simples para clusters locais (localhost -> host.docker.internal)
-    sed -i 's|https://127.0.0.1|https://host.docker.internal|g; \
-            s|https://localhost|https://host.docker.internal|g' \
-        /root/.kube/config_mod
+    # Usa Python para manipular o kubeconfig de forma segura (garante YAML válido)
+    python3 -c "
+import yaml
+
+# Lê o kubeconfig original
+with open('/root/.kube/config', 'r') as f:
+    config = yaml.safe_load(f)
+
+# Processa cada cluster
+for cluster in config.get('clusters', []):
+    if 'cluster' in cluster:
+        server = cluster['cluster'].get('server', '')
         
-    # Remove CA e adiciona insecure-skip-tls-verify para desenvolvimento local
-    sed -i '/certificate-authority-data:/d' /root/.kube/config_mod
-    sed -i '/server: https:\/\/host.docker.internal/a\    insecure-skip-tls-verify: true' \
-        /root/.kube/config_mod
+        # Substitui localhost/127.0.0.1 por host.docker.internal
+        if 'localhost' in server or '127.0.0.1' in server:
+            server = server.replace('https://127.0.0.1', 'https://host.docker.internal')
+            server = server.replace('https://localhost', 'https://host.docker.internal')
+            cluster['cluster']['server'] = server
+        
+        # Remove certificate-authority-data
+        if 'certificate-authority-data' in cluster['cluster']:
+            del cluster['cluster']['certificate-authority-data']
+        
+        # Adiciona insecure-skip-tls-verify
+        cluster['cluster']['insecure-skip-tls-verify'] = True
+
+# Salva o kubeconfig modificado
+with open('/root/.kube/config_mod', 'w') as f:
+    yaml.dump(config, f, default_flow_style=False)
+"
     
     export KUBECONFIG=/root/.kube/config_mod
     echo "✅ Kubeconfig configurado"
@@ -104,7 +125,7 @@ else
 fi
 
 echo ""
-echo "🚀 NautiKube v2.0.3 pronto!"
+echo "🚀 NautiKube v2.0.4 pronto!"
 echo "   Uso: docker exec nautikube nautikube analyze --explain"
 echo ""
 
