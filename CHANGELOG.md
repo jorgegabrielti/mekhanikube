@@ -5,6 +5,16 @@ Todas as mudanças notáveis do NautiKube serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 e este projeto segue [Versionamento Semântico](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.5] - 2025-11-20
+
+### ✨ Melhorias
+- **Detecção Avançada de Provedor**: Identificação visual do tipo de cluster (AWS EKS, Azure AKS, Google GKE, Local).
+- **Conectividade Resiliente**: Nova lógica de conexão em Go com múltiplas estratégias de fallback.
+- **Troubleshooting Inteligente**: Dicas de resolução de problemas baseadas no tipo de erro.
+
+### 🔧 Ajustes
+- Mantida a estabilidade da v2.0.4 com melhorias visuais e de robustez.
+
 ## [2.0.4] - 2025-11-20
 
 ### 🐛 Corrigido

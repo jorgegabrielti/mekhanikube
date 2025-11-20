@@ -4,7 +4,7 @@ set -e
 echo "⚓ NautiKube - Seu navegador de diagnósticos Kubernetes"
 echo ""
 
-# Função para ajustar kubeconfig de forma agnóstica
+# Função para configurar o kubeconfig de forma agnóstica
 configure_kubeconfig() {
     if [ ! -f "/root/.kube/config" ]; then
         echo "⚠️  Kubeconfig não encontrado em /root/.kube/config"
@@ -14,118 +14,117 @@ configure_kubeconfig() {
     echo "🔧 Configurando acesso ao cluster..."
     cp /root/.kube/config /root/.kube/config_mod
     
-    # Usa Python para manipular o kubeconfig de forma segura (garante YAML válido)
+    # Usa Python para manipular o kubeconfig de forma segura e robusta
     python3 -c "
 import yaml
+import sys
 
-# Lê o kubeconfig original
-with open('/root/.kube/config', 'r') as f:
-    config = yaml.safe_load(f)
+try:
+    # Lê o kubeconfig original
+    with open('/root/.kube/config', 'r') as f:
+        config = yaml.safe_load(f)
 
-# Processa cada cluster
-for cluster in config.get('clusters', []):
-    if 'cluster' in cluster:
-        server = cluster['cluster'].get('server', '')
-        
-        # Substitui localhost/127.0.0.1 por host.docker.internal
-        if 'localhost' in server or '127.0.0.1' in server:
-            server = server.replace('https://127.0.0.1', 'https://host.docker.internal')
-            server = server.replace('https://localhost', 'https://host.docker.internal')
-            cluster['cluster']['server'] = server
-        
-        # Remove certificate-authority-data
-        if 'certificate-authority-data' in cluster['cluster']:
-            del cluster['cluster']['certificate-authority-data']
-        
-        # Adiciona insecure-skip-tls-verify
-        cluster['cluster']['insecure-skip-tls-verify'] = True
+    if not config or 'clusters' not in config:
+        print('⚠️  Kubeconfig inválido ou vazio')
+        sys.exit(0)
 
-# Salva o kubeconfig modificado
-with open('/root/.kube/config_mod', 'w') as f:
-    yaml.dump(config, f, default_flow_style=False)
+    # Processa cada cluster
+    for cluster in config.get('clusters', []):
+        if 'cluster' in cluster:
+            server = cluster['cluster'].get('server', '')
+            
+            # Substitui localhost/127.0.0.1 por host.docker.internal (para Docker Desktop/Kind)
+            if 'localhost' in server or '127.0.0.1' in server:
+                server = server.replace('https://127.0.0.1', 'https://host.docker.internal')
+                server = server.replace('https://localhost', 'https://host.docker.internal')
+                cluster['cluster']['server'] = server
+            
+            # Remove certificate-authority-data para evitar erros de CA local
+            if 'certificate-authority-data' in cluster['cluster']:
+                del cluster['cluster']['certificate-authority-data']
+            
+            # Adiciona insecure-skip-tls-verify para facilitar conexão local
+            cluster['cluster']['insecure-skip-tls-verify'] = True
+
+    # Salva o kubeconfig modificado
+    with open('/root/.kube/config_mod', 'w') as f:
+        yaml.dump(config, f, default_flow_style=False)
+    
+    print('✅ Kubeconfig processado com sucesso')
+
+except Exception as e:
+    print(f'❌ Erro ao processar kubeconfig: {e}')
+    sys.exit(1)
 "
     
     export KUBECONFIG=/root/.kube/config_mod
-    echo "✅ Kubeconfig configurado"
     return 0
 }
 
-# Configura o kubeconfig
+# Executa configuração
 configure_kubeconfig
 
-# Verificação inteligente de conectividade
+# --- DETECÇÃO DE PROVEDOR (Feature Avançada) ---
 echo ""
-echo "🔍 Testando conectividade com o cluster..."
+echo "🔍 Analisando ambiente..."
 
-# Primeira tentativa: conexão direta
+SERVER=$(grep -m 1 "server:" /root/.kube/config_mod | awk '{print $2}')
+PROVIDER="Desconhecido"
+ICON="❓"
+
+if echo "$SERVER" | grep -q "eks.amazonaws.com"; then
+    PROVIDER="AWS EKS"
+    ICON="☁️ "
+elif echo "$SERVER" | grep -q "azmk8s.io"; then
+    PROVIDER="Azure AKS"
+    ICON="☁️ "
+elif echo "$SERVER" | grep -q "googleapis.com"; then
+    PROVIDER="Google GKE"
+    ICON="☁️ "
+elif echo "$SERVER" | grep -q "host.docker.internal"; then
+    PROVIDER="Cluster Local (Docker/Kind)"
+    ICON="🏠"
+elif echo "$SERVER" | grep -q "192.168"; then
+    PROVIDER="Cluster Local (LAN)"
+    ICON="🏠"
+else
+    PROVIDER="Cluster Customizado"
+    ICON="🌐"
+fi
+
+echo "   $ICON Tipo: $PROVIDER"
+echo "   🔗 Endpoint: $SERVER"
+
+# --- TESTE DE CONECTIVIDADE ---
+echo ""
+echo "🔌 Testando conexão..."
+
 if kubectl cluster-info > /dev/null 2>&1; then
-    echo "✅ Cluster acessível!"
+    echo "✅ Conectado com sucesso!"
     
-    # Informações do cluster
+    # Coleta métricas básicas
     NODE_COUNT=$(kubectl get nodes --no-headers 2>/dev/null | wc -l || echo "0")
-    CURRENT_CONTEXT=$(kubectl config current-context 2>/dev/null || echo "N/A")
     K8S_VERSION=$(kubectl version --short 2>/dev/null | grep "Server Version" | awk '{print $3}' || echo "N/A")
     
     echo "   📊 Nodes: $NODE_COUNT"
-    echo "   🎯 Contexto: $CURRENT_CONTEXT"
-    echo "   🐳 Versão K8s: $K8S_VERSION"
+    echo "   🐳 Versão: $K8S_VERSION"
 else
-    echo "⚠️  Primeira tentativa falhou, tentando estratégias alternativas..."
-    
-    # Estratégia 2: Limpa duplicatas e garante insecure-skip-tls-verify
-    echo "   🔄 Limpando configuração e forçando insecure-skip-tls-verify..."
-    
-    # Remove todas as linhas duplicadas de server e insecure
-    awk '!seen[$0]++' /root/.kube/config_mod > /root/.kube/config_mod.tmp
-    mv /root/.kube/config_mod.tmp /root/.kube/config_mod
-    
-    # Remove CA completamente
-    sed -i '/certificate-authority-data:/d' /root/.kube/config_mod
-    
-    # Garante que insecure está presente se ainda não estiver
-    if ! grep -q "insecure-skip-tls-verify: true" /root/.kube/config_mod; then
-        sed -i '/server: https:\/\//a\    insecure-skip-tls-verify: true' /root/.kube/config_mod
-    fi
-    
-    if kubectl cluster-info > /dev/null 2>&1; then
-        echo "   ✅ Conectado após ajustes!"
-        
-        # Mostra informações do cluster
-        NODE_COUNT=$(kubectl get nodes --no-headers 2>/dev/null | wc -l || echo "0")
-        CURRENT_CONTEXT=$(kubectl config current-context 2>/dev/null || echo "N/A")
-        K8S_VERSION=$(kubectl version --short 2>/dev/null | grep "Server Version" | awk '{print $3}' || echo "N/A")
-        
-        echo "   📊 Nodes: $NODE_COUNT"
-        echo "   🎯 Contexto: $CURRENT_CONTEXT"
-        echo "   🐳 Versão K8s: $K8S_VERSION"
-    else
-        echo "   ❌ Ainda sem conexão"
-        echo "   💡 Dicas de troubleshooting:"
-        echo "      - Verifique se o cluster está rodando: kubectl cluster-info"
-        echo "      - Confirme o kubeconfig montado: docker exec nautikube cat /root/.kube/config"
-        echo "      - Para clusters EKS: verifique ~/.aws/credentials"
-        echo "      - Servidor detectado: $(grep -m 1 'server:' /root/.kube/config_mod | awk '{print $2}')"
-    fi
+    echo "❌ Falha na conexão"
+    echo "   ⚠️  O NautiKube não conseguiu falar com o cluster."
+    echo "   💡 Dica: Verifique se o cluster está rodando e se o kubeconfig está montado corretamente."
 fi
 
-# Verifica conectividade com Ollama
+# --- OLLAMA CHECK ---
 echo ""
-echo "🤖 Verificando Ollama..."
+echo "🤖 Verificando IA (Ollama)..."
 if curl -s http://host.docker.internal:11434/api/tags > /dev/null 2>&1; then
-    echo "✅ Ollama acessível em http://host.docker.internal:11434"
-    
-    # Lista modelos instalados
-    MODEL_COUNT=$(curl -s http://host.docker.internal:11434/api/tags 2>/dev/null | grep -o '"name"' | wc -l || echo "0")
-    if [ "$MODEL_COUNT" -gt 0 ]; then
-        echo "   $MODEL_COUNT modelo(s) instalado(s)"
-    fi
+    echo "✅ Ollama detectado"
 else
-    echo "⚠️  Ollama não acessível"
-    echo "   Use 'analyze' sem --explain para análise básica"
+    echo "⚠️  Ollama não encontrado (IA desativada)"
 fi
 
 echo ""
-echo "🚀 NautiKube v2.0.4 pronto!"
+echo "🚀 NautiKube v2.0.5 pronto!"
 echo "   Uso: docker exec nautikube nautikube analyze --explain"
 echo ""
 
