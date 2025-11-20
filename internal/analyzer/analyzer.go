@@ -49,6 +49,12 @@ func (a *Analyzer) Analyze(ctx context.Context, opts types.AnalyzeOptions) ([]ty
 		allProblems = append(allProblems, problems...)
 	}
 
+	// Define severidade e calcula score para cada problema
+	for i := range allProblems {
+		a.assignSeverity(&allProblems[i])
+		allProblems[i].CalculateScore()
+	}
+
 	// Se deve explicar com IA, processa cada problema
 	if opts.Explain && a.ollamaClient != nil {
 		for i := range allProblems {
@@ -63,6 +69,67 @@ func (a *Analyzer) Analyze(ctx context.Context, opts types.AnalyzeOptions) ([]ty
 	}
 
 	return allProblems, nil
+}
+
+// assignSeverity define a severidade baseada no tipo de problema
+func (a *Analyzer) assignSeverity(p *types.Problem) {
+	errorLower := toLower(p.Error)
+
+	// Critical: Problemas que afetam diretamente a disponibilidade
+	if containsAny(errorLower, []string{"crashloopbackoff", "oomkilled", "error", "failed"}) {
+		p.Severity = types.Critical
+		return
+	}
+
+	// High: Problemas que podem afetar funcionalidade
+	if containsAny(errorLower, []string{"imagepullbackoff", "pending", "no endpoints"}) {
+		p.Severity = types.High
+		return
+	}
+
+	// Medium: Avisos importantes
+	if containsAny(errorLower, []string{"warning", "restart"}) {
+		p.Severity = types.Medium
+		return
+	}
+
+	// Low: Outros problemas menores
+	p.Severity = types.Low
+}
+
+// containsAny verifica se a string contém alguma das substrings
+func containsAny(s string, substrs []string) bool {
+	for _, substr := range substrs {
+		if indexCaseInsensitive(s, substr) >= 0 {
+			return true
+		}
+	}
+	return false
+}
+
+// indexCaseInsensitive encontra substr em s ignorando case
+func indexCaseInsensitive(s, substr string) int {
+	s = toLower(s)
+	substr = toLower(substr)
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return i
+		}
+	}
+	return -1
+}
+
+// toLower converte string para lowercase
+func toLower(s string) string {
+	result := make([]byte, len(s))
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if c >= 'A' && c <= 'Z' {
+			c = c + ('a' - 'A')
+		}
+		result[i] = c
+	}
+	return string(result)
 }
 
 // contains verifica se uma string está em um slice

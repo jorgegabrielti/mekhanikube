@@ -45,9 +45,9 @@ func (p *Problem) CalculateScore() {
 	if p.Namespace == "kube-system" || p.Namespace == "default" {
 		score += 10 // Namespaces críticos
 	}
-	
-	if p.Kind == "Pod" && (containsCaseInsensitive(p.Error, "CrashLoopBackOff") || 
-		containsCaseInsensitive(p.Error, "ImagePullBackOff") || 
+
+	if p.Kind == "Pod" && (containsCaseInsensitive(p.Error, "CrashLoopBackOff") ||
+		containsCaseInsensitive(p.Error, "ImagePullBackOff") ||
 		containsCaseInsensitive(p.Error, "OOMKilled")) {
 		score += 10 // Problemas críticos de Pod
 	}
