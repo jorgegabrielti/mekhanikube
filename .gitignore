@@ -69,9 +69,13 @@ coverage.html
 *test*.yaml
 resultado-*.txt
 test-pods.yaml
+simple-test.yaml
 
 # Dependency directories (vendoring)
 vendor/
+
+# Diretório pessoal / desenvolvimento (notas, releases, anúncios)
+.personal/
 
 # Go workspace file
 go.work

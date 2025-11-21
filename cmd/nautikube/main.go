@@ -15,7 +15,7 @@ import (
 
 const (
 	// Version do NautiKube
-	Version = "2.0.5"
+	Version = "0.9.0-beta"
 )
 
 var (
@@ -129,17 +129,20 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 	fmt.Printf("\n🔍 Encontrados %d problema(s):\n\n", len(problems))
 
 	for i, problem := range problems {
-		fmt.Printf("%d: %s %s/%s\n", i, problem.Kind, problem.Namespace, problem.Name)
-		fmt.Printf("- Error: %s\n", problem.Error)
+		// Exibe com ícone baseado na severidade
+		severityIcon := getSeverityIcon(problem.Severity)
+		fmt.Printf("%d: %s [%s] Score: %d/100\n", i, severityIcon, problem.Severity, problem.Score)
+		fmt.Printf("   %s %s/%s\n", problem.Kind, problem.Namespace, problem.Name)
+		fmt.Printf("   Error: %s\n", problem.Error)
 
 		if explain && problem.Explanation != "" {
-			fmt.Printf("- IA: %s\n", problem.Explanation)
+			fmt.Printf("   IA: %s\n", problem.Explanation)
 		}
 
 		if len(problem.Details) > 0 {
-			fmt.Println("- Detalhes:")
+			fmt.Println("   Detalhes:")
 			for _, detail := range problem.Details {
-				fmt.Printf("  - %s\n", detail)
+				fmt.Printf("     - %s\n", detail)
 			}
 		}
 
@@ -147,6 +150,24 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+// getSeverityIcon retorna o ícone baseado na severidade
+func getSeverityIcon(severity types.Severity) string {
+	switch severity {
+	case types.Critical:
+		return "🔴"
+	case types.High:
+		return "🟠"
+	case types.Medium:
+		return "🟡"
+	case types.Low:
+		return "🔵"
+	case types.Info:
+		return "⚪"
+	default:
+		return "❓"
+	}
 }
 
 func main() {

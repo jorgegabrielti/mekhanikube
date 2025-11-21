@@ -5,6 +5,79 @@ Todas as mudanças notáveis do NautiKube serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 e este projeto segue [Versionamento Semântico](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1] - 2025-11-20
+
+### ✨ Adicionado
+
+- **Sistema de Severidade:** Enum `Severity` com 5 níveis (CRITICAL, HIGH, MEDIUM, LOW, INFO)
+- **Score Numérico:** Campo `Score` em `Problem` com range 0-100
+- **Cálculo Inteligente:** Método `CalculateScore()` com ajustes contextuais:
+  - Score base por severidade (Critical=90, High=70, Medium=50, Low=30, Info=10)
+  - +10 pontos para namespaces críticos (kube-system, default)
+  - +10 pontos para problemas críticos de Pod (CrashLoopBackOff, ImagePullBackOff, OOMKilled)
+  - +10 pontos para Services sem endpoints
+  - Cap automático em 100 pontos
+- **Testes Unitários:** 23 testes passando cobrindo enum, cálculo de score e ranges
+
+### 📝 Documentação
+
+- Godoc para enum `Severity` e método `CalculateScore()`
+- Exemplos de uso no código
+- Cobertura de testes para todos os cenários
+
+### 🎯 Sprint 1 - Issue #9
+
+Feature desenvolvida em 3 horas conforme planejamento (20-22 Nov).
+
+## [0.9.0] - 2025-11-20
+
+### 🔄 BREAKING CHANGE: Reset Brutal de Versionamento
+
+**O Nautikube está fazendo um reset honesto do versionamento de v2.0.5 → v0.9.0-beta.**
+
+#### Por que este reset?
+
+- **Honestidade primeiro:** Nunca tivemos uma v1.0.0 estável, pulamos direto para v2.0.0
+- **Números inflacionados:** v2.x sugeria maturidade que ainda não atingimos
+- **Recomeço correto:** v0.9.0 sinaliza que estamos a 90% de uma v1.0.0 real
+- **Respeito ao trabalho:** O "9" reconhece o progresso significativo já feito
+
+#### O que muda?
+
+- **Apenas os números:** Todo o código funciona exatamente igual
+- **Funcionalidades mantidas:** Todas as features de v2.0.5 estão presentes
+- **Status honesto:** Agora refletimos corretamente que estamos em beta funcional
+
+#### Roadmap para v1.0.0
+
+- **v0.9.x** (Nov-Dez 2025): Refinamentos e correções
+- **v0.10.0** (Dez 2025): Release Candidate, testes intensivos
+- **v1.0.0** (Jan 2026): Primeira versão estável com arquitetura CLI-First
+
+#### Versões Anteriores (Preservadas em histórico Git)
+
+As versões v2.0.0 a v2.0.5 permanecem no histórico do Git para referência.
+Todas as funcionalidades implementadas nessas versões estão presentes em v0.9.0.
+
+📖 **Documentação completa:** Veja `docs/VERSION-RESET-BRUTAL.md` para entender toda a decisão.
+
+### ✨ Funcionalidades (Mantidas de v2.0.5)
+
+- Análise completa de recursos Kubernetes
+- Integração com Ollama para explicações IA
+- Detecção agnóstica de 7 tipos de cluster (Kind, Minikube, Docker Desktop, k3d, EKS, AKS, GKE)
+- Estratégia de fallback multi-nível (4 níveis de conexão)
+- Arquitetura Docker-First funcional
+- Filtros por namespace e tipo de recurso
+- Modo detalhado com --explain
+- Documentação técnica completa
+
+---
+
+## Histórico Anterior (v2.0.0 - v2.0.5)
+
+_Nota: As versões abaixo foram resetadas para v0.9.0. O histórico é mantido para referência._
+
 ## [2.0.5] - 2025-11-20
 
 ### ✨ Melhorias

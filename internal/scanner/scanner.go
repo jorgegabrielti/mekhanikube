@@ -88,18 +88,35 @@ func (s *Scanner) ScanPods(ctx context.Context, namespace string) ([]types.Probl
 
 	var problems []types.Problem
 	for _, pod := range pods.Items {
-		// Verifica pods que não estão rodando
-		if pod.Status.Phase != "Running" && pod.Status.Phase != "Succeeded" {
-			problems = append(problems, types.Problem{
-				Kind:      "Pod",
-				Namespace: pod.Namespace,
-				Name:      pod.Name,
-				Error:     fmt.Sprintf("Pod is in %s state", pod.Status.Phase),
-			})
-		}
-
-		// Verifica restarts
+		// Verifica container statuses para problemas específicos
 		for _, containerStatus := range pod.Status.ContainerStatuses {
+			// CrashLoopBackOff, ImagePullBackOff, etc
+			if containerStatus.State.Waiting != nil {
+				reason := containerStatus.State.Waiting.Reason
+				if reason == "CrashLoopBackOff" || reason == "ImagePullBackOff" || reason == "ErrImagePull" {
+					problems = append(problems, types.Problem{
+						Kind:      "Pod",
+						Namespace: pod.Namespace,
+						Name:      pod.Name,
+						Error:     fmt.Sprintf("Container %s in %s", containerStatus.Name, reason),
+					})
+				}
+			}
+
+			// Container terminated (OOMKilled, Error, etc)
+			if containerStatus.State.Terminated != nil {
+				reason := containerStatus.State.Terminated.Reason
+				if reason == "OOMKilled" || reason == "Error" {
+					problems = append(problems, types.Problem{
+						Kind:      "Pod",
+						Namespace: pod.Namespace,
+						Name:      pod.Name,
+						Error:     fmt.Sprintf("Container %s was %s", containerStatus.Name, reason),
+					})
+				}
+			}
+
+			// High restart count
 			if containerStatus.RestartCount > 5 {
 				problems = append(problems, types.Problem{
 					Kind:      "Pod",
@@ -108,6 +125,16 @@ func (s *Scanner) ScanPods(ctx context.Context, namespace string) ([]types.Probl
 					Error:     fmt.Sprintf("Container %s has high restart count: %d", containerStatus.Name, containerStatus.RestartCount),
 				})
 			}
+		}
+
+		// Verifica pods que não estão rodando (fallback para outros estados)
+		if pod.Status.Phase != "Running" && pod.Status.Phase != "Succeeded" && len(pod.Status.ContainerStatuses) == 0 {
+			problems = append(problems, types.Problem{
+				Kind:      "Pod",
+				Namespace: pod.Namespace,
+				Name:      pod.Name,
+				Error:     fmt.Sprintf("Pod is in %s state", pod.Status.Phase),
+			})
 		}
 	}
 	return problems, nil
