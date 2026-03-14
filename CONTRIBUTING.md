@@ -1,152 +1,100 @@
-# Contribuindo para o NautiKube 🔧
+# Contributing to NautiKube
 
-Obrigado pelo seu interesse em contribuir com o NautiKube!
+Thank you for your interest in contributing! This guide will help you get started.
 
-## Como Contribuir
+## Prerequisites
 
-### Reportando Problemas
-- Use GitHub Issues para reportar bugs
-- Inclua seu SO, versão do Docker e versão do Kubernetes
-- Especifique se está usando NautiKube v2 ou K8sGPT legacy
-- Forneça passos para reproduzir o problema
-- Inclua logs relevantes:
-  - `docker logs NautiKube` (v2)
-  - `docker logs NautiKube-k8sgpt` (legacy)
-  - `docker logs NautiKube-ollama`
+- **Go 1.22+** — [Download](https://go.dev/dl/)
+- **kubectl** configured with a valid kubeconfig (for integration tests)
+- **golangci-lint** — [Install](https://golangci-lint.run/welcome/install/)
+- **govulncheck** — `go install golang.org/x/vuln/cmd/govulncheck@latest`
 
-### Sugerindo Funcionalidades
-- Abra uma GitHub Issue com o rótulo "enhancement"
-- Descreva o caso de uso e o comportamento esperado
-- Explique como isso beneficiaria os usuários
-
-### Pull Requests
-1. Faça fork do repositório
-2. Crie uma branch de funcionalidade (`git checkout -b feature/funcionalidade-incrivel`)
-3. Teste suas alterações localmente
-4. Faça commit com mensagens claras (`git commit -m 'Adiciona funcionalidade incrível'`)
-5. Envie para seu fork (`git push origin feature/funcionalidade-incrivel`)
-6. Abra um Pull Request
-
-### Configuração de Desenvolvimento
-
-#### Desenvolvimento Go (NautiKube v2)
+## Getting Started
 
 ```bash
-# Clone seu fork
-git clone https://github.com/SEU_USUARIO/NautiKube.git
-cd NautiKube
-
-# Instalar dependências Go
-go mod download
-
-# Compilar localmente
-go build -o NautiKube ./cmd/NautiKube
-
-# Testar localmente (requer cluster K8s ativo)
-./NautiKube analyze --explain --language Portuguese
-
-# Ou executar diretamente
-go run ./cmd/NautiKube/main.go analyze --explain --language Portuguese
+git clone https://github.com/jorgegabrielti/nautikube.git
+cd nautikube
+make check     # Run all quality gates
 ```
 
-#### Desenvolvimento Docker
+## Development Workflow
+
+1. **Fork** the repository and create a feature branch from `main`.
+2. Write your code following [Effective Go](https://go.dev/doc/effective_go) idioms.
+3. Write **table-driven tests** using the stdlib `testing` package (no testify).
+4. Run `make check` to verify all quality gates pass.
+5. Commit using [Conventional Commits](https://www.conventionalcommits.org/) format.
+6. Open a Pull Request against `main`.
+
+### Commit Message Format
+
+```
+<type>(<scope>): <description>
+
+feat(scanner): add StatefulSet scanner
+fix(output): handle empty problem list in JSON formatter
+docs(readme): update installation instructions
+refactor(k8s): simplify client option handling
+test(scanner): add edge cases for node pressure conditions
+```
+
+## Quality Gates
+
+All PRs must pass the following before merge:
 
 ```bash
-# Construir imagem NautiKube
-docker build -f configs/Dockerfile.NautiKube -t NautiKube:dev .
-
-# Iniciar stack completa
-docker-compose up -d
-
-# Baixar modelo
-docker exec NautiKube-ollama ollama pull llama3.1:8b
-
-# Testar NautiKube v2
-docker exec NautiKube NautiKube analyze --explain --language Portuguese
-
-# Testar K8sGPT legacy (se usar profile)
-docker-compose --profile k8sgpt up -d
-docker exec NautiKube-k8sgpt k8sgpt analyze --explain --language Portuguese
+make fmt          # Code formatting (gofmt)
+make vet          # Bug detection (go vet)
+make lint         # 50+ linters (golangci-lint)
+make vuln         # CVE scanning (govulncheck)
+make test         # Unit tests with race detector
+make build        # Binary build with ldflags
 ```
 
-## Estrutura do Código
+Or run them all at once:
 
-```
-NautiKube/
-├── cmd/
-│   └── NautiKube/
-│       └── main.go              # Entry point, CLI
-├── internal/
-│   ├── scanner/                 # Scanners de recursos K8s
-│   ├── analyzer/                # Lógica de análise
-│   └── ollama/                  # Cliente Ollama
-├── pkg/
-│   └── types/                   # Tipos compartilhados
-├── configs/
-│   ├── Dockerfile.NautiKube
-│   └── entrypoint-NautiKube.sh
-└── docs/                        # Documentação
-```
-
-## Estilo de Código
-
-### Go
-- Siga [Effective Go](https://golang.org/doc/effective_go)
-- Use `gofmt` para formatação
-- Execute `go vet` antes de commitar
-- Mantenha funções pequenas e focadas
-- Documente funções públicas
-
-### Shell Scripts
-- Siga recomendações do ShellCheck
-- Use `set -e` para parar em erros
-- Adicione comentários explicativos
-
-### Docker
-- Use builds multi-estágio
-- Minimize camadas de imagem
-- Use `.dockerignore` apropriadamente
-- Prefira imagens Alpine para tamanho reduzido
-
-### Documentação
-- Mantenha README.md atualizado
-- Documente novas features em docs/
-- Atualize CHANGELOG.md
-- Use português para documentação brasileira
-
-## Testes
-
-Antes de enviar um PR:
-
-### Testes Go
 ```bash
-# Compilar código
-go build ./...
-
-# Verificar imports
-go mod tidy
-go mod verify
-
-# Lint (se tiver golangci-lint instalado)
-golangci-lint run
+make check
 ```
 
-### Testes Docker
-1. Construir imagens sem erros
-2. Testar com cluster Kubernetes local (Docker Desktop, Minikube, Kind)
-3. Verificar todos os comandos do README.md
-4. Testar cenários de erro (cluster offline, Ollama offline)
-5. Verificar logs sem erros (`docker logs NautiKube`)
+## Project Structure
 
-### Testes Funcionais
-1. Criar pods com problemas intencionais
-2. Executar análise e verificar detecção
-3. Testar filtros (`--filter Pod`, `--filter ConfigMap`)
-4. Testar namespaces (`-n kube-system`)
-5. Testar explicações IA (`--explain`)
-6. Testar ambos idiomas (`--language Portuguese`, `--language English`)
+```
+cmd/nautikube/               → Entry point
+internal/
+├── cli/                     → Cobra CLI commands
+├── k8s/                     → Kubernetes client factory
+├── scanner/                 → Scanner interface + implementations
+├── diagnosis/               → Problem types, scoring, knowledge base
+└── output/                  → Output formatters (table, JSON, YAML)
+.agents/
+├── CONSTITUTION.md          → Project laws and constraints
+├── specs/                   → Feature specifications
+├── skills/                  → Development skill guides
+└── workflows/               → Development workflows
+```
 
-## Dúvidas?
+## Adding a New Scanner
 
-Abra uma GitHub Discussion ou Issue!
+Refer to `.agents/skills/scanner-development/SKILL.md` for the complete guide. In summary:
 
+1. **Write a spec** in `.agents/specs/`
+2. **Write tests first** (SDD: spec → test → implement)
+3. **Implement** the `scanner.Scanner` interface
+4. **Register** the scanner in `internal/scanner/registry.go`
+5. **Add knowledge entries** in `internal/diagnosis/knowledge/`
+
+## Code Style
+
+- Follow the [NautiKube Constitution](.agents/CONSTITUTION.md)
+- Accept interfaces, return structs
+- `context.Context` as first parameter on all I/O functions
+- Sentinel errors with `errors.New()` and `errors.Is()`
+- No global mutable state
+- All comments and error messages in English
+
+## Reporting Issues
+
+- Use GitHub Issues with clear reproduction steps
+- Include `nautikube version` output
+- Include relevant `kubectl` output if applicable

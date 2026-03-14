@@ -1,0 +1,7 @@
+key: "node-unschedulable"
+title: "Node Cordoned (Unschedulable)"
+explanation: |
+  This node has been cordoned and will not accept new pods. This may be
+  intentional for maintenance. Uncordon when ready.
+commands:
+  - "kubectl uncordon {name}"

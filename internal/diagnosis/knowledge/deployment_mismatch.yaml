@@ -1,0 +1,8 @@
+key: "deployment-mismatch"
+title: "Deployment Replicas Mismatch"
+explanation: |
+  The number of ready replicas does not match the desired count. The
+  deployment may be scaling or some pods may be failing to become ready.
+commands:
+  - "kubectl describe deployment {name} -n {namespace}"
+  - "kubectl get replicaset -l app={name} -n {namespace}"

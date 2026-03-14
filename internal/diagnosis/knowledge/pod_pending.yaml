@@ -1,0 +1,10 @@
+key: "pod-pending"
+title: "Pod Stuck in Pending State"
+explanation: |
+  The pod cannot be scheduled to a node. Common causes: insufficient CPU or
+  memory on available nodes, unresolvable node selectors or affinities,
+  or a PersistentVolumeClaim that cannot be bound.
+commands:
+  - "kubectl describe pod {pod} -n {namespace}"
+  - "kubectl get events -n {namespace} --field-selector involvedObject.name={pod}"
+  - "kubectl get nodes -o wide"

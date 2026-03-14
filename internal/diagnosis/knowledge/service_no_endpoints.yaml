@@ -1,0 +1,10 @@
+key: "service-no-endpoints"
+title: "Service Has No Endpoints"
+explanation: |
+  This service has no endpoints, meaning no pods match its selector. Traffic
+  sent to this service will fail. Check the selector labels and ensure
+  matching pods are running and ready.
+commands:
+  - "kubectl describe service {name} -n {namespace}"
+  - "kubectl get endpoints {name} -n {namespace}"
+  - "kubectl get pods --show-labels -n {namespace}"

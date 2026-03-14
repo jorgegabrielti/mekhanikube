@@ -1,0 +1,9 @@
+key: "frequent-events"
+title: "Frequent Warning Events"
+explanation: |
+  This resource has generated many warning events in a short period. This
+  indicates a recurring issue that Kubernetes is repeatedly attempting
+  to handle.
+commands:
+  - "kubectl describe {kind} {name} -n {namespace}"
+  - "kubectl get events -n {namespace} --field-selector involvedObject.name={name}"

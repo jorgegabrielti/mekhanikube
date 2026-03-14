@@ -1,0 +1,10 @@
+key: "oomkilled"
+title: "Container OOMKilled"
+explanation: |
+  The container exceeded its memory limit and was killed by the kernel OOM
+  killer. The application needs more memory than allocated, or it has a
+  memory leak.
+commands:
+  - "kubectl describe pod {pod} -n {namespace}"
+  - "kubectl top pod {pod} -n {namespace}"
+  - "kubectl get pod {pod} -n {namespace} -o jsonpath='{.spec.containers[*].resources}'"

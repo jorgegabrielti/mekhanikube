@@ -1,0 +1,9 @@
+key: "node-memory-pressure"
+title: "Node Under Memory Pressure"
+explanation: |
+  The node is running low on available memory. Kubernetes may start evicting
+  pods to reclaim memory. Identify high-memory pods and adjust resource limits.
+commands:
+  - "kubectl top node {name}"
+  - "kubectl describe node {name}"
+  - "kubectl top pods -A --sort-by=memory"

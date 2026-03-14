@@ -2,169 +2,80 @@ package scanner
 
 import (
 	"context"
-	"fmt"
-	"os"
-	"path/filepath"
+	"sort"
 
-	"github.com/jorgegabrielti/nautikube/pkg/types"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/jorgegabrielti/nautikube/internal/diagnosis"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/util/homedir"
 )
 
-// Scanner analisa o cluster Kubernetes
-type Scanner struct {
-	Client *kubernetes.Clientset
+// Scanner defines the interface for resource scanners.
+type Scanner interface {
+	// Name returns the human-readable name of the resource this scanner inspects.
+	Name() string
+
+	// Scan inspects resources in the given namespace and returns detected problems.
+	// An empty namespace scans all namespaces.
+	Scan(ctx context.Context, client kubernetes.Interface, namespace string) ([]diagnosis.Problem, error)
 }
 
-// New cria uma nova instância do Scanner com detecção agnóstica
-func New() (*Scanner, error) {
-	config, err := getKubeConfig()
-	if err != nil {
-		return nil, fmt.Errorf("erro ao obter kubeconfig: %v", err)
-	}
-
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, fmt.Errorf("erro ao criar cliente Kubernetes: %v", err)
-	}
-
-	return &Scanner{
-		Client: clientset,
-	}, nil
+// Registry holds a collection of scanners and runs them in sequence.
+type Registry struct {
+	scanners []Scanner
 }
 
-// getKubeConfig tenta obter a configuração do cluster de várias formas (Agnostic)
-func getKubeConfig() (*rest.Config, error) {
-	// 1. Tenta configuração in-cluster (se estiver rodando dentro de um Pod)
-	config, err := rest.InClusterConfig()
-	if err == nil {
-		fmt.Println("🔌 Usando configuração In-Cluster")
-		return config, nil
-	}
-
-	// 2. Tenta usar o arquivo modificado pelo entrypoint (config_mod)
-	modPath := "/root/.kube/config_mod"
-	if _, err := os.Stat(modPath); err == nil {
-		config, err := clientcmd.BuildConfigFromFlags("", modPath)
-		if err == nil {
-			fmt.Println("🔌 Usando configuração modificada (config_mod)")
-			return config, nil
-		}
-	}
-
-	// 3. Tenta usar o arquivo padrão ~/.kube/config
-	if home := homedir.HomeDir(); home != "" {
-		kubeconfig := filepath.Join(home, ".kube", "config")
-		if _, err := os.Stat(kubeconfig); err == nil {
-			config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
-			if err == nil {
-				fmt.Println("🔌 Usando configuração padrão (~/.kube/config)")
-				return config, nil
-			}
-		}
-	}
-
-	// 4. Tenta ler da variável de ambiente KUBECONFIG
-	if envConfig := os.Getenv("KUBECONFIG"); envConfig != "" {
-		config, err := clientcmd.BuildConfigFromFlags("", envConfig)
-		if err == nil {
-			fmt.Println("🔌 Usando configuração da variável KUBECONFIG")
-			return config, nil
-		}
-	}
-
-	return nil, fmt.Errorf("nenhuma configuração Kubernetes encontrada (tentado: in-cluster, config_mod, home, env)")
+// NewRegistry creates a Registry with the given scanners.
+func NewRegistry(scanners ...Scanner) *Registry {
+	return &Registry{scanners: scanners}
 }
 
-// ScanPods analisa pods em busca de problemas
-func (s *Scanner) ScanPods(ctx context.Context, namespace string) ([]types.Problem, error) {
-	pods, err := s.Client.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{})
-	if err != nil {
-		return nil, err
-	}
+// ScanAll runs all registered scanners and returns all detected problems sorted by score.
+func (r *Registry) ScanAll(ctx context.Context, client kubernetes.Interface, namespace string, kb *diagnosis.KnowledgeBase, resourceFilter []string) ([]diagnosis.Problem, error) {
+	var allProblems []diagnosis.Problem
 
-	var problems []types.Problem
-	for _, pod := range pods.Items {
-		// Verifica container statuses para problemas específicos
-		for _, containerStatus := range pod.Status.ContainerStatuses {
-			// CrashLoopBackOff, ImagePullBackOff, etc
-			if containerStatus.State.Waiting != nil {
-				reason := containerStatus.State.Waiting.Reason
-				if reason == "CrashLoopBackOff" || reason == "ImagePullBackOff" || reason == "ErrImagePull" {
-					problems = append(problems, types.Problem{
-						Kind:      "Pod",
-						Namespace: pod.Namespace,
-						Name:      pod.Name,
-						Error:     fmt.Sprintf("Container %s in %s", containerStatus.Name, reason),
-					})
-				}
-			}
+	for _, s := range r.scanners {
+		if len(resourceFilter) > 0 && !contains(resourceFilter, s.Name()) {
+			continue
+		}
 
-			// Container terminated (OOMKilled, Error, etc)
-			if containerStatus.State.Terminated != nil {
-				reason := containerStatus.State.Terminated.Reason
-				if reason == "OOMKilled" || reason == "Error" {
-					problems = append(problems, types.Problem{
-						Kind:      "Pod",
-						Namespace: pod.Namespace,
-						Name:      pod.Name,
-						Error:     fmt.Sprintf("Container %s was %s", containerStatus.Name, reason),
-					})
-				}
-			}
+		problems, err := s.Scan(ctx, client, namespace)
+		if err != nil {
+			// Log and continue — don't fail the whole scan for one resource type
+			continue
+		}
 
-			// High restart count
-			if containerStatus.RestartCount > 5 {
-				problems = append(problems, types.Problem{
-					Kind:      "Pod",
-					Namespace: pod.Namespace,
-					Name:      pod.Name,
-					Error:     fmt.Sprintf("Container %s has high restart count: %d", containerStatus.Name, containerStatus.RestartCount),
-				})
+		// Calculate score and enrich with knowledge base
+		for i := range problems {
+			problems[i].CalculateScore()
+			if kb != nil {
+				kb.Enrich(&problems[i])
 			}
 		}
 
-		// Verifica pods que não estão rodando (fallback para outros estados)
-		if pod.Status.Phase != "Running" && pod.Status.Phase != "Succeeded" && len(pod.Status.ContainerStatuses) == 0 {
-			problems = append(problems, types.Problem{
-				Kind:      "Pod",
-				Namespace: pod.Namespace,
-				Name:      pod.Name,
-				Error:     fmt.Sprintf("Pod is in %s state", pod.Status.Phase),
-			})
-		}
+		allProblems = append(allProblems, problems...)
 	}
-	return problems, nil
+
+	// Sort by score descending (highest priority first)
+	sort.Slice(allProblems, func(i, j int) bool {
+		return allProblems[i].Score > allProblems[j].Score
+	})
+
+	return allProblems, nil
 }
 
-// ScanConfigMaps analisa ConfigMaps não utilizados (simplificado)
-func (s *Scanner) ScanConfigMaps(ctx context.Context, namespace string) ([]types.Problem, error) {
-	// Implementação simplificada: lista ConfigMaps e verifica se existem
-	// Em uma implementação real, verificaríamos referências em Pods
-	cms, err := s.Client.CoreV1().ConfigMaps(namespace).List(ctx, metav1.ListOptions{})
-	if err != nil {
-		return nil, err
+// Names returns the names of all registered scanners.
+func (r *Registry) Names() []string {
+	names := make([]string, len(r.scanners))
+	for i, s := range r.scanners {
+		names[i] = s.Name()
 	}
+	return names
+}
 
-	var problems []types.Problem
-
-	// Exemplo: Detecta ConfigMaps "órfãos" (lógica simplificada para demonstração)
-	// Na prática, precisaríamos listar todos os pods e checar volumes/envFrom
-
-	// Vamos apenas reportar se encontrarmos ConfigMaps suspeitos de não uso (ex: sufixo .bak)
-	for _, cm := range cms.Items {
-		if len(cm.Data) == 0 {
-			problems = append(problems, types.Problem{
-				Kind:      "ConfigMap",
-				Namespace: cm.Namespace,
-				Name:      cm.Name,
-				Error:     "ConfigMap is empty (no data)",
-			})
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
 		}
 	}
-
-	return problems, nil
+	return false
 }

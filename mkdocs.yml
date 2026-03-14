@@ -1,0 +1,65 @@
+site_name: NautiKube
+site_description: Kubernetes Cluster Diagnostic CLI — Detect, Prioritize, Remediate
+site_author: Jorge Gabriel
+repo_url: https://github.com/jorgegabrielti/nautikube
+repo_name: jorgegabrielti/nautikube
+
+theme:
+  name: material
+  custom_dir: docs/overrides
+  palette:
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: cyan
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: cyan
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.instant
+    - navigation.tracking
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+
+nav:
+  - Introduction: index.md
+  - Tutorials:
+      - Getting Started: tutorials/getting-started.md
+  - How-To Guides:
+      - Filter Scan Results: how-to/filter-results.md
+      - Integrate with CI/CD: how-to/ci-cd-integration.md
+      - Add a New Scanner: how-to/add-new-scanner.md
+  - Reference:
+      - CLI Commands: reference/cli-commands.md
+      - Scoring System Math: reference/scoring-system.md
+      - Architecture Options: reference/architecture.md
+  - Concepts:
+      - Spec-Driven Development: concepts/spec-driven-dev.md
+      - Project Lifecycle: concepts/lifecycle.md

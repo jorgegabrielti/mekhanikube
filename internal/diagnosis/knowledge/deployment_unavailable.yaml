@@ -1,0 +1,9 @@
+key: "deployment-unavailable"
+title: "Deployment Has Unavailable Replicas"
+explanation: |
+  One or more replicas of this deployment are not available. Pods may be
+  failing to start, crashing, or stuck in a pending state.
+commands:
+  - "kubectl describe deployment {name} -n {namespace}"
+  - "kubectl get pods -l app={name} -n {namespace}"
+  - "kubectl rollout status deployment/{name} -n {namespace}"

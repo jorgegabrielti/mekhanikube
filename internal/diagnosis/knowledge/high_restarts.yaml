@@ -1,0 +1,8 @@
+key: "high-restarts"
+title: "High Container Restart Count"
+explanation: |
+  The container has restarted many times. This indicates recurring failures
+  such as application crashes, health check failures, or resource exhaustion.
+commands:
+  - "kubectl logs {pod} -n {namespace} --previous"
+  - "kubectl describe pod {pod} -n {namespace}"

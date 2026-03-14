@@ -1,0 +1,7 @@
+key: "node-disk-pressure"
+title: "Node Under Disk Pressure"
+explanation: |
+  The node is running low on disk space. Kubernetes may evict pods and
+  refuse to schedule new ones. Clean up unused container images and volumes.
+commands:
+  - "kubectl describe node {name}"

@@ -1,0 +1,9 @@
+key: "node-not-ready"
+title: "Node Not Ready"
+explanation: |
+  This node is not in Ready state. It cannot schedule new pods and existing
+  pods may be evicted. Common causes: kubelet not running, network issues,
+  or resource exhaustion.
+commands:
+  - "kubectl describe node {name}"
+  - "kubectl get events --field-selector involvedObject.name={name}"

@@ -1,0 +1,9 @@
+key: "container-not-ready"
+title: "Container Not Ready"
+explanation: |
+  The container is running but has not passed its readiness probe. Traffic
+  will not be routed to this pod. Check if the readiness probe is correctly
+  configured and the application is healthy.
+commands:
+  - "kubectl describe pod {pod} -n {namespace}"
+  - "kubectl logs {pod} -n {namespace}"

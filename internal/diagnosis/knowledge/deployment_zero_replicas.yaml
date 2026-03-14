@@ -1,0 +1,7 @@
+key: "deployment-zero-replicas"
+title: "Deployment Scaled to Zero"
+explanation: |
+  This deployment is scaled to zero replicas. No pods are running for this
+  workload. This may be intentional (e.g., maintenance) or accidental.
+commands:
+  - "kubectl scale deployment/{name} -n {namespace} --replicas=1"

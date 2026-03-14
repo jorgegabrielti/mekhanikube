@@ -1,0 +1,7 @@
+key: "node-pid-pressure"
+title: "Node Under PID Pressure"
+explanation: |
+  The node is running out of process IDs. Too many processes are running.
+  Identify pods creating excessive processes and set resource limits.
+commands:
+  - "kubectl describe node {name}"

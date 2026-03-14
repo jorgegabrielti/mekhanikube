@@ -1,0 +1,10 @@
+key: "deployment-stuck"
+title: "Deployment Rollout Stuck"
+explanation: |
+  The deployment rollout is not progressing. This often means new pods
+  cannot start (image pull errors, crash loops, or resource constraints).
+  Consider rolling back.
+commands:
+  - "kubectl rollout status deployment/{name} -n {namespace}"
+  - "kubectl rollout undo deployment/{name} -n {namespace}"
+  - "kubectl get events -n {namespace} --field-selector involvedObject.name={name}"
