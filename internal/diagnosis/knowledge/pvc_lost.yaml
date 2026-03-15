@@ -1,0 +1,8 @@
+key: pvc_lost
+title: PVC is in Lost state
+explanation: |
+  The underlying PersistentVolume bound to this claim has been deleted or is otherwise missing from the cluster. This is a critical state as it often implies data loss or unrecoverable disk attachment issues.
+commands:
+  - "kubectl describe pvc {name} -n {namespace}"
+  - "kubectl get pv # Check if the corresponding PV exists"
+  - "kubectl get events -n {namespace} --field-selector involvedObject.name={name}"

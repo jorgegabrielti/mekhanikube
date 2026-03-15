@@ -1,10 +1,14 @@
 key: "service-no-endpoints"
 title: "Service Has No Endpoints"
 explanation: |
-  This service has no endpoints, meaning no pods match its selector. Traffic
-  sent to this service will fail. Check the selector labels and ensure
-  matching pods are running and ready.
+  This Service has no Endpoints mapped to it, meaning no Pods match its `spec.selector` labels. 
+  Traffic sent to this Service IP will fail and time out.
+  Verify if the pods have the exact labels specified in the service selector, and ensure those pods are actually in a "Ready" state (Services only route to Ready pods).
 commands:
-  - "kubectl describe service {name} -n {namespace}"
+  - "kubectl get service {name} -n {namespace} -o jsonpath='{.spec.selector}'"
+  - "kubectl get pods --show-labels -n {namespace} | grep -E '$(kubectl get service {name} -n {namespace} -o jsonpath='{.spec.selector}' | jq -r 'to_entries | map(\"\\(.value)\") | join(\"|\")')'"
   - "kubectl get endpoints {name} -n {namespace}"
-  - "kubectl get pods --show-labels -n {namespace}"
+windows_commands:
+  - "kubectl get service {name} -n {namespace} -o jsonpath='{.spec.selector}'"
+  - "kubectl get pods --show-labels -n {namespace} | Select-String -Pattern $((kubectl get service {name} -n {namespace} -o json | ConvertFrom-Json).spec.selector | Get-Member -MemberType NoteProperty | ForEach-Object { (kubectl get service {name} -n {namespace} -o json | ConvertFrom-Json).spec.selector.$($_.Name) } | join '|')"
+  - "kubectl get endpoints {name} -n {namespace}"

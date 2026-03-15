@@ -1,8 +1,9 @@
 key: "service-lb-pending"
 title: "LoadBalancer Pending External IP"
 explanation: |
-  This LoadBalancer service has not received an external IP. On cloud
-  providers, this may indicate a quota limit or provisioning issue. On
-  local clusters, LoadBalancer services require MetalLB or similar.
+  This Service of type LoadBalancer has not received an External IP from the provider infrastructure.
+  On cloud providers (AWS, GCP, Azure), this usually indicates a quota limit, lack of permissions by the Cloud Controller Manager, or an invalid annotation. 
+  On local bare-metal clusters (like Minikube or Kind), LoadBalancer services stay "Pending" forever unless a tool like MetalLB is installed and configured.
 commands:
-  - "kubectl describe service {name} -n {namespace}"
+  - "kubectl get events -n {namespace} --field-selector involvedObject.name={name} --sort-by='.lastTimestamp'"
+  - "kubectl describe service {name} -n {namespace} | grep -i 'Annotations'"

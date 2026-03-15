@@ -1,0 +1,8 @@
+key: quota_near_limit
+title: ResourceQuota near limit
+explanation: |
+  The ResourceQuota for a specific resource is nearing its configured limit (>90%). While resources can still be created, the namespace is close to exhaustion. 
+  Consider investigating current usage and increasing the quota if this is expected growth, or cleaning up unused resources.
+commands:
+  - "kubectl describe quota {name} -n {namespace}"
+  - "kubectl get pods -n {namespace}"

@@ -1,10 +1,13 @@
 key: "crashloopbackoff"
 title: "Container in CrashLoopBackOff"
 explanation: |
-  The container is crashing repeatedly and Kubernetes keeps restarting it
-  with exponential backoff. Common causes: application error, misconfigured
-  command/entrypoint, or missing configuration (env vars, config files).
+  The container is crashing repeatedly immediately after starting. Kubernetes is restarting it with exponential backoff.
+  The process might be panic/crashing, the entrypoint command might be failing, or a required configuration (env vars, secrets, config maps) is missing or invalid. Check the previous instance logs to see the stack trace or error message before the exit.
 commands:
   - "kubectl logs {pod} -n {namespace} --previous"
-  - "kubectl describe pod {pod} -n {namespace}"
-  - "kubectl get events -n {namespace} --field-selector involvedObject.name={pod}"
+  - "kubectl describe pod {pod} -n {namespace} | grep -A5 -B2 'State:.*Waiting.*CrashLoopBackOff'"
+  - "kubectl get events -n {namespace} --field-selector involvedObject.name={pod} --sort-by='.lastTimestamp'"
+windows_commands:
+  - "kubectl logs {pod} -n {namespace} --previous"
+  - "kubectl describe pod {pod} -n {namespace} | Select-String -Pattern 'CrashLoopBackOff' -Context 2,5"
+  - "kubectl get events -n {namespace} --field-selector involvedObject.name={pod} --sort-by='.lastTimestamp'"

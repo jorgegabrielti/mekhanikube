@@ -1,0 +1,7 @@
+key: job_failed
+title: Job has failed executions
+explanation: |
+  The Job has one or more failed pods. This indicates that the task performed by the Job encountered an error. If the 'backoffLimit' is reached, the Job will stop retrying and remain in a failed state.
+commands:
+  - "kubectl describe job {name} -n {namespace}"
+  - "kubectl logs -l job-name={name} -n {namespace} --tail=100"

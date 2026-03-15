@@ -1,10 +1,17 @@
 key: "pod-pending"
 title: "Pod Stuck in Pending State"
 explanation: |
-  The pod cannot be scheduled to a node. Common causes: insufficient CPU or
-  memory on available nodes, unresolvable node selectors or affinities,
-  or a PersistentVolumeClaim that cannot be bound.
+  The Pod cannot be scheduled to any Node. This is a cluster capacity or constraint issue.
+  Common causes:
+  1. No node has enough requested CPU or Memory.
+  2. The pod has NodeSelectors, Taints/Tolerations, or Affinities that no node matches.
+  3. A PersistentVolumeClaim (PVC) requested by the pod cannot be bound or provisioned.
+  Check the scheduler's event to see the exact reason why the pod was rejected.
 commands:
-  - "kubectl describe pod {pod} -n {namespace}"
-  - "kubectl get events -n {namespace} --field-selector involvedObject.name={pod}"
-  - "kubectl get nodes -o wide"
+  - "kubectl get events -n {namespace} --field-selector involvedObject.name={pod} --sort-by='.lastTimestamp' | grep -i 'FailedScheduling'"
+  - "kubectl get pvc -n {namespace}"
+  - "kubectl describe pod {pod} -n {namespace} | grep -A 5 -B 5 'Events:'"
+windows_commands:
+  - "kubectl get events -n {namespace} --field-selector involvedObject.name={pod} --sort-by='.lastTimestamp' | Select-String -Pattern 'FailedScheduling'"
+  - "kubectl get pvc -n {namespace}"
+  - "kubectl describe pod {pod} -n {namespace} | Select-String -Pattern 'Events:' -Context 5,5"

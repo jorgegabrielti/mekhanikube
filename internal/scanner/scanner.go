@@ -2,6 +2,7 @@ package scanner
 
 import (
 	"context"
+	"fmt"
 	"sort"
 
 	"github.com/jorgegabrielti/nautikube/internal/diagnosis"
@@ -28,10 +29,27 @@ func NewRegistry(scanners ...Scanner) *Registry {
 	return &Registry{scanners: scanners}
 }
 
-// ScanAll runs all registered scanners and returns all detected problems sorted by score.
 func (r *Registry) ScanAll(ctx context.Context, client kubernetes.Interface, namespace string, kb *diagnosis.KnowledgeBase, resourceFilter []string) ([]diagnosis.Problem, error) {
-	var allProblems []diagnosis.Problem
+	// Validate resource filter
+	if len(resourceFilter) > 0 {
+		found := false
+		for _, rf := range resourceFilter {
+			for _, s := range r.scanners {
+				if s.Name() == rf {
+					found = true
+					break
+				}
+			}
+			if found {
+				break
+			}
+		}
+		if !found {
+			return nil, fmt.Errorf("no scanners match resource filter: %v", resourceFilter)
+		}
+	}
 
+	var allProblems []diagnosis.Problem
 	for _, s := range r.scanners {
 		if len(resourceFilter) > 0 && !contains(resourceFilter, s.Name()) {
 			continue

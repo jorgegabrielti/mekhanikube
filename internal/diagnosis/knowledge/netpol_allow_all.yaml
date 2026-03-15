@@ -1,0 +1,7 @@
+key: netpol_allow_all
+title: Overly permissive NetworkPolicy
+explanation: |
+  This NetworkPolicy allows all ingress traffic (Allow All). While sometimes necessary, it is a poor security practice that can expose sensitive workloads to unnecessary traffic.
+commands:
+  - "kubectl describe netpol {name} -n {namespace}"
+  - "# Restrict the policy to specific pods or namespaces"

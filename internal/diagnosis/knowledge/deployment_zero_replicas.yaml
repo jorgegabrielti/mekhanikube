@@ -1,7 +1,8 @@
 key: "deployment-zero-replicas"
 title: "Deployment Scaled to Zero"
 explanation: |
-  This deployment is scaled to zero replicas. No pods are running for this
-  workload. This may be intentional (e.g., maintenance) or accidental.
+  This deployment is intentionally scaled to zero replicas (`spec.replicas = 0`), or an autoscaler (like HPA or KEDA) has scaled it down due to lack of metrics/traffic.
+  No pods are running for this workload. If this is unexpected, verify if an autoscaler is misbehaving or if human error occurred.
 commands:
+  - "kubectl get hpa -n {namespace}"
   - "kubectl scale deployment/{name} -n {namespace} --replicas=1"

@@ -73,7 +73,7 @@ func TestPodScanner_Scan(t *testing.T) {
 		{
 			name: "high restart count over 50 is critical",
 			pods: []corev1.Pod{
-				podWithRestarts("restart-pod", "default", "app", 51),
+				podWithRestarts(51),
 			},
 			wantCount:    1,
 			wantSeverity: diagnosis.Critical,
@@ -83,7 +83,7 @@ func TestPodScanner_Scan(t *testing.T) {
 		{
 			name: "high restart count over 20 is high",
 			pods: []corev1.Pod{
-				podWithRestarts("restart-pod", "default", "app", 21),
+				podWithRestarts(21),
 			},
 			wantCount:    1,
 			wantSeverity: diagnosis.High,
@@ -92,7 +92,7 @@ func TestPodScanner_Scan(t *testing.T) {
 		{
 			name: "high restart count over 5 is medium",
 			pods: []corev1.Pod{
-				podWithRestarts("restart-pod", "default", "app", 6),
+				podWithRestarts(6),
 			},
 			wantCount:    1,
 			wantSeverity: diagnosis.Medium,
@@ -101,7 +101,7 @@ func TestPodScanner_Scan(t *testing.T) {
 		{
 			name: "restart count 5 or below not reported",
 			pods: []corev1.Pod{
-				podWithRestarts("restart-pod", "default", "app", 5),
+				podWithRestarts(5),
 			},
 			wantCount: 0,
 		},
@@ -254,14 +254,14 @@ func podWithTerminated(name, ns, container, reason string) corev1.Pod {
 	}
 }
 
-func podWithRestarts(name, ns, container string, restarts int32) corev1.Pod {
+func podWithRestarts(restarts int32) corev1.Pod {
 	return corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns},
+		ObjectMeta: metav1.ObjectMeta{Name: "restart-pod", Namespace: "default"},
 		Status: corev1.PodStatus{
 			Phase: corev1.PodRunning,
 			ContainerStatuses: []corev1.ContainerStatus{
 				{
-					Name:         container,
+					Name:         "app",
 					Ready:        true,
 					RestartCount: restarts,
 					State:        corev1.ContainerState{Running: &corev1.ContainerStateRunning{}},

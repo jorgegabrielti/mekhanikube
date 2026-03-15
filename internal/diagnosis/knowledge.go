@@ -3,6 +3,7 @@ package diagnosis
 import (
 	"embed"
 	"fmt"
+	"runtime"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -13,10 +14,11 @@ var knowledgeFS embed.FS
 
 // KnowledgeEntry represents a single entry in the knowledge base.
 type KnowledgeEntry struct {
-	Key         string   `yaml:"key"`
-	Title       string   `yaml:"title"`
-	Explanation string   `yaml:"explanation"`
-	Commands    []string `yaml:"commands"`
+	Key             string   `yaml:"key"`
+	Title           string   `yaml:"title"`
+	Explanation     string   `yaml:"explanation"`
+	Commands        []string `yaml:"commands"`
+	WindowsCommands []string `yaml:"windows_commands"`
 }
 
 // KnowledgeBase holds all known problem patterns and their remediation steps.
@@ -70,8 +72,13 @@ func (kb *KnowledgeBase) Enrich(p *Problem) {
 		return
 	}
 
-	commands := make([]string, len(entry.Commands))
-	for i, cmd := range entry.Commands {
+	rawCommands := entry.Commands
+	if runtime.GOOS == "windows" && len(entry.WindowsCommands) > 0 {
+		rawCommands = entry.WindowsCommands
+	}
+
+	commands := make([]string, len(rawCommands))
+	for i, cmd := range rawCommands {
 		cmd = strings.ReplaceAll(cmd, "{pod}", p.Name)
 		cmd = strings.ReplaceAll(cmd, "{name}", p.Name)
 		cmd = strings.ReplaceAll(cmd, "{namespace}", p.Namespace)
@@ -79,4 +86,5 @@ func (kb *KnowledgeBase) Enrich(p *Problem) {
 		commands[i] = cmd
 	}
 	p.Remediation = commands
+	p.Explanation = strings.TrimSpace(entry.Explanation)
 }

@@ -8,5 +8,35 @@ func DefaultRegistry() *Registry {
 		NewServiceScanner(),
 		NewNodeScanner(),
 		NewEventScanner(),
+		NewClusterScanner(),
+
+		// Configuration & Storage
+		NewConfigMapScanner(),
+		NewSecretScanner(),
+		NewPersistentVolumeScanner(),
+		NewPersistentVolumeClaimScanner(),
+		NewServiceAccountScanner(),
+
+		// Advanced Workloads
+		NewStatefulSetScanner(),
+		NewDaemonSetScanner(),
+		NewReplicaSetScanner(),
+		NewJobScanner(),
+		NewCronJobScanner(),
+
+		// Networking & Autoscaling
+		NewIngressScanner(),
+		NewNetworkPolicyScanner(),
+		NewHorizontalPodAutoscalerScanner(),
+
+		// Security & RBAC
+		NewRoleScanner(),
+		NewClusterRoleScanner(),
+		NewRoleBindingScanner(),
+		NewClusterRoleBindingScanner(),
+
+		// Specialized
+		NewPodDisruptionBudgetScanner(),
+		NewResourceQuotaScanner(),
 	)
 }

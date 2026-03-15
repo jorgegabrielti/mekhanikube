@@ -1,0 +1,7 @@
+key: rbac_cluster_wildcard
+title: ClusterRole has wildcard permissions
+explanation: |
+  The ClusterRole grants cluster-wide permissions using the '*' wildcard. This is a significant security risk and should be reserved only for highly trusted system components.
+commands:
+  - "kubectl describe clusterrole {name}"
+  - "kubectl get clusterrole {name} -o yaml"

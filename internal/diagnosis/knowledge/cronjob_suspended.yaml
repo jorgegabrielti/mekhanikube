@@ -1,0 +1,7 @@
+key: cronjob_suspended
+title: CronJob is suspended
+explanation: |
+  The CronJob is currently suspended, meaning it will not create any new Jobs according to its schedule. This might be intentional (e.g., during maintenance) or a result of a manual suspension that was forgotten.
+commands:
+  - "kubectl describe cronjob {name} -n {namespace}"
+  - "kubectl patch cronjob {name} -n {namespace} -p '{\"spec\":{\"suspend\":false}}' # Resume the CronJob"

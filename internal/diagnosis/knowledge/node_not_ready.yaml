@@ -1,9 +1,14 @@
 key: "node-not-ready"
 title: "Node Not Ready"
 explanation: |
-  This node is not in Ready state. It cannot schedule new pods and existing
-  pods may be evicted. Common causes: kubelet not running, network issues,
-  or resource exhaustion.
+  This Node is not in the 'Ready' state. The kubelet has stopped reporting its health to the control plane.
+  It cannot schedule new pods, and existing pods may be evicted after 5 minutes.
+  Common causes: The node crashed, network partitioning between the node and the API server, kubelet process died, or extreme CPU/memory starvation on the underlying VM.
 commands:
-  - "kubectl describe node {name}"
-  - "kubectl get events --field-selector involvedObject.name={name}"
+  - "kubectl describe node {name} | grep -A 10 'Conditions:'"
+  - "kubectl get events --field-selector involvedObject.name={name} --sort-by='.lastTimestamp'"
+  - "ssh {name} 'systemctl status kubelet'" # Note: SSH availability depends on infrastructure
+windows_commands:
+  - "kubectl describe node {name} | Select-String -Pattern 'Conditions:' -Context 0,10"
+  - "kubectl get events --field-selector involvedObject.name={name} --sort-by='.lastTimestamp'"
+  - "ssh {name} 'systemctl status kubelet'"

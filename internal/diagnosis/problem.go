@@ -3,6 +3,9 @@ package diagnosis
 import (
 	"fmt"
 	"strings"
+	"time"
+
+	"github.com/jorgegabrielti/nautikube/internal/version"
 )
 
 // Severity represents the severity level of a detected problem.
@@ -41,15 +44,18 @@ func (s Severity) Weight() int {
 
 // Problem represents a detected issue in the Kubernetes cluster.
 type Problem struct {
-	Resource       string   `json:"resource" yaml:"resource"`
-	Namespace      string   `json:"namespace" yaml:"namespace"`
-	Name           string   `json:"name" yaml:"name"`
-	Issue          string   `json:"issue" yaml:"issue"`
-	Severity       Severity `json:"severity" yaml:"severity"`
-	Score          int      `json:"score" yaml:"score"`
-	Remediation    []string `json:"remediation" yaml:"remediation"`
-	RemediationKey string   `json:"-" yaml:"-"`
-	Details        []string `json:"details,omitempty" yaml:"details,omitempty"`
+	Resource          string   `json:"resource" yaml:"resource"`
+	Namespace         string   `json:"namespace" yaml:"namespace"`
+	Name              string   `json:"name" yaml:"name"`
+	Issue             string   `json:"issue" yaml:"issue"`
+	Explanation       string   `json:"explanation,omitempty" yaml:"explanation,omitempty"`
+	OffendingProperty string   `json:"offendingProperty,omitempty" yaml:"offendingProperty,omitempty"`
+	MutativeFix       string   `json:"mutativeFix,omitempty" yaml:"mutativeFix,omitempty"`
+	Severity          Severity `json:"severity" yaml:"severity"`
+	Score             int      `json:"score" yaml:"score"`
+	Remediation       []string `json:"remediation" yaml:"remediation"`
+	RemediationKey    string   `json:"-" yaml:"-"`
+	Details           []string `json:"details,omitempty" yaml:"details,omitempty"`
 }
 
 // String returns a human-readable representation of the problem.
@@ -103,17 +109,23 @@ func containsAny(s string, substrs ...string) bool {
 
 // Summary holds aggregate statistics about scan results.
 type Summary struct {
-	Total    int `json:"total" yaml:"total"`
-	Critical int `json:"critical" yaml:"critical"`
-	High     int `json:"high" yaml:"high"`
-	Medium   int `json:"medium" yaml:"medium"`
-	Low      int `json:"low" yaml:"low"`
-	Info     int `json:"info" yaml:"info"`
+	ScanTime time.Time `json:"scanTime" yaml:"scanTime"`
+	Version  string    `json:"version" yaml:"version"`
+	Total    int       `json:"total" yaml:"total"`
+	Critical int       `json:"critical" yaml:"critical"`
+	High     int       `json:"high" yaml:"high"`
+	Medium   int       `json:"medium" yaml:"medium"`
+	Low      int       `json:"low" yaml:"low"`
+	Info     int       `json:"info" yaml:"info"`
 }
 
 // NewSummary computes summary statistics from a list of problems.
 func NewSummary(problems []Problem) Summary {
-	s := Summary{Total: len(problems)}
+	s := Summary{
+		ScanTime: time.Now(),
+		Version:  version.Version,
+		Total:    len(problems),
+	}
 	for _, p := range problems {
 		switch p.Severity {
 		case Critical:

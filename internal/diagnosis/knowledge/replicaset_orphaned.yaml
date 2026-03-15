@@ -1,0 +1,7 @@
+key: replicaset_orphaned
+title: Orphaned ReplicaSet detected
+explanation: |
+  This ReplicaSet has no owner references (e.g., it is not managed by a Deployment) but still has active replicas. This can occur if a Deployment was deleted with the '--cascade=orphan' flag or if a ReplicaSet was created manually.
+commands:
+  - "kubectl describe rs {name} -n {namespace}"
+  - "kubectl delete rs {name} -n {namespace} # Delete if no longer needed"

@@ -1,0 +1,129 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nautikube-qa
+---
+# 1. CrashLoopBackOff Pod
+apiVersion: v1
+kind: Pod
+metadata:
+  name: crashing-pod
+  namespace: nautikube-qa
+spec:
+  containers:
+  - name: crasher
+    image: busybox
+    command: ["sh", "-c", "echo 'I am purposely crashing!'; exit 1"]
+---
+# 2. OOMKilled Pod
+apiVersion: v1
+kind: Pod
+metadata:
+  name: oom-pod
+  namespace: nautikube-qa
+spec:
+  containers:
+  - name: memory-hog
+    image: python:3.9-slim
+    command: ["python", "-c", "a = []\nwhile True:\n  a.append(' ' * 10**6)"]
+    resources:
+      limits:
+        memory: "10Mi"
+---
+# 3. Pending Pod (Impossible CPU request)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pending-cpu-pod
+  namespace: nautikube-qa
+spec:
+  containers:
+  - name: idle
+    image: alpine
+    command: ["sleep", "3600"]
+    resources:
+      requests:
+        cpu: "999"
+---
+# 4. Orphaned Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: orphan-service
+  namespace: nautikube-qa
+spec:
+  selector:
+    app: does-not-exist
+  ports:
+  - port: 80
+    targetPort: 8080
+---
+# 5. Missing Image Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bad-image-deploy
+  namespace: nautikube-qa
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bad-image
+  template:
+    metadata:
+      labels:
+        app: bad-image
+    spec:
+      containers:
+      - name: oops
+        image: nautikube-invalid-image:999.9.9
+---
+# 6. ConfigMap Missing (CreateContainerConfigError)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: missing-config-pod
+  namespace: nautikube-qa
+spec:
+  containers:
+  - name: app
+    image: nginx:alpine
+    envFrom:
+    - configMapRef:
+        name: non-existent-configmap
+---
+# 7. Liveness Probe Failure
+apiVersion: v1
+kind: Pod
+metadata:
+  name: liveness-fail-pod
+  namespace: nautikube-qa
+spec:
+  containers:
+  - name: app
+    image: busybox
+    command: ["sh", "-c", "touch /tmp/healthy; sleep 30; rm -f /tmp/healthy; sleep 600"]
+    livenessProbe:
+      exec:
+        command: ["cat", "/tmp/healthy"]
+      initialDelaySeconds: 5
+      periodSeconds: 5
+---
+# 8. RunContainerError (Bad Mount)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: bad-mount-pod
+  namespace: nautikube-qa
+spec:
+  containers:
+  - name: app
+    image: alpine
+    command: ["sleep", "3600"]
+    volumeMounts:
+    - name: bad-volume
+      mountPath: /data
+  volumes:
+  - name: bad-volume
+    persistentVolumeClaim:
+      claimName: non-existent-pvc

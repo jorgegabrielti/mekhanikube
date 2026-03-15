@@ -21,7 +21,7 @@ type yamlOutput struct {
 // Format writes the scan results as YAML.
 func (f *YAMLFormatter) Format(w io.Writer, problems []diagnosis.Problem, summary diagnosis.Summary) error {
 	out := yamlOutput{
-		Timestamp: time.Now().UTC().Format(time.RFC3339),
+		Timestamp: summary.ScanTime.UTC().Format(time.RFC3339),
 		Problems:  problems,
 		Summary:   summary,
 	}

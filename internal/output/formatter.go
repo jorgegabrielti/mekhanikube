@@ -13,9 +13,11 @@ type Formatter interface {
 }
 
 // NewFormatter creates a Formatter for the given format name.
-// Supported formats: "table" (default), "json", "yaml".
+// Supported formats: "table" (default), "json", "yaml", "csv".
 func NewFormatter(format string) Formatter {
 	switch format {
+	case "csv":
+		return &CSVFormatter{}
 	case "json":
 		return &JSONFormatter{}
 	case "yaml":

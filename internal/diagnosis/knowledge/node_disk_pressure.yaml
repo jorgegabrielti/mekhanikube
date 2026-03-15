@@ -1,7 +1,14 @@
 key: "node-disk-pressure"
 title: "Node Under Disk Pressure"
 explanation: |
-  The node is running low on disk space. Kubernetes may evict pods and
-  refuse to schedule new ones. Clean up unused container images and volumes.
+  The Node is running critically low on disk space (generally root device or image filesystem). 
+  Kubernetes will immediately start to aggressively evict pods to free up space and will refuse to schedule new ones on this node.
+  You need to identify what is taking up disk space (e.g., untracked log files, massive container images, or unused volumes) and clean it up.
 commands:
-  - "kubectl describe node {name}"
+  - "kubectl describe node {name} | grep -A 10 'Conditions:'"
+  - "kubectl get pods --field-selector spec.nodeName={name} -A"
+  - "ssh {name} 'df -h && cd /var/log && ls -lahS | head -n 10'" # Note: SSH availability depends on infrastructure
+windows_commands:
+  - "kubectl describe node {name} | Select-String -Pattern 'Conditions:' -Context 0,10"
+  - "kubectl get pods --field-selector spec.nodeName={name} -A"
+  - "ssh {name} 'df -h; cd /var/log; ls -lahS | head -n 10'" # SSH in PowerShell often works with semicolon

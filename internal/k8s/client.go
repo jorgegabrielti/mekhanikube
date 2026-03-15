@@ -46,6 +46,7 @@ func NewClient(opts ...Option) (kubernetes.Interface, error) {
 	restConfig, err := rest.InClusterConfig()
 	if err == nil {
 		slog.Debug("using in-cluster configuration")
+		restConfig.WarningHandler = rest.NoWarnings{}
 		return kubernetes.NewForConfig(restConfig)
 	}
 
@@ -88,5 +89,12 @@ func buildConfig(kubeconfigPath, context string) (*rest.Config, error) {
 	if context != "" {
 		overrides.CurrentContext = context
 	}
-	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides).ClientConfig()
+
+	config, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides).ClientConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	config.WarningHandler = rest.NoWarnings{}
+	return config, nil
 }

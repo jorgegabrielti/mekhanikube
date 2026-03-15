@@ -1,0 +1,7 @@
+key: rbac_wildcard
+title: Role has wildcard permissions
+explanation: |
+  The Role grants permissions using the '*' wildcard for verbs or resources. This violates the principle of least privilege and can grant unintended power to users or service accounts.
+commands:
+  - "kubectl describe role {name} -n {namespace}"
+  - "kubectl get role {name} -n {namespace} -o yaml"

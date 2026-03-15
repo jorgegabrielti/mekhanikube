@@ -1,0 +1,7 @@
+key: daemonset_misscheduled
+title: DaemonSet not fully scheduled
+explanation: |
+  The DaemonSet is not running on all desired nodes. This is typically caused by node taints that the DaemonSet doesn't tolerate, insufficient resources (CPU/RAM) on specific nodes, or node selectors that exclude certain nodes.
+commands:
+  - "kubectl describe ds {name} -n {namespace}"
+  - "kubectl get nodes --show-labels # Verify node labels/taints"

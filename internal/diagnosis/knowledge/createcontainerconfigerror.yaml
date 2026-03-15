@@ -1,0 +1,11 @@
+key: "createcontainerconfigerror"
+title: "CreateContainerConfigError"
+explanation: |
+  Kubernetes (kubelet) failed to generate the necessary configuration to start the container.
+  This almost always happens when a referenced ConfigMap, Secret, or ServiceAccount does not exist in the namespace,
+  the key within the config doesn't match the volume mount, or the kubelet lacks permissions to read it.
+  Check the Events section of the pod description to identify the exact missing resource.
+commands:
+  - "kubectl get events -n {namespace} --field-selector involvedObject.name={pod} --sort-by='.lastTimestamp' | grep -i 'Error:'"
+  - "kubectl get configmap,secret -n {namespace}"
+  - "kubectl get pod {pod} -n {namespace} -o yaml | awk '/volumes:/,/status:/'"

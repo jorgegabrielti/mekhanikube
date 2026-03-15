@@ -1,9 +1,12 @@
 key: "deployment-unavailable"
 title: "Deployment Has Unavailable Replicas"
 explanation: |
-  One or more replicas of this deployment are not available. Pods may be
-  failing to start, crashing, or stuck in a pending state.
+  One or more replicas of this deployment are not available (`status.unavailableReplicas > 0`). 
+  This means pods are failing to start, crashing, failing readiness probes, or stuck in a pending state.
+  Check the underlying pods to find the exact reason they are not entering the Ready state.
 commands:
-  - "kubectl describe deployment {name} -n {namespace}"
-  - "kubectl get pods -l app={name} -n {namespace}"
-  - "kubectl rollout status deployment/{name} -n {namespace}"
+  - "kubectl get pods -n {namespace} -l $(kubectl get deployment {name} -n {namespace} -o jsonpath='{.spec.selector.matchLabels}' | jq -r 'to_entries | map(\"\\(.key)=\\(.value)\") | join(\",\")') | awk '$3 != \"Running\" || $2 ~ /^0/'"
+  - "kubectl describe deployment {name} -n {namespace} | grep -A 10 'Conditions:'"
+windows_commands:
+  - "kubectl get pods -n {namespace} -l $((kubectl get deployment {name} -n {namespace} -o json | ConvertFrom-Json).spec.selector.matchLabels | Get-Member -MemberType NoteProperty | ForEach-Object { \"$($_.Name)=$((kubectl get deployment {name} -n {namespace} -o json | ConvertFrom-Json).spec.selector.matchLabels.$($_.Name))\" } | join ',') | ForEach-Object { if ($_ -match 'Running' -and $_ -match '1/1') { } else { $_ } }"
+  - "kubectl describe deployment {name} -n {namespace} | Select-String -Pattern 'Conditions:' -Context 0,10"

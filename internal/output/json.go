@@ -21,7 +21,7 @@ type jsonOutput struct {
 // Format writes the scan results as JSON.
 func (f *JSONFormatter) Format(w io.Writer, problems []diagnosis.Problem, summary diagnosis.Summary) error {
 	out := jsonOutput{
-		Timestamp: time.Now().UTC().Format(time.RFC3339),
+		Timestamp: summary.ScanTime.UTC().Format(time.RFC3339),
 		Problems:  problems,
 		Summary:   summary,
 	}

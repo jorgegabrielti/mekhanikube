@@ -1,9 +1,16 @@
 key: "imagepullbackoff"
 title: "Image Pull Failure"
 explanation: |
-  Kubernetes cannot pull the container image. The image name or tag may be
-  wrong, the registry may be unreachable, or imagePullSecrets are missing
-  for a private registry.
+  The kubelet cannot pull the container image. 
+  1. The image name or tag might be misspelled.
+  2. The container registry might be down or unreachable from the node's network.
+  3. The `imagePullSecrets` might be missing, incorrect, or expired for a private registry.
+  Inspect the pod events to see the exact registry response (e.g., 'unauthorized', 'not found').
 commands:
-  - "kubectl describe pod {pod} -n {namespace}"
-  - "kubectl get events -n {namespace} --field-selector involvedObject.name={pod}"
+  - "kubectl get events -n {namespace} --field-selector involvedObject.name={pod} --sort-by='.lastTimestamp' | grep -i 'Failed to pull image'"
+  - "kubectl get pod {pod} -n {namespace} -o jsonpath='{.spec.containers[*].image}'"
+  - "kubectl get pod {pod} -n {namespace} -o jsonpath='{.spec.imagePullSecrets}'"
+windows_commands:
+  - "kubectl get events -n {namespace} --field-selector involvedObject.name={pod} --sort-by='.lastTimestamp' | Select-String -Pattern 'Failed to pull image'"
+  - "kubectl get pod {pod} -n {namespace} -o jsonpath='{.spec.containers[*].image}'"
+  - "kubectl get pod {pod} -n {namespace} -o jsonpath='{.spec.imagePullSecrets}'"

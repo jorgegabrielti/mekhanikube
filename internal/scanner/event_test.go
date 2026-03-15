@@ -35,7 +35,7 @@ func TestEventScanner_Scan(t *testing.T) {
 		{
 			name: "high frequency warning event over 50",
 			events: []corev1.Event{
-				warningEvent("pod-1", "default", "FailedMount", "Unable to mount volume", 55, now),
+				warningEvent("pod-1", "FailedMount", "Unable to mount volume", 55, now),
 			},
 			wantCount:    1,
 			wantSeverity: diagnosis.High,
@@ -43,7 +43,7 @@ func TestEventScanner_Scan(t *testing.T) {
 		{
 			name: "medium frequency warning event over 20",
 			events: []corev1.Event{
-				warningEvent("pod-2", "default", "Unhealthy", "Readiness probe failed", 25, now),
+				warningEvent("pod-2", "Unhealthy", "Readiness probe failed", 25, now),
 			},
 			wantCount:    1,
 			wantSeverity: diagnosis.Medium,
@@ -51,7 +51,7 @@ func TestEventScanner_Scan(t *testing.T) {
 		{
 			name: "low frequency warning event over 5",
 			events: []corev1.Event{
-				warningEvent("pod-3", "default", "BackOff", "Back-off pulling image", 10, now),
+				warningEvent("pod-3", "BackOff", "Back-off pulling image", 10, now),
 			},
 			wantCount:    1,
 			wantSeverity: diagnosis.Low,
@@ -59,14 +59,14 @@ func TestEventScanner_Scan(t *testing.T) {
 		{
 			name: "event with count 5 or below not reported",
 			events: []corev1.Event{
-				warningEvent("pod-4", "default", "Pulling", "Pulling image", 5, now),
+				warningEvent("pod-4", "Pulling", "Pulling image", 5, now),
 			},
 			wantCount: 0,
 		},
 		{
 			name: "old event filtered out",
 			events: []corev1.Event{
-				warningEvent("pod-5", "default", "FailedMount", "Old event", 100, twoHoursAgo),
+				warningEvent("pod-5", "FailedMount", "Old event", 100, twoHoursAgo),
 			},
 			wantCount: 0,
 		},
@@ -106,14 +106,14 @@ func TestEventScanner_Scan(t *testing.T) {
 	}
 }
 
-func warningEvent(objName, ns, reason, message string, count int32, lastTime metav1.Time) corev1.Event {
+func warningEvent(objName, reason, message string, count int32, lastTime metav1.Time) corev1.Event {
 	return corev1.Event{
-		ObjectMeta:     metav1.ObjectMeta{Name: objName + "-event", Namespace: ns},
+		ObjectMeta:     metav1.ObjectMeta{Name: objName + "-event", Namespace: "default"},
 		Type:           "Warning",
 		Reason:         reason,
 		Message:        message,
 		Count:          count,
 		LastTimestamp:  lastTime,
-		InvolvedObject: corev1.ObjectReference{Kind: "Pod", Name: objName, Namespace: ns},
+		InvolvedObject: corev1.ObjectReference{Kind: "Pod", Name: objName, Namespace: "default"},
 	}
 }

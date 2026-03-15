@@ -4,17 +4,25 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var rootCmd = &cobra.Command{
-	Use:   "nautikube",
-	Short: "Kubernetes cluster diagnostic tool",
-	Long: `NautiKube scans your Kubernetes cluster, detects problems,
+// NewRootCmd creates a new root command.
+func NewRootCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "nautikube",
+		Short: "Kubernetes cluster diagnostic tool",
+		Long: `NautiKube scans your Kubernetes cluster, detects problems,
 prioritizes them by severity score (0-100), and provides
 actionable remediation commands.`,
-	SilenceUsage:  true,
-	SilenceErrors: true,
+		SilenceUsage:  false,
+		SilenceErrors: false,
+	}
+
+	cmd.AddCommand(NewScanCmd())
+	cmd.AddCommand(NewVersionCmd())
+
+	return cmd
 }
 
 // Execute runs the root command.
 func Execute() error {
-	return rootCmd.Execute()
+	return NewRootCmd().Execute()
 }
