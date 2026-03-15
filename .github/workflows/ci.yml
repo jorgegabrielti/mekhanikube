@@ -18,7 +18,8 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          go-version: 'stable'
+          cache: true
 
       - name: Check formatting
         run: test -z "$(gofmt -l .)" || (echo "Files need formatting:"; gofmt -l .; exit 1)
@@ -64,7 +65,8 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          go-version: 'stable'
+          cache: true
 
       - name: Install govulncheck
         run: go install golang.org/x/vuln/cmd/govulncheck@latest
@@ -93,7 +95,8 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          go-version: 'stable'
+          cache: true
 
       - name: Build
         env:
