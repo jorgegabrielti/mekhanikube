@@ -90,7 +90,6 @@ func (s *{{.CamelName}}Scanner) Scan(ctx context.Context, client kubernetes.Inte
 }
 `
 
-
 func main() {
 	scanners := []ScannerInfo{
 		{"ConfigMap", "ConfigMap", "v1.ConfigMap", "CoreV1().ConfigMaps", "List", ""},
@@ -121,7 +120,7 @@ func main() {
 			fmt.Printf("Skipping %s, already exists\n", filename)
 			continue
 		}
-		
+
 		f, _ := os.Create(filename)
 		if s.Import == "cluster" {
 			clusterTmpl.Execute(f, s)

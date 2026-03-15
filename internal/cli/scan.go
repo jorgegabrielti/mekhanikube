@@ -41,8 +41,6 @@ func (s *resourceListValue) Type() string {
 	return "<resource-names>"
 }
 
-
-
 // NewScanCmd creates a new scan command.
 func NewScanCmd() *cobra.Command {
 	opts := &scanOptions{}

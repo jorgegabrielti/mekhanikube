@@ -33,11 +33,11 @@ func (s *ResourceQuotaScanner) Scan(ctx context.Context, client kubernetes.Inter
 	for _, item := range items.Items {
 		for resName, limit := range item.Status.Hard {
 			used := item.Status.Used[resName]
-			
+
 			// Simple check for > 90% usage
 			// Kubernetes quantity comparisons can be complex, but for diagnostic purposes,
 			// we'll flag if used is close to hard.
-			
+
 			// Note: Proper Quantity math would be better, but as a first pass:
 			if used.Cmp(limit) >= 0 {
 				problems = append(problems, diagnosis.Problem{
