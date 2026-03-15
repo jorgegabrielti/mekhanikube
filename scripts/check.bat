@@ -5,11 +5,15 @@ echo ===================================
 echo   NautiKube Local Quality Gate
 echo ===================================
 
-echo [1/4] Running go fmt...
-go fmt ./...
-if %errorlevel% neq 0 (
-    echo [ERROR] go fmt failed.
-    exit /b %errorlevel%
+echo [1/4] Checking code formatting...
+for /f "tokens=*" %%i in ('gofmt -l .') do (
+    set "UNFORMATTED=%%i"
+)
+if defined UNFORMATTED (
+    echo [ERROR] Files need formatting:
+    gofmt -l .
+    echo Run 'make fix' or 'go fmt ./...' to fix these issues.
+    exit /b 1
 )
 
 echo [2/4] Running go vet...
