@@ -18,7 +18,6 @@ type scanOptions struct {
 	namespace   string
 	resources   resourceListValue
 	minSeverity string
-	outputFmt   string
 	noColor     bool
 	kubeconfig  string
 	kubecontext string
@@ -38,8 +37,19 @@ func (s *resourceListValue) Set(val string) error {
 }
 
 func (s *resourceListValue) Type() string {
-	return "<resource-names>"
+	return "<RESOURCE>"
 }
+
+// namedStringValue is a pflag.Value that lets us control the type placeholder
+// shown in --help output (e.g. <NAMESPACE> instead of "string").
+type namedStringValue struct {
+	ptr      *string
+	typeName string
+}
+
+func (s *namedStringValue) String() string       { return *s.ptr }
+func (s *namedStringValue) Set(val string) error { *s.ptr = val; return nil }
+func (s *namedStringValue) Type() string         { return s.typeName }
 
 // NewScanCmd creates a new scan command.
 func NewScanCmd() *cobra.Command {
@@ -57,10 +67,30 @@ Arguments:
 
 Results are sorted by severity score (highest first) and include
 actionable remediation commands.`,
-		Example: `  nautikube scan
-  nautikube scan Pod Deployment
+		Example: `  # Scan all resources in all namespaces
+  nautikube scan
+
+  # Scan specific resource types
+  nautikube scan Pod Deployment Node
   nautikube scan Cluster --min-severity critical
-  nautikube scan -n my-namespace -o json`,
+  nautikube scan -r Pod,Deployment,Service
+
+  # Scope to a namespace and filter by severity
+  nautikube scan -n production
+  nautikube scan -n kube-system --min-severity critical
+  nautikube scan -n default -r Pod --min-severity high
+
+  # Export results to a file (format is detected from the file extension)
+  nautikube scan -f report.json
+  nautikube scan -f report.yaml -n default
+  nautikube scan -f report.csv --min-severity medium
+
+  # Use a specific kubeconfig or context
+  nautikube scan --kubeconfig ~/.kube/config --context staging
+  nautikube scan --context production --min-severity high
+
+  # Disable color (useful for CI/CD pipelines)
+  nautikube scan --no-color`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Prevent confusion by making positional args and --resource flag mutually exclusive
 			if len(args) > 0 && cmd.Flags().Changed("resource") {
@@ -79,31 +109,17 @@ actionable remediation commands.`,
 				return fmt.Errorf("invalid severity: %s (allowed: critical, high, medium, low, info)", opts.minSeverity)
 			}
 
-			// Validate output format
-			validFormats := []string{"table", "csv", "json", "yaml"}
-			isValidFormat := false
-			for _, f := range validFormats {
-				if opts.outputFmt == f {
-					isValidFormat = true
-					break
-				}
-			}
-			if !isValidFormat {
-				return fmt.Errorf("invalid output format: %s (allowed: %s)", opts.outputFmt, strings.Join(validFormats, ", "))
-			}
-
 			return runScan(opts)
 		},
 	}
 
-	scanCmd.Flags().StringVarP(&opts.namespace, "namespace", "n", "", "Scan a specific namespace (default: all)")
-	scanCmd.Flags().VarP(&opts.resources, "resource", "r", "Filter by resource type (e.g., Pod,Deployment)")
-	scanCmd.Flags().StringVarP(&opts.minSeverity, "min-severity", "s", "", "Minimum severity to display (critical,high,medium,low,info)")
-	scanCmd.Flags().StringVarP(&opts.outputFmt, "output", "o", "table", "Output format: table, csv, json, yaml")
-	scanCmd.Flags().BoolVar(&opts.noColor, "no-color", false, "Disable colored output")
-	scanCmd.Flags().StringVar(&opts.kubeconfig, "kubeconfig", "", "Path to kubeconfig file")
-	scanCmd.Flags().StringVar(&opts.kubecontext, "context", "", "Kubernetes context to use")
-	scanCmd.Flags().StringVarP(&opts.reportFile, "report-file", "f", "", "Write output to a file instead of stdout (format determined by --output)")
+	scanCmd.Flags().VarP(&namedStringValue{ptr: &opts.namespace, typeName: "<NAMESPACE>"}, "namespace", "n", "Scan a specific namespace (default: all namespaces)")
+	scanCmd.Flags().VarP(&opts.resources, "resource", "r", "Filter by resource type, comma-separated (e.g., Pod,Deployment,Node)")
+	scanCmd.Flags().VarP(&namedStringValue{ptr: &opts.minSeverity, typeName: "<LEVEL>"}, "min-severity", "s", "Minimum severity level to display: critical, high, medium, low, info")
+	scanCmd.Flags().BoolVar(&opts.noColor, "no-color", false, "Disable colored output (automatically set when writing to a file)")
+	scanCmd.Flags().Var(&namedStringValue{ptr: &opts.kubeconfig, typeName: "<FILE>"}, "kubeconfig", "Path to kubeconfig file (default: $KUBECONFIG or ~/.kube/config)")
+	scanCmd.Flags().Var(&namedStringValue{ptr: &opts.kubecontext, typeName: "<KUBE-CONTEXT>"}, "context", "Kubernetes context to use (default: current context)")
+	scanCmd.Flags().VarP(&namedStringValue{ptr: &opts.reportFile, typeName: "<FILE>"}, "report-file", "f", "Write scan results to FILE (format auto-detected from extension: .json, .yaml, .csv, .txt)")
 
 	return scanCmd
 }
@@ -145,14 +161,13 @@ func runScan(opts *scanOptions) error {
 		problems = filterBySeverity(problems, opts.minSeverity)
 	}
 
-	// Output Formatting and Destination
-	fmtString := opts.outputFmt
+	// Determine output format and destination
+	fmtString := "table"
 	var outWriter *os.File = os.Stdout
 
 	if opts.reportFile != "" {
-		if fmtString == "table" {
-			opts.noColor = true // force no color for text files
-		}
+		fmtString = formatFromExtension(opts.reportFile)
+		opts.noColor = true // force no color for file output
 
 		file, err := os.Create(opts.reportFile)
 		if err != nil {
@@ -176,6 +191,21 @@ func runScan(opts *scanOptions) error {
 		fmt.Printf("Report successfully generated: %s\n", opts.reportFile)
 	}
 	return nil
+}
+
+// formatFromExtension infers the output format from the report file extension.
+func formatFromExtension(filename string) string {
+	lower := strings.ToLower(filename)
+	switch {
+	case strings.HasSuffix(lower, ".json"):
+		return "json"
+	case strings.HasSuffix(lower, ".yaml"), strings.HasSuffix(lower, ".yml"):
+		return "yaml"
+	case strings.HasSuffix(lower, ".csv"):
+		return "csv"
+	default:
+		return "table"
+	}
 }
 
 func filterBySeverity(problems []diagnosis.Problem, minSev string) []diagnosis.Problem {

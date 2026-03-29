@@ -123,9 +123,13 @@ func main() {
 
 		f, _ := os.Create(filename)
 		if s.Import == "cluster" {
-			clusterTmpl.Execute(f, s)
+			if err := clusterTmpl.Execute(f, s); err != nil {
+				fmt.Printf("Error generating %s: %v\n", filename, err)
+			}
 		} else {
-			tmpl.Execute(f, s)
+			if err := tmpl.Execute(f, s); err != nil {
+				fmt.Printf("Error generating %s: %v\n", filename, err)
+			}
 		}
 		f.Close()
 		fmt.Printf("Created %s\n", filename)

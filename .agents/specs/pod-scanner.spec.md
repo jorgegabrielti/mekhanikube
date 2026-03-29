@@ -84,10 +84,10 @@ Detect problems in Pods of a live Kubernetes cluster.
 
 ## Acceptance Criteria
 
-- [ ] Detects all 6 problem types above
-- [ ] Score calculated correctly with contextual adjustments
-- [ ] Each problem has remediation key linking to knowledge base
-- [ ] Tests cover all 6 scenarios using fake K8s client
-- [ ] Tests cover all edge cases listed above
-- [ ] Zero false positives on a healthy cluster
-- [ ] Handles RBAC permission errors gracefully (skip, don't crash)
+- [x] Detects all 6 problem types above
+- [x] Score calculated correctly with contextual adjustments
+- [x] Each problem has remediation key linking to knowledge base
+- [x] Tests cover all 6 scenarios using fake K8s client
+- [x] Tests cover all edge cases listed above
+- [x] Zero false positives on a healthy cluster
+- [x] Handles RBAC permission errors gracefully (skip, don't crash)

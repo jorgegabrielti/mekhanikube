@@ -43,8 +43,8 @@ Events and groups them by resource + reason to identify patterns.
 
 ## Acceptance Criteria
 
-- [ ] Aggregates Warning events by resource and reason
-- [ ] Correctly assigns severity based on event count
-- [ ] Filters out events older than 1 hour
-- [ ] Tests use fake Events with various counts and timestamps
-- [ ] Handles missing timestamps gracefully
+- [x] Aggregates Warning events by resource and reason
+- [x] Correctly assigns severity based on event count
+- [x] Filters out events older than 1 hour
+- [x] Tests use fake Events with various counts and timestamps
+- [x] Handles missing timestamps gracefully

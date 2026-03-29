@@ -118,11 +118,11 @@ summary:
 
 ## Acceptance Criteria
 
-- [ ] Table formatter produces colored, readable output
-- [ ] Table respects `--no-color` flag and `NO_COLOR` env var
-- [ ] JSON output is valid JSON (verify with `jq`)
-- [ ] YAML output is valid YAML
-- [ ] All formatters sort problems by Score descending
-- [ ] All formatters include summary statistics
-- [ ] Empty results produce a clean "no problems" message
-- [ ] Tests validate output against expected strings
+- [x] Table formatter produces colored, readable output
+- [x] Table respects `--no-color` flag and `NO_COLOR` env var
+- [x] JSON output is valid JSON (verify with `jq`)
+- [x] YAML output is valid YAML
+- [x] All formatters sort problems by Score descending
+- [x] All formatters include summary statistics
+- [x] Empty results produce a clean "no problems" message
+- [x] Tests validate output against expected strings

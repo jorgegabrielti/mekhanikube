@@ -49,8 +49,8 @@ Detect problems in Services of a live Kubernetes cluster.
 
 ## Acceptance Criteria
 
-- [ ] Detects all 3 problem types
-- [ ] Correctly cross-references Services with Endpoints
-- [ ] Skips headless services and services without selectors
-- [ ] Tests use fake Services and Endpoints
-- [ ] Zero false positives on healthy services
+- [x] Detects all 3 problem types
+- [x] Correctly cross-references Services with Endpoints
+- [x] Skips headless services and services without selectors
+- [x] Tests use fake Services and Endpoints
+- [x] Zero false positives on healthy services

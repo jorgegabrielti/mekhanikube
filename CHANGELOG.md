@@ -5,6 +5,25 @@ All notable changes to NautiKube are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-03-28 (release/v1.0.0)
+
+### 🐛 Fixed
+
+- **NetworkPolicy scanner** — replaced non-functional stub (`_ = item` no-op loop) with a complete implementation using `isAllowAllIngress()` helper. The scanner now detects ingress rules with no `From` selectors and no `Ports` restrictions and reports them as `HIGH` severity with the `netpol_allow_all` remediation key.
+
+### 🧪 Tests
+
+- **NetworkPolicy tests** — expanded from 3 trivial stub cases (all expecting 0 problems) to 7 table-driven cases covering positive detection, negative (non-matching) cases, edge cases (empty policy list, multiple policies, mixed policies).
+
+### 📋 Specs & Documentation
+
+- **20 new scanner spec files** created in `.agents/specs/` covering all scanners added after the initial 5: `ConfigMapScanner`, `SecretScanner`, `PersistentVolumeScanner`, `PersistentVolumeClaimScanner`, `ServiceAccountScanner`, `StatefulSetScanner`, `DaemonSetScanner`, `ReplicaSetScanner`, `JobScanner`, `CronJobScanner`, `IngressScanner`, `NetworkPolicyScanner`, `HorizontalPodAutoscalerScanner`, `RoleScanner`, `ClusterRoleScanner`, `RoleBindingScanner`, `ClusterRoleBindingScanner`, `PodDisruptionBudgetScanner`, `ResourceQuotaScanner`, `ClusterScanner`.
+- **6 existing specs updated** — acceptance criteria marked complete (`[x]`) in `pod-scanner.spec.md`, `deployment-scanner.spec.md`, `service-scanner.spec.md`, `node-scanner.spec.md`, `event-aggregator.spec.md`, `output-formatters.spec.md`.
+- **QA chaos workloads extended** — `tests/qa/chaos-workloads.yaml` expanded from 8 to 20 scenarios, adding workloads for all 16 newly documented scanners.
+- **QA report extended** — `docs/testing/QA-REPORT.md` extended with Section 5 documenting all 12 new scanner scenarios and Section 6 confirming full scanner coverage across all 26 registered scanners.
+
+---
+
 ## [1.0.0] - 2026-03-14
 
 ### 🚀 BREAKING CHANGE — Complete Architecture Rewrite

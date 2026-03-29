@@ -67,7 +67,7 @@ Detect problems in Nodes of a live Kubernetes cluster.
 
 ## Acceptance Criteria
 
-- [ ] Detects all 5 problem types
-- [ ] Correctly reads Node conditions
-- [ ] Tests use fake Nodes with various conditions
-- [ ] Zero false positives on healthy nodes
+- [x] Detects all 5 problem types
+- [x] Correctly reads Node conditions
+- [x] Tests use fake Nodes with various conditions
+- [x] Zero false positives on healthy nodes

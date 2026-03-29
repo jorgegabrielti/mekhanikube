@@ -56,8 +56,8 @@ Detect problems in Deployments of a live Kubernetes cluster.
 
 ## Acceptance Criteria
 
-- [ ] Detects all 4 problem types
-- [ ] Score calculated with contextual adjustments
-- [ ] Tests use fake Deployments with various status conditions
-- [ ] Handles nil Spec.Replicas gracefully
-- [ ] Zero false positives on healthy deployments
+- [x] Detects all 4 problem types
+- [x] Score calculated with contextual adjustments
+- [x] Tests use fake Deployments with various status conditions
+- [x] Handles nil Spec.Replicas gracefully
+- [x] Zero false positives on healthy deployments

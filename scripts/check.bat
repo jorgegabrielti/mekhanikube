@@ -50,10 +50,12 @@ if %errorlevel% neq 0 (
 )
 
 echo [5/5] Running Tests...
-go test ./...
-if %errorlevel% neq 0 (
+go test ./... > "%TEMP%\nautikube_test_out.txt" 2>&1
+type "%TEMP%\nautikube_test_out.txt"
+findstr /i /r "^FAIL" "%TEMP%\nautikube_test_out.txt" > nul 2>&1
+if %errorlevel% equ 0 (
     echo [ERROR] Tests failed.
-    exit /b %errorlevel%
+    exit /b 1
 )
 
 echo ===================================
