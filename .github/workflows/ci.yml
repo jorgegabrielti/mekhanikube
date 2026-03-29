@@ -49,7 +49,9 @@ jobs:
         run: go test -race ./...
 
       - name: Generate coverage report
-        run: go test -coverprofile=coverage.txt -covermode=atomic ./...
+        run: |
+          PKGS=$(go list -f '{{if .TestGoFiles}}{{.ImportPath}}{{end}}' ./... | tr '\n' ' ')
+          go test -coverprofile=coverage.txt -covermode=atomic $PKGS
 
       - name: Upload coverage
         if: matrix.go-version == '1.24'
