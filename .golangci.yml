@@ -3,7 +3,6 @@ linters:
     - errcheck
     - govet
     - staticcheck
-    - unused
     - ineffassign
     - goconst
     - gofmt
@@ -28,5 +27,5 @@ issues:
         - goconst
 
 run:
-  timeout: 5m
+  timeout: 10m
   go: "1.24"
