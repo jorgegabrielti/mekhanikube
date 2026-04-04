@@ -65,6 +65,10 @@ secrets/
 coverage.txt
 coverage.html
 
+# CLI report artifacts generated during manual testing
+internal/cli/out
+internal/cli/out.*
+
 # Test files temporários
 *test*.yaml
 resultado-*.txt

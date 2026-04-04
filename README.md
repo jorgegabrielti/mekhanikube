@@ -82,14 +82,18 @@ nautikube scan -n production
 # Filter by resource type
 nautikube scan -r Pod,Deployment
 
+# Filter by positional resource args
+nautikube scan Pod Deployment Node
+
 # Show only high severity and above
 nautikube scan -s high
 
-# JSON output (for automation / pipelines)
-nautikube scan -o json
+# Export results to JSON (format auto-detected from extension)
+nautikube scan -f report.json
 
-# YAML output
-nautikube scan -o yaml
+# Export results to YAML or CSV
+nautikube scan -f report.yaml
+nautikube scan -f report.csv
 
 # Disable colors (CI-friendly)
 nautikube scan --no-color
@@ -138,7 +142,7 @@ cmd/nautikube/
 internal/
 ├── cli/                       → Cobra commands (root, scan, version)
 ├── k8s/                       → Kubernetes client factory (functional options)
-├── scanner/                   → Scanner interface + 5 implementations
+├── scanner/                   → Scanner interface + 25 implementations (one per resource type)
 ├── diagnosis/                 → Problem types, scoring, embedded knowledge base
 └── output/                    → Formatter interface (table, JSON, YAML)
 ```
