@@ -24,10 +24,23 @@ jobs:
       - name: Check formatting
         run: test -z "$(gofmt -l .)" || (echo "Files need formatting:"; gofmt -l .; exit 1)
 
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: latest
+      - name: go vet
+        run: go vet ./...
+
+      - name: errcheck
+        run: |
+          go install github.com/kisielk/errcheck@latest
+          errcheck ./...
+
+      - name: ineffassign
+        run: |
+          go install github.com/gordonklaus/ineffassign@latest
+          ineffassign ./...
+
+      - name: misspell
+        run: |
+          go install github.com/client9/misspell/cmd/misspell@latest
+          misspell -error ./...
 
   test:
     name: Test (Go ${{ matrix.go-version }})
