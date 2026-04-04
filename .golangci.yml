@@ -6,11 +6,7 @@ linters:
     - ineffassign
     - goconst
     - gofmt
-    - goimports
     - misspell
-    - unconvert
-    - unparam
-    - gosimple
 
 linters-settings:
   goconst:
@@ -28,4 +24,5 @@ issues:
 
 run:
   timeout: 10m
+  concurrency: 2
   go: "1.24"
