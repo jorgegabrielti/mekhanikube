@@ -1,8 +1,8 @@
-// Package cli â€” exhaustive tests for root, version, and scan commands.
+// Package cli - exhaustive tests for root, version, and scan commands.
 //
 // Strategy:
-//   - Tests that validate flag *registration* use ParseFlags() â€” no network, always fast.
-//   - Tests that validate *RunE validation errors* use Execute() â€” errors are returned
+//   - Tests that validate flag *registration* use ParseFlags() - no network, always fast.
+//   - Tests that validate *RunE validation errors* use Execute() - errors are returned
 //     before any cluster connection is attempted.
 //   - Tests for pure logic functions (parseSeverityWeight, filterBySeverity,
 //     formatFromExtension) call the functions directly.
@@ -194,7 +194,7 @@ func TestScanCommand_MinSeverity_FlagRegistration(t *testing.T) {
 		{"long medium", []string{"--min-severity", "medium"}},
 		{"long low", []string{"--min-severity", "low"}},
 		{"long info", []string{"--min-severity", "info"}},
-		// Case variants â€” flag accepts any string; RunE validates casing.
+		// Case variants - flag accepts any string; RunE validates casing.
 		{"upper CRITICAL", []string{"-s", "CRITICAL"}},
 		{"mixed Critical", []string{"--min-severity", "Critical"}},
 	}
@@ -207,7 +207,7 @@ func TestScanCommand_MinSeverity_FlagRegistration(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// --report-file / -f flag registration â€” all extensions
+// --report-file / -f flag registration - all extensions
 // ---------------------------------------------------------------------------
 
 func TestScanCommand_ReportFile_FlagRegistration(t *testing.T) {
@@ -294,7 +294,7 @@ func TestScanCommand_NoColor_FlagRegistration(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// --resource / -r flag registration â€” all 25 scanner names
+// --resource / -r flag registration - all 25 scanner names
 // ---------------------------------------------------------------------------
 
 // allResourceNames lists every scanner Name() registered in DefaultRegistry.
@@ -360,7 +360,7 @@ func TestScanCommand_ResourceFlag_Repeated(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Registry contract â€” allResourceNames must match DefaultRegistry exactly
+// Registry contract - allResourceNames must match DefaultRegistry exactly
 // ---------------------------------------------------------------------------
 
 func TestDefaultRegistry_NamesMatchContract(t *testing.T) {
@@ -387,7 +387,7 @@ func TestDefaultRegistry_NamesMatchContract(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Complex flag combinations (ParseFlags â€” no network)
+// Complex flag combinations (ParseFlags - no network)
 // ---------------------------------------------------------------------------
 
 func TestScanCommand_ComplexCombinations_FlagRegistration(t *testing.T) {
@@ -512,7 +512,7 @@ func TestScanCommand_Validation_Extended(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// parseSeverityWeight â€” exhaustive per-case coverage
+// parseSeverityWeight - exhaustive per-case coverage
 // ---------------------------------------------------------------------------
 
 func TestParseSeverityWeight_AllCases(t *testing.T) {
@@ -553,7 +553,7 @@ func TestParseSeverityWeight_AllCases(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// filterBySeverity â€” actual Problem filtering
+// filterBySeverity - actual Problem filtering
 // ---------------------------------------------------------------------------
 
 func makeProblems() []diagnosis.Problem {
@@ -637,7 +637,7 @@ func TestFilterBySeverity_SeveritiesPreserved(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// formatFromExtension â€” extended cases
+// formatFromExtension - extended cases
 // ---------------------------------------------------------------------------
 
 func TestFormatFromExtension_Extended(t *testing.T) {
