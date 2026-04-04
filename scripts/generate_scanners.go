@@ -131,7 +131,7 @@ func main() {
 				fmt.Printf("Error generating %s: %v\n", filename, err)
 			}
 		}
-		f.Close()
+		_ = f.Close()
 		fmt.Printf("Created %s\n", filename)
 	}
 }

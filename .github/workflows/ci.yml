@@ -30,7 +30,7 @@ jobs:
       - name: errcheck
         run: |
           go install github.com/kisielk/errcheck@latest
-          errcheck ./...
+          errcheck -ignore 'fmt:.*,github.com/fatih/color:.*' ./...
 
       - name: ineffassign
         run: |

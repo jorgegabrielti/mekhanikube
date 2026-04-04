@@ -173,7 +173,7 @@ func runScan(opts *scanOptions) error {
 		if err != nil {
 			return fmt.Errorf("failed to create report file: %w", err)
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 		outWriter = file
 	}
 
