@@ -7,7 +7,7 @@ before:
     - go test -race ./...
 
 builds:
-  - id: nautikube
+  - id: nautikube-linux
     main: ./cmd/nautikube
     binary: nautikube
     env:
@@ -17,22 +17,57 @@ builds:
       - -X github.com/jorgegabrielti/nautikube/internal/cli.version={{ .Version }}
     goos:
       - linux
-      - darwin
-      - windows
     goarch:
       - amd64
       - arm64
-    ignore:
-      - goos: windows
-        goarch: arm64
+
+  - id: nautikube-darwin
+    main: ./cmd/nautikube
+    binary: nautikube
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w
+      - -X github.com/jorgegabrielti/nautikube/internal/cli.version={{ .Version }}
+    goos:
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+
+  - id: nautikube-windows
+    main: ./cmd/nautikube
+    binary: nautikube
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w
+      - -X github.com/jorgegabrielti/nautikube/internal/cli.version={{ .Version }}
+    goos:
+      - windows
+    goarch:
+      - amd64
 
 archives:
-  - id: default
+  - id: linux
+    builds: [nautikube-linux]
     format: tar.gz
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
-    format_overrides:
-      - goos: windows
-        format: zip
+
+  - id: darwin
+    builds: [nautikube-darwin]
+    format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - src: scripts/nautikube.command
+        dst: .
+        info:
+          mode: 0755
+
+  - id: windows
+    builds: [nautikube-windows]
+    format: zip
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 
 checksum:
   name_template: "checksums.txt"
