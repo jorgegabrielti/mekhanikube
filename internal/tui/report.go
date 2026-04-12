@@ -10,24 +10,22 @@ import (
 	"github.com/jorgegabrielti/nautikube/internal/diagnosis"
 )
 
-var reportSep = strings.Repeat("─", 83)
+const reportWidth = 80
 
-// reportBoxHeader builds a centered box header with the given title.
-// Width is measured in runes so multibyte characters (e.g. —) don't shift the frame.
-func reportBoxHeader(title string) string {
-	const boxWidth = 80
-	inner := boxWidth - 2 // chars between the ║ borders
+var reportSep = strings.Repeat("=", reportWidth)
+
+// reportHeader builds a centered ASCII header with the given title.
+func reportHeader(title string) string {
 	titleLen := len([]rune(title))
-	totalPad := inner - titleLen
+	totalPad := reportWidth - titleLen
 	if totalPad < 0 {
 		totalPad = 0
 	}
 	leftPad := totalPad / 2
 	rightPad := totalPad - leftPad
-	mid := "║" + strings.Repeat(" ", leftPad) + title + strings.Repeat(" ", rightPad) + "║"
-	top := "╔" + strings.Repeat("═", inner) + "╗"
-	bot := "╚" + strings.Repeat("═", inner) + "╝"
-	return top + "\n" + mid + "\n" + bot + "\n"
+	line := strings.Repeat("=", reportWidth)
+	mid := strings.Repeat(" ", leftPad) + title + strings.Repeat(" ", rightPad)
+	return line + "\n" + mid + "\n" + line + "\n"
 }
 
 // saveFullReport generates a full report of all problems and writes it to a file.
@@ -38,7 +36,7 @@ func saveFullReport(problems []diagnosis.Problem, contextName, namespace string)
 	}
 	var sb strings.Builder
 
-	sb.WriteString(reportBoxHeader("NautiKube — Full Report"))
+	sb.WriteString(reportHeader("NautiKube - Full Report"))
 	sb.WriteString(fmt.Sprintf("Generated : %s\n", time.Now().Format("2006-01-02 15:04:05")))
 	sb.WriteString(fmt.Sprintf("Context   : %s\n", contextName))
 	sb.WriteString(fmt.Sprintf("Namespace : %s\n", namespace))
@@ -81,7 +79,7 @@ func saveFullReport(problems []diagnosis.Problem, contextName, namespace string)
 func saveIssueReport(p diagnosis.Problem, contextName string) (string, error) {
 	var sb strings.Builder
 
-	sb.WriteString(reportBoxHeader("NautiKube — Issue Report"))
+	sb.WriteString(reportHeader("NautiKube - Issue Report"))
 	sb.WriteString(fmt.Sprintf("Generated : %s\n", time.Now().Format("2006-01-02 15:04:05")))
 	sb.WriteString(fmt.Sprintf("Context   : %s\n", contextName))
 	sb.WriteString("\n")
