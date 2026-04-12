@@ -68,6 +68,9 @@ archives:
     builds: [nautikube-windows]
     format: zip
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - src: scripts/nautikube.bat
+        dst: .
 
 checksum:
   name_template: "checksums.txt"
