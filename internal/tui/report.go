@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jorgegabrielti/nautikube/internal/diagnosis"
+	"github.com/jorgegabrielti/nautikube/internal/version"
 )
 
 const reportWidth = 80
@@ -38,6 +39,7 @@ func saveFullReport(problems []diagnosis.Problem, contextName, namespace string)
 
 	sb.WriteString(reportHeader("NautiKube - Full Report"))
 	sb.WriteString(fmt.Sprintf("Generated : %s\n", time.Now().Format("2006-01-02 15:04:05")))
+	sb.WriteString(fmt.Sprintf("Version   : %s\n", version.Version))
 	sb.WriteString(fmt.Sprintf("Context   : %s\n", contextName))
 	sb.WriteString(fmt.Sprintf("Namespace : %s\n", namespace))
 	sb.WriteString(fmt.Sprintf("Issues    : %d\n", len(problems)))
@@ -81,6 +83,7 @@ func saveIssueReport(p diagnosis.Problem, contextName string) (string, error) {
 
 	sb.WriteString(reportHeader("NautiKube - Issue Report"))
 	sb.WriteString(fmt.Sprintf("Generated : %s\n", time.Now().Format("2006-01-02 15:04:05")))
+	sb.WriteString(fmt.Sprintf("Version   : %s\n", version.Version))
 	sb.WriteString(fmt.Sprintf("Context   : %s\n", contextName))
 	sb.WriteString("\n")
 	sb.WriteString(reportSep + "\n")
