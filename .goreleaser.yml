@@ -14,7 +14,7 @@ builds:
       - CGO_ENABLED=0
     ldflags:
       - -s -w
-      - -X github.com/jorgegabrielti/nautikube/internal/cli.version={{ .Version }}
+      - -X github.com/jorgegabrielti/nautikube/internal/version.Version={{ .Version }}
     goos:
       - linux
     goarch:
@@ -28,7 +28,7 @@ builds:
       - CGO_ENABLED=0
     ldflags:
       - -s -w
-      - -X github.com/jorgegabrielti/nautikube/internal/cli.version={{ .Version }}
+      - -X github.com/jorgegabrielti/nautikube/internal/version.Version={{ .Version }}
     goos:
       - darwin
     goarch:
@@ -42,7 +42,7 @@ builds:
       - CGO_ENABLED=0
     ldflags:
       - -s -w
-      - -X github.com/jorgegabrielti/nautikube/internal/cli.version={{ .Version }}
+      - -X github.com/jorgegabrielti/nautikube/internal/version.Version={{ .Version }}
     goos:
       - windows
     goarch:

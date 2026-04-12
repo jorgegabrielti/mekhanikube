@@ -10,14 +10,14 @@ import (
 )
 
 var (
-	kernel32     = syscall.NewLazyDLL("kernel32.dll")
-	allocConsole = kernel32.NewProc("AllocConsole")
+	kernel32     = syscall.NewLazyDLL("kernel32.dll") //nolint:gochecknoglobals
+	allocConsole = kernel32.NewProc("AllocConsole")    //nolint:gochecknoglobals
 )
 
 // ensureConsole allocates a Windows console when the process is launched
-// without one (e.g. double-clicked in Explorer). It then reopens stdin,
-// stdout, and stderr against the new console so that bubbletea can detect
-// a proper terminal and render the TUI correctly.
+// without one (e.g. double-clicked in Explorer). After AllocConsole sets
+// up the OS standard handles, we wrap them with os.NewFile so that the Go
+// runtime and bubbletea see proper terminal file objects.
 func ensureConsole() {
 	// If stdout is already a terminal we're running inside an existing
 	// console (cmd.exe / PowerShell / Windows Terminal) — nothing to do.
@@ -25,33 +25,25 @@ func ensureConsole() {
 		return
 	}
 
-	// Allocate a new console window.
+	// Allocate a new console window. AllocConsole sets STD_INPUT/OUTPUT/ERROR
+	// handles on the process; subsequent GetStdHandle calls return them.
 	allocConsole.Call() //nolint:errcheck
 
-	// Re-open the standard handles so the Go runtime and bubbletea see them.
-	reopenConsoleFile("CONIN$", windows.STD_INPUT_HANDLE)
-	reopenConsoleFile("CONOUT$", windows.STD_OUTPUT_HANDLE)
-	reopenConsoleFile("CONOUT$", windows.STD_ERROR_HANDLE)
+	// Wrap the newly set OS handles in Go file objects so that bubbletea's
+	// terminal detection (GetConsoleMode on os.Stdout.Fd()) succeeds.
+	if h, err := windows.GetStdHandle(windows.STD_INPUT_HANDLE); err == nil {
+		os.Stdin = os.NewFile(uintptr(h), "/dev/stdin")
+	}
+	if h, err := windows.GetStdHandle(windows.STD_OUTPUT_HANDLE); err == nil {
+		os.Stdout = os.NewFile(uintptr(h), "/dev/stdout")
+	}
+	if h, err := windows.GetStdHandle(windows.STD_ERROR_HANDLE); err == nil {
+		os.Stderr = os.NewFile(uintptr(h), "/dev/stderr")
+	}
 }
 
 func fileIsTerminal(f *os.File) bool {
 	var mode uint32
 	handle := windows.Handle(f.Fd())
 	return windows.GetConsoleMode(handle, &mode) == nil
-}
-
-func reopenConsoleFile(name string, stdHandle uint32) {
-	f, err := os.OpenFile(name, os.O_RDWR, 0)
-	if err != nil {
-		return
-	}
-	_ = windows.SetStdHandle(stdHandle, windows.Handle(f.Fd()))
-	switch stdHandle {
-	case windows.STD_INPUT_HANDLE:
-		os.Stdin = f
-	case windows.STD_OUTPUT_HANDLE:
-		os.Stdout = f
-	case windows.STD_ERROR_HANDLE:
-		os.Stderr = f
-	}
 }
