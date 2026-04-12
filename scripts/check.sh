@@ -5,8 +5,14 @@ echo "==================================="
 echo "  NautiKube Local Quality Gate"
 echo "==================================="
 
-echo "[1/4] Running go fmt..."
-go fmt ./...
+echo "[1/4] Checking code formatting..."
+UNFORMATTED=$(gofmt -l .)
+if [ -n "$UNFORMATTED" ]; then
+    echo "[ERROR] Files need formatting:"
+    echo "$UNFORMATTED"
+    echo "Run 'make fix' or 'gofmt -w .' to fix these issues."
+    exit 1
+fi
 
 echo "[2/4] Running go vet..."
 go vet ./...
