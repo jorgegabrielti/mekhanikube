@@ -10,7 +10,7 @@ import (
 	"github.com/jorgegabrielti/nautikube/internal/diagnosis"
 )
 
-var reportSep = strings.Repeat("─", 80)
+var reportSep = strings.Repeat("─", 83)
 
 // saveFullReport generates a full report of all problems and writes it to a file.
 // Returns the absolute path of the created file.
@@ -34,13 +34,13 @@ func saveFullReport(problems []diagnosis.Problem, contextName, namespace string)
 	} else {
 		// Summary table
 		sb.WriteString(reportSep + "\n")
-		sb.WriteString(fmt.Sprintf("%-10s %-12s %-25s %-5s  %s\n",
+		sb.WriteString(fmt.Sprintf("%-10s %-15s %-25s %-5s  %s\n",
 			"SEVERITY", "RESOURCE", "NAME", "SCORE", "ISSUE"))
 		sb.WriteString(reportSep + "\n")
 		for _, p := range problems {
-			sb.WriteString(fmt.Sprintf("%-10s %-12s %-25s %-5d  %s\n",
+			sb.WriteString(fmt.Sprintf("%-10s %-15s %-25s %-5d  %s\n",
 				string(p.Severity),
-				p.Resource,
+				truncate(p.Resource, 15),
 				truncate(p.Name, 25),
 				p.Score,
 				truncate(p.Issue, 50),
