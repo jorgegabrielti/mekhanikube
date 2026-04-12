@@ -224,15 +224,15 @@ func pdfSanitize(tr func(string) string, s string) string {
 	// Replace common symbols not in CP1252 with readable ASCII equivalents
 	// before passing through the fpdf translator (which handles the rest).
 	replacer := strings.NewReplacer(
-		"\u2192", "->",  // → rightwards arrow
-		"\u2190", "<-",  // ← leftwards arrow
-		"\u2014", "--",  // — em dash
-		"\u2013", "-",   // – en dash
-		"\u2022", "*",   // • bullet
-		"\u2018", "'",   // ' left single quote
-		"\u2019", "'",   // ' right single quote
-		"\u201c", "\"",  // " left double quote
-		"\u201d", "\"",  // " right double quote
+		"\u2192", "->", // → rightwards arrow
+		"\u2190", "<-", // ← leftwards arrow
+		"\u2014", "--", // — em dash
+		"\u2013", "-", // – en dash
+		"\u2022", "*", // • bullet
+		"\u2018", "'", // ' left single quote
+		"\u2019", "'", // ' right single quote
+		"\u201c", "\"", // " left double quote
+		"\u201d", "\"", // " right double quote
 		"\u2026", "...", // … ellipsis
 	)
 	return tr(replacer.Replace(s))
@@ -290,11 +290,13 @@ func savePDFReport(problems []diagnosis.Problem, contextName, namespace string) 
 		} else {
 			pdf.SetFillColor(255, 255, 255)
 		}
+		// Truncation limits calculated for Courier 8pt: char width ~1.69 mm
+		// minus 1 char safety margin per column.
 		pdf.CellFormat(25, 6, ps(string(p.Severity)), "1", 0, "L", true, 0, "")
-		pdf.CellFormat(28, 6, ps(truncate(p.Resource, 17)), "1", 0, "L", true, 0, "")
-		pdf.CellFormat(45, 6, ps(truncate(p.Name, 28)), "1", 0, "L", true, 0, "")
+		pdf.CellFormat(28, 6, ps(truncate(p.Resource, 14)), "1", 0, "L", true, 0, "")
+		pdf.CellFormat(45, 6, ps(truncate(p.Name, 24)), "1", 0, "L", true, 0, "")
 		pdf.CellFormat(15, 6, strconv.Itoa(p.Score), "1", 0, "C", true, 0, "")
-		pdf.CellFormat(67, 6, ps(truncate(p.Issue, 42)), "1", 1, "L", true, 0, "")
+		pdf.CellFormat(67, 6, ps(truncate(p.Issue, 38)), "1", 1, "L", true, 0, "")
 	}
 	pdf.Ln(6)
 
@@ -319,15 +321,21 @@ func savePDFReport(problems []diagnosis.Problem, contextName, namespace string) 
 			pdf.SetFont("Helvetica", "B", 9)
 			pdf.CellFormat(0, 5, "  Explanation:", "", 1, "L", false, 0, "")
 			pdf.SetFont("Helvetica", "", 9)
-			pdf.MultiCell(0, 5, ps("    "+p.Explanation), "", "L", false)
+			leftM, _, _, _ := pdf.GetMargins()
+			pdf.SetLeftMargin(leftM + 6)
+			pdf.MultiCell(0, 5, ps(p.Explanation), "", "L", false)
+			pdf.SetLeftMargin(leftM)
 		}
 		if len(p.Remediation) > 0 {
 			pdf.SetFont("Helvetica", "B", 9)
 			pdf.CellFormat(0, 5, "  Remediation:", "", 1, "L", false, 0, "")
 			pdf.SetFont("Courier", "", 8)
+			leftM, _, _, _ := pdf.GetMargins()
+			pdf.SetLeftMargin(leftM + 6)
 			for j, cmd := range p.Remediation {
-				pdf.MultiCell(0, 5, ps(fmt.Sprintf("    [%d] %s", j+1, cmd)), "", "L", false)
+				pdf.MultiCell(0, 5, ps(fmt.Sprintf("[%d] %s", j+1, cmd)), "", "L", false)
 			}
+			pdf.SetLeftMargin(leftM)
 		}
 		pdf.Ln(3)
 	}
@@ -373,39 +381,57 @@ func savePDFIssueReport(p diagnosis.Problem, contextName string) (string, error)
 		pdf.SetFont("Helvetica", "B", 9)
 		pdf.CellFormat(0, 5, "  Explanation:", "", 1, "L", false, 0, "")
 		pdf.SetFont("Helvetica", "", 9)
-		pdf.MultiCell(0, 5, ps("    "+p.Explanation), "", "L", false)
+		leftM, _, _, _ := pdf.GetMargins()
+		pdf.SetLeftMargin(leftM + 6)
+		pdf.MultiCell(0, 5, ps(p.Explanation), "", "L", false)
+		pdf.SetLeftMargin(leftM)
 	}
 	if len(p.Remediation) > 0 {
 		pdf.SetFont("Helvetica", "B", 9)
 		pdf.CellFormat(0, 5, "  Remediation:", "", 1, "L", false, 0, "")
 		pdf.SetFont("Courier", "", 8)
+		leftM, _, _, _ := pdf.GetMargins()
+		pdf.SetLeftMargin(leftM + 6)
 		for j, cmd := range p.Remediation {
-			pdf.MultiCell(0, 5, ps(fmt.Sprintf("    [%d] %s", j+1, cmd)), "", "L", false)
+			pdf.MultiCell(0, 5, ps(fmt.Sprintf("[%d] %s", j+1, cmd)), "", "L", false)
 		}
+		pdf.SetLeftMargin(leftM)
 	}
 	if p.MutativeFix != "" {
 		pdf.SetFont("Helvetica", "B", 9)
 		pdf.CellFormat(0, 5, "  Mutative Fix:", "", 1, "L", false, 0, "")
 		pdf.SetFont("Courier", "", 8)
-		pdf.MultiCell(0, 5, ps("    "+p.MutativeFix), "", "L", false)
+		leftM, _, _, _ := pdf.GetMargins()
+		pdf.SetLeftMargin(leftM + 6)
+		pdf.MultiCell(0, 5, ps(p.MutativeFix), "", "L", false)
+		pdf.SetLeftMargin(leftM)
 	}
 	if len(p.Details) > 0 {
 		pdf.SetFont("Helvetica", "B", 9)
 		pdf.CellFormat(0, 5, "  Details:", "", 1, "L", false, 0, "")
 		pdf.SetFont("Helvetica", "", 9)
+		leftM, _, _, _ := pdf.GetMargins()
+		pdf.SetLeftMargin(leftM + 6)
 		for _, d := range p.Details {
-			pdf.MultiCell(0, 5, ps("    * "+d), "", "L", false)
+			pdf.MultiCell(0, 5, ps("* "+d), "", "L", false)
 		}
+		pdf.SetLeftMargin(leftM)
 	}
 
 	return abs, pdf.OutputFileAndClose(abs)
 }
 
 // pdfDetailField writes a bold key + normal value row in a PDF detail section.
+// Long values wrap within the value column using a temporary left-margin shift.
 // ps is the sanitizer function that converts UTF-8 to CP1252.
 func pdfDetailField(pdf *fpdf.Fpdf, ps func(string) string, key, val string) {
+	const keyColW = 42.0
+	leftM, _, _, _ := pdf.GetMargins()
 	pdf.SetFont("Helvetica", "B", 9)
-	pdf.CellFormat(42, 5, ps("  "+key+":"), "", 0, "L", false, 0, "")
+	pdf.CellFormat(keyColW, 5, ps("  "+key+":"), "", 0, "L", false, 0, "")
 	pdf.SetFont("Helvetica", "", 9)
-	pdf.CellFormat(138, 5, val, "", 1, "L", false, 0, "")
+	// Shift left margin so MultiCell wraps within the value column, not at page edge.
+	pdf.SetLeftMargin(leftM + keyColW)
+	pdf.MultiCell(0, 5, val, "", "L", false)
+	pdf.SetLeftMargin(leftM)
 }
