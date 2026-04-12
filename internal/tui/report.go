@@ -12,6 +12,24 @@ import (
 
 var reportSep = strings.Repeat("─", 83)
 
+// reportBoxHeader builds a centered box header with the given title.
+// Width is measured in runes so multibyte characters (e.g. —) don't shift the frame.
+func reportBoxHeader(title string) string {
+	const boxWidth = 80
+	inner := boxWidth - 2 // chars between the ║ borders
+	titleLen := len([]rune(title))
+	totalPad := inner - titleLen
+	if totalPad < 0 {
+		totalPad = 0
+	}
+	leftPad := totalPad / 2
+	rightPad := totalPad - leftPad
+	mid := "║" + strings.Repeat(" ", leftPad) + title + strings.Repeat(" ", rightPad) + "║"
+	top := "╔" + strings.Repeat("═", inner) + "╗"
+	bot := "╚" + strings.Repeat("═", inner) + "╝"
+	return top + "\n" + mid + "\n" + bot + "\n"
+}
+
 // saveFullReport generates a full report of all problems and writes it to a file.
 // Returns the absolute path of the created file.
 func saveFullReport(problems []diagnosis.Problem, contextName, namespace string) (string, error) {
@@ -20,9 +38,7 @@ func saveFullReport(problems []diagnosis.Problem, contextName, namespace string)
 	}
 	var sb strings.Builder
 
-	sb.WriteString("╔══════════════════════════════════════════════════════════════════════════════╗\n")
-	sb.WriteString("║                        NautiKube — Full Report                             ║\n")
-	sb.WriteString("╚══════════════════════════════════════════════════════════════════════════════╝\n")
+	sb.WriteString(reportBoxHeader("NautiKube — Full Report"))
 	sb.WriteString(fmt.Sprintf("Generated : %s\n", time.Now().Format("2006-01-02 15:04:05")))
 	sb.WriteString(fmt.Sprintf("Context   : %s\n", contextName))
 	sb.WriteString(fmt.Sprintf("Namespace : %s\n", namespace))
@@ -65,9 +81,7 @@ func saveFullReport(problems []diagnosis.Problem, contextName, namespace string)
 func saveIssueReport(p diagnosis.Problem, contextName string) (string, error) {
 	var sb strings.Builder
 
-	sb.WriteString("╔══════════════════════════════════════════════════════════════════════════════╗\n")
-	sb.WriteString("║                      NautiKube — Issue Report                              ║\n")
-	sb.WriteString("╚══════════════════════════════════════════════════════════════════════════════╝\n")
+	sb.WriteString(reportBoxHeader("NautiKube — Issue Report"))
 	sb.WriteString(fmt.Sprintf("Generated : %s\n", time.Now().Format("2006-01-02 15:04:05")))
 	sb.WriteString(fmt.Sprintf("Context   : %s\n", contextName))
 	sb.WriteString("\n")
