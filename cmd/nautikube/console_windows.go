@@ -11,7 +11,7 @@ import (
 
 var (
 	kernel32     = syscall.NewLazyDLL("kernel32.dll") //nolint:gochecknoglobals
-	allocConsole = kernel32.NewProc("AllocConsole")    //nolint:gochecknoglobals
+	allocConsole = kernel32.NewProc("AllocConsole")   //nolint:gochecknoglobals
 )
 
 // ensureConsole allocates a Windows console when the process is launched
