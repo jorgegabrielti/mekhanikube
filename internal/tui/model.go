@@ -24,6 +24,7 @@ const (
 	stateDetail
 	stateOutput
 	stateReportMenu
+	stateReportFormat
 	stateReportSaved
 	stateError
 )
@@ -53,9 +54,11 @@ type model struct {
 	cmdScroll  int
 	cmdRunning bool
 	// report
-	reportOrigin     viewState
-	reportPath       string
-	reportMenuCursor int // 0=full, 1=current issue
+	reportOrigin       viewState
+	reportPath         string
+	reportMenuCursor   int // 0=full, 1=current issue (scope selection)
+	reportScope        int // confirmed scope: 0=full, 1=current issue
+	reportFormatCursor int // 0=TXT, 1=CSV, 2=PDF
 }
 
 func newModel(opts Options, contexts []k8s.ContextInfo) model {
@@ -175,6 +178,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.updateOutput(msg)
 		case stateReportMenu:
 			return m.updateReportMenu(msg)
+		case stateReportFormat:
+			return m.updateReportFormat(msg)
 		case stateReportSaved:
 			m.state = m.reportOrigin
 			return m, nil
@@ -286,6 +291,8 @@ func (m model) View() string {
 		return m.viewOutput()
 	case stateReportMenu:
 		return m.viewReportMenu()
+	case stateReportFormat:
+		return m.viewReportFormat()
 	case stateReportSaved:
 		return m.viewReportSaved()
 	case stateError:
@@ -587,13 +594,50 @@ func (m model) updateReportMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.reportMenuCursor++
 		}
 	case "enter", " ":
+		m.reportScope = m.reportMenuCursor
+		m.reportFormatCursor = 0
+		m.state = stateReportFormat
+	}
+	return m, nil
+}
+
+func (m model) updateReportFormat(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "q", "ctrl+c":
+		return m, tea.Quit
+	case "esc", "backspace":
+		m.state = stateReportMenu
+	case "up", "k":
+		if m.reportFormatCursor > 0 {
+			m.reportFormatCursor--
+		}
+	case "down", "j":
+		if m.reportFormatCursor < 2 {
+			m.reportFormatCursor++
+		}
+	case "enter", " ":
 		var path string
 		var err error
-		if m.reportMenuCursor == 0 {
-			path, err = saveFullReport(m.problems, m.opts.Context, m.opts.Namespace)
-		} else {
+		switch m.reportScope {
+		case 0: // full report
+			switch m.reportFormatCursor {
+			case 0:
+				path, err = saveFullReport(m.problems, m.opts.Context, m.opts.Namespace)
+			case 1:
+				path, err = saveCSVReport(m.problems, m.opts.Context, m.opts.Namespace)
+			case 2:
+				path, err = savePDFReport(m.problems, m.opts.Context, m.opts.Namespace)
+			}
+		case 1: // current issue
 			if len(m.problems) > 0 && m.cursor < len(m.problems) {
-				path, err = saveIssueReport(m.problems[m.cursor], m.opts.Context)
+				switch m.reportFormatCursor {
+				case 0:
+					path, err = saveIssueReport(m.problems[m.cursor], m.opts.Context)
+				case 1:
+					path, err = saveCSVIssueReport(m.problems[m.cursor], m.opts.Context)
+				case 2:
+					path, err = savePDFIssueReport(m.problems[m.cursor], m.opts.Context)
+				}
 			}
 		}
 		if err != nil {
@@ -604,6 +648,39 @@ func (m model) updateReportMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.state = stateReportSaved
 	}
 	return m, nil
+}
+
+func (m model) viewReportFormat() string {
+	var sb strings.Builder
+	sb.WriteString(m.banner())
+	scopeLabel := "Full report"
+	if m.reportScope == 1 {
+		scopeLabel = "Current issue"
+	}
+	sb.WriteString(subtitleStyle.Render(fmt.Sprintf("Export Format — %s", scopeLabel)))
+	sb.WriteString("\n\n")
+
+	formats := []string{
+		"TXT  — plain text",
+		"CSV  — spreadsheet (Excel / Google Sheets)",
+		"PDF  — formatted document",
+	}
+	for i, f := range formats {
+		label := "  [ ] "
+		if i == m.reportFormatCursor {
+			label = "  [●] "
+		}
+		row := label + f
+		if i == m.reportFormatCursor {
+			sb.WriteString(selectedStyle.Render(row))
+		} else {
+			sb.WriteString(normalRowStyle.Render(row))
+		}
+		sb.WriteString("\n")
+	}
+
+	sb.WriteString(helpStyle.Render("  ↑/↓ select  enter confirm  esc back  q quit"))
+	return sb.String()
 }
 
 func (m model) viewReportMenu() string {
