@@ -1,7 +1,25 @@
 key: replicaset_orphaned
 title: Orphaned ReplicaSet detected
 explanation: |
-  This ReplicaSet has no owner references (e.g., it is not managed by a Deployment) but still has active replicas. This can occur if a Deployment was deleted with the '--cascade=orphan' flag or if a ReplicaSet was created manually.
+  This ReplicaSet has no ownerReferences — it is not managed by any Deployment or higher-level
+  controller. Common causes: a Deployment deleted with '--cascade=orphan', or a manually created
+  ReplicaSet. Orphaned ReplicaSets consume CPU, memory, and IP addresses with no lifecycle
+  management (no rollouts, no self-healing via a Deployment).
+
+  Decision tree:
+    - Is it serving production traffic?  →  Wrap it in a Deployment for proper lifecycle management.
+    - Is it a leftover from a deleted Deployment?  →  Verify pods are not in use, then delete it.
+    - Is it intentional (e.g., a test pod group)?  →  Accept the risk or migrate to a Deployment.
+
+  Steps:
+    1. Confirm it has no owner references (empty output = truly orphaned).
+    2. Check if its pods are handling real traffic before deleting.
+    3. Delete if unused, or recreate as a Deployment if needed.
 commands:
+  - "kubectl get rs {name} -n {namespace} -o jsonpath='{.metadata.ownerReferences}'"
+  - "kubectl get pods -n {namespace} -l $(kubectl get rs {name} -n {namespace} -o jsonpath='{.spec.selector.matchLabels}' | tr -d '{}\"' | tr ':' '=' | tr ',' ',') -o wide"
+  - "kubectl delete rs {name} -n {namespace}"
+windows_commands:
+  - "kubectl get rs {name} -n {namespace} -o jsonpath='{.metadata.ownerReferences}'"
   - "kubectl describe rs {name} -n {namespace}"
-  - "kubectl delete rs {name} -n {namespace} # Delete if no longer needed"
+  - "kubectl delete rs {name} -n {namespace}"
