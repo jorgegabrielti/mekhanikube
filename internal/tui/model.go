@@ -23,6 +23,8 @@ const (
 	stateResults
 	stateDetail
 	stateOutput
+	stateReportMenu
+	stateReportSaved
 	stateError
 )
 
@@ -50,6 +52,10 @@ type model struct {
 	cmdOutput  []string
 	cmdScroll  int
 	cmdRunning bool
+	// report
+	reportOrigin     viewState
+	reportPath       string
+	reportMenuCursor int // 0=full, 1=current issue
 }
 
 func newModel(opts Options, contexts []k8s.ContextInfo) model {
@@ -167,6 +173,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.updateDetail(msg)
 		case stateOutput:
 			return m.updateOutput(msg)
+		case stateReportMenu:
+			return m.updateReportMenu(msg)
+		case stateReportSaved:
+			m.state = m.reportOrigin
+			return m, nil
 		case stateError:
 			if msg.String() == "q" || msg.String() == "ctrl+c" {
 				return m, tea.Quit
@@ -210,6 +221,12 @@ func (m model) updateResults(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.problems = nil
 		m.cursor = 0
 		return m, tea.Batch(m.spinner.Tick, doScan(m.opts))
+	case "e":
+		if len(m.problems) > 0 {
+			m.reportOrigin = stateResults
+			m.reportMenuCursor = 0
+			m.state = stateReportMenu
+		}
 	case "c":
 		return m.switchContext()
 	}
@@ -230,6 +247,10 @@ func (m model) updateDetail(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if m.cursor < len(m.problems)-1 {
 			m.cursor++
 		}
+	case "e":
+		m.reportOrigin = stateDetail
+		m.reportMenuCursor = 0
+		m.state = stateReportMenu
 	case "c":
 		return m.switchContext()
 	default:
@@ -263,6 +284,10 @@ func (m model) View() string {
 		return m.viewDetail()
 	case stateOutput:
 		return m.viewOutput()
+	case stateReportMenu:
+		return m.viewReportMenu()
+	case stateReportSaved:
+		return m.viewReportSaved()
 	case stateError:
 		return m.viewError()
 	}
@@ -379,11 +404,15 @@ func (m model) viewResults() string {
 		visibleStart, visibleEnd := m.visibleRange()
 		for i := visibleStart; i < visibleEnd; i++ {
 			p := m.problems[i]
-			sevStr := m.colorSeverity(p.Severity)
-			name := truncate(p.Name, 22)
-			issue := truncate(p.Issue, 40)
-			row := fmt.Sprintf("  %-10s %-12s %-22s %-5d  %s",
-				sevStr, p.Resource, name, p.Score, issue)
+			// Pad plain text FIRST, then apply color — avoids ANSI byte-count misalignment.
+			sevPadded := fmt.Sprintf("%-10s", string(p.Severity))
+			sevCol := m.colorSeverityStr(p.Severity, sevPadded)
+			row := fmt.Sprintf("  %s %-12s %-22s %-5d  %s",
+				sevCol,
+				truncate(p.Resource, 12),
+				truncate(p.Name, 22),
+				p.Score,
+				truncate(p.Issue, 40))
 
 			if i == m.cursor {
 				sb.WriteString(selectedStyle.Render(row))
@@ -401,7 +430,7 @@ func (m model) viewResults() string {
 		}
 	}
 
-	sb.WriteString(helpStyle.Render("  ↑/↓ navigate  enter detail  r rescan  c context  q quit"))
+	sb.WriteString(helpStyle.Render("  ↑/↓ navigate  enter detail  e export  r rescan  c context  q quit"))
 	return sb.String()
 }
 
@@ -479,7 +508,7 @@ func (m model) viewDetail() string {
 	sb.WriteString("\n")
 	sb.WriteString(subtitleStyle.Render(nav))
 	sb.WriteString("\n")
-	sb.WriteString(helpStyle.Render("  ↑/↓ next/prev  1-9 run cmd  esc back  c context  r rescan  q quit"))
+	sb.WriteString(helpStyle.Render("  ↑/↓ next/prev  1-9 run cmd  e export  esc back  c context  r rescan  q quit"))
 	return sb.String()
 }
 
@@ -543,6 +572,86 @@ func (m model) viewOutput() string {
 	return sb.String()
 }
 
+func (m model) updateReportMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "q", "ctrl+c":
+		return m, tea.Quit
+	case "esc", "backspace":
+		m.state = m.reportOrigin
+	case "up", "k":
+		if m.reportMenuCursor > 0 {
+			m.reportMenuCursor--
+		}
+	case "down", "j":
+		if m.reportMenuCursor < 1 {
+			m.reportMenuCursor++
+		}
+	case "enter", " ":
+		var path string
+		var err error
+		if m.reportMenuCursor == 0 {
+			path, err = saveFullReport(m.problems, m.opts.Context, m.opts.Namespace)
+		} else {
+			if len(m.problems) > 0 && m.cursor < len(m.problems) {
+				path, err = saveIssueReport(m.problems[m.cursor], m.opts.Context)
+			}
+		}
+		if err != nil {
+			m.reportPath = "Error: " + err.Error()
+		} else {
+			m.reportPath = path
+		}
+		m.state = stateReportSaved
+	}
+	return m, nil
+}
+
+func (m model) viewReportMenu() string {
+	var sb strings.Builder
+	sb.WriteString(m.banner())
+	sb.WriteString(subtitleStyle.Render("Export Report"))
+	sb.WriteString("\n\n")
+
+	options := []string{
+		fmt.Sprintf("Full report  (%d issues)", len(m.problems)),
+		"Current issue only",
+	}
+
+	for i, opt := range options {
+		label := "  [ ] "
+		if i == m.reportMenuCursor {
+			label = "  [●] "
+		}
+		row := label + opt
+		if i == m.reportMenuCursor {
+			sb.WriteString(selectedStyle.Render(row))
+		} else {
+			sb.WriteString(normalRowStyle.Render(row))
+		}
+		sb.WriteString("\n")
+	}
+
+	sb.WriteString(helpStyle.Render("  ↑/↓ select  enter confirm  esc back  q quit"))
+	return sb.String()
+}
+
+func (m model) viewReportSaved() string {
+	var sb strings.Builder
+	sb.WriteString(m.banner())
+	if strings.HasPrefix(m.reportPath, "Error:") {
+		sb.WriteString(errorStyle.Render("  Export failed"))
+		sb.WriteString("\n\n  ")
+		sb.WriteString(detailValStyle.Render(m.reportPath))
+	} else {
+		sb.WriteString(infoStyle.Render("  ✓ Report saved"))
+		sb.WriteString("\n\n  ")
+		sb.WriteString(detailValStyle.Render(m.reportPath))
+	}
+	sb.WriteString("\n\n")
+	sb.WriteString(helpStyle.Render("  any key to continue"))
+	return sb.String()
+}
+
 func (m model) viewError() string {
 	var sb strings.Builder
 	sb.WriteString(m.banner())
@@ -588,9 +697,14 @@ func (m model) visibleRange() (int, int) {
 	return start, end
 }
 
-// colorSeverity styles a severity string.
+// colorSeverity styles a severity string (uses the raw severity text).
 func (m model) colorSeverity(sev diagnosis.Severity) string {
-	s := string(sev)
+	return m.colorSeverityStr(sev, string(sev))
+}
+
+// colorSeverityStr applies the severity color to an arbitrary string s.
+// Use this when s is pre-padded so ANSI codes don't break column alignment.
+func (m model) colorSeverityStr(sev diagnosis.Severity, s string) string {
 	switch sev {
 	case diagnosis.Critical:
 		return criticalStyle.Render(s)
