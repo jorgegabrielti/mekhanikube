@@ -216,6 +216,28 @@ func saveCSVIssueReport(p diagnosis.Problem, contextName string) (string, error)
 	return abs, w.Error()
 }
 
+// pdfSanitize translates a UTF-8 string to the CP1252 encoding expected by
+// fpdf's built-in fonts (Helvetica, Courier, Times). Characters outside the
+// CP1252 range are replaced with their closest ASCII equivalent so that
+// multi-byte glyphs like →, —, • never produce garbled output.
+func pdfSanitize(tr func(string) string, s string) string {
+	// Replace common symbols not in CP1252 with readable ASCII equivalents
+	// before passing through the fpdf translator (which handles the rest).
+	replacer := strings.NewReplacer(
+		"\u2192", "->",  // → rightwards arrow
+		"\u2190", "<-",  // ← leftwards arrow
+		"\u2014", "--",  // — em dash
+		"\u2013", "-",   // – en dash
+		"\u2022", "*",   // • bullet
+		"\u2018", "'",   // ' left single quote
+		"\u2019", "'",   // ' right single quote
+		"\u201c", "\"",  // " left double quote
+		"\u201d", "\"",  // " right double quote
+		"\u2026", "...", // … ellipsis
+	)
+	return tr(replacer.Replace(s))
+}
+
 // savePDFReport generates a PDF containing all problems and saves it to disk.
 func savePDFReport(problems []diagnosis.Problem, contextName, namespace string) (string, error) {
 	if namespace == "" {
@@ -230,6 +252,8 @@ func savePDFReport(problems []diagnosis.Problem, contextName, namespace string) 
 	pdf.SetAutoPageBreak(true, 15)
 	pdf.SetMargins(15, 15, 15)
 	pdf.AddPage()
+	tr := pdf.UnicodeTranslatorFromDescriptor("")
+	ps := func(s string) string { return pdfSanitize(tr, s) }
 
 	// Title
 	pdf.SetFont("Helvetica", "B", 16)
@@ -237,8 +261,8 @@ func savePDFReport(problems []diagnosis.Problem, contextName, namespace string) 
 	pdf.SetFont("Helvetica", "", 9)
 	pdf.CellFormat(0, 5, fmt.Sprintf("Generated: %s   |   Version: %s",
 		time.Now().Format("2006-01-02 15:04:05"), version.Version), "", 1, "C", false, 0, "")
-	pdf.CellFormat(0, 5, fmt.Sprintf("Context: %s   |   Namespace: %s   |   Issues: %d",
-		contextName, namespace, len(problems)), "", 1, "C", false, 0, "")
+	pdf.CellFormat(0, 5, ps(fmt.Sprintf("Context: %s   |   Namespace: %s   |   Issues: %d",
+		contextName, namespace, len(problems))), "", 1, "C", false, 0, "")
 	pdf.Ln(4)
 
 	if len(problems) == 0 {
@@ -266,11 +290,11 @@ func savePDFReport(problems []diagnosis.Problem, contextName, namespace string) 
 		} else {
 			pdf.SetFillColor(255, 255, 255)
 		}
-		pdf.CellFormat(25, 6, string(p.Severity), "1", 0, "L", true, 0, "")
-		pdf.CellFormat(28, 6, truncate(p.Resource, 17), "1", 0, "L", true, 0, "")
-		pdf.CellFormat(45, 6, truncate(p.Name, 28), "1", 0, "L", true, 0, "")
+		pdf.CellFormat(25, 6, ps(string(p.Severity)), "1", 0, "L", true, 0, "")
+		pdf.CellFormat(28, 6, ps(truncate(p.Resource, 17)), "1", 0, "L", true, 0, "")
+		pdf.CellFormat(45, 6, ps(truncate(p.Name, 28)), "1", 0, "L", true, 0, "")
 		pdf.CellFormat(15, 6, strconv.Itoa(p.Score), "1", 0, "C", true, 0, "")
-		pdf.CellFormat(67, 6, truncate(p.Issue, 42), "1", 1, "L", true, 0, "")
+		pdf.CellFormat(67, 6, ps(truncate(p.Issue, 42)), "1", 1, "L", true, 0, "")
 	}
 	pdf.Ln(6)
 
@@ -282,27 +306,27 @@ func savePDFReport(problems []diagnosis.Problem, contextName, namespace string) 
 	for i, p := range problems {
 		pdf.SetFont("Helvetica", "B", 10)
 		pdf.SetFillColor(220, 220, 220)
-		pdf.CellFormat(0, 7, fmt.Sprintf("  #%d — %s — %s", i+1, p.Resource, truncate(p.Name, 40)), "LRB", 1, "L", true, 0, "")
+		pdf.CellFormat(0, 7, ps(fmt.Sprintf("  #%d -- %s -- %s", i+1, p.Resource, truncate(p.Name, 40))), "LRB", 1, "L", true, 0, "")
 		pdf.SetFillColor(255, 255, 255)
-		pdfDetailField(pdf, "Severity", string(p.Severity))
-		pdfDetailField(pdf, "Namespace", p.Namespace)
-		pdfDetailField(pdf, "Score", strconv.Itoa(p.Score))
-		pdfDetailField(pdf, "Issue", p.Issue)
+		pdfDetailField(pdf, ps, "Severity", ps(string(p.Severity)))
+		pdfDetailField(pdf, ps, "Namespace", ps(p.Namespace))
+		pdfDetailField(pdf, ps, "Score", strconv.Itoa(p.Score))
+		pdfDetailField(pdf, ps, "Issue", ps(p.Issue))
 		if p.OffendingProperty != "" {
-			pdfDetailField(pdf, "Offending Property", p.OffendingProperty)
+			pdfDetailField(pdf, ps, "Offending Property", ps(p.OffendingProperty))
 		}
 		if p.Explanation != "" {
 			pdf.SetFont("Helvetica", "B", 9)
 			pdf.CellFormat(0, 5, "  Explanation:", "", 1, "L", false, 0, "")
 			pdf.SetFont("Helvetica", "", 9)
-			pdf.MultiCell(0, 5, "    "+p.Explanation, "", "L", false)
+			pdf.MultiCell(0, 5, ps("    "+p.Explanation), "", "L", false)
 		}
 		if len(p.Remediation) > 0 {
 			pdf.SetFont("Helvetica", "B", 9)
 			pdf.CellFormat(0, 5, "  Remediation:", "", 1, "L", false, 0, "")
 			pdf.SetFont("Courier", "", 8)
 			for j, cmd := range p.Remediation {
-				pdf.MultiCell(0, 5, fmt.Sprintf("    [%d] %s", j+1, cmd), "", "L", false)
+				pdf.MultiCell(0, 5, ps(fmt.Sprintf("    [%d] %s", j+1, cmd)), "", "L", false)
 			}
 		}
 		pdf.Ln(3)
@@ -322,53 +346,55 @@ func savePDFIssueReport(p diagnosis.Problem, contextName string) (string, error)
 	pdf.SetAutoPageBreak(true, 15)
 	pdf.SetMargins(15, 15, 15)
 	pdf.AddPage()
+	tr := pdf.UnicodeTranslatorFromDescriptor("")
+	ps := func(s string) string { return pdfSanitize(tr, s) }
 
 	// Title
 	pdf.SetFont("Helvetica", "B", 16)
 	pdf.CellFormat(0, 10, "NautiKube - Issue Report", "", 1, "C", false, 0, "")
 	pdf.SetFont("Helvetica", "", 9)
-	pdf.CellFormat(0, 5, fmt.Sprintf("Generated: %s   |   Version: %s   |   Context: %s",
-		time.Now().Format("2006-01-02 15:04:05"), version.Version, contextName), "", 1, "C", false, 0, "")
+	pdf.CellFormat(0, 5, ps(fmt.Sprintf("Generated: %s   |   Version: %s   |   Context: %s",
+		time.Now().Format("2006-01-02 15:04:05"), version.Version, contextName)), "", 1, "C", false, 0, "")
 	pdf.Ln(6)
 
 	// Detail block
 	pdf.SetFont("Helvetica", "B", 10)
 	pdf.SetFillColor(220, 220, 220)
-	pdf.CellFormat(0, 7, fmt.Sprintf("  %s — %s", p.Resource, p.Name), "LRB", 1, "L", true, 0, "")
+	pdf.CellFormat(0, 7, ps(fmt.Sprintf("  %s -- %s", p.Resource, p.Name)), "LRB", 1, "L", true, 0, "")
 	pdf.SetFillColor(255, 255, 255)
-	pdfDetailField(pdf, "Severity", string(p.Severity))
-	pdfDetailField(pdf, "Namespace", p.Namespace)
-	pdfDetailField(pdf, "Score", strconv.Itoa(p.Score))
-	pdfDetailField(pdf, "Issue", p.Issue)
+	pdfDetailField(pdf, ps, "Severity", ps(string(p.Severity)))
+	pdfDetailField(pdf, ps, "Namespace", ps(p.Namespace))
+	pdfDetailField(pdf, ps, "Score", strconv.Itoa(p.Score))
+	pdfDetailField(pdf, ps, "Issue", ps(p.Issue))
 	if p.OffendingProperty != "" {
-		pdfDetailField(pdf, "Offending Property", p.OffendingProperty)
+		pdfDetailField(pdf, ps, "Offending Property", ps(p.OffendingProperty))
 	}
 	if p.Explanation != "" {
 		pdf.SetFont("Helvetica", "B", 9)
 		pdf.CellFormat(0, 5, "  Explanation:", "", 1, "L", false, 0, "")
 		pdf.SetFont("Helvetica", "", 9)
-		pdf.MultiCell(0, 5, "    "+p.Explanation, "", "L", false)
+		pdf.MultiCell(0, 5, ps("    "+p.Explanation), "", "L", false)
 	}
 	if len(p.Remediation) > 0 {
 		pdf.SetFont("Helvetica", "B", 9)
 		pdf.CellFormat(0, 5, "  Remediation:", "", 1, "L", false, 0, "")
 		pdf.SetFont("Courier", "", 8)
 		for j, cmd := range p.Remediation {
-			pdf.MultiCell(0, 5, fmt.Sprintf("    [%d] %s", j+1, cmd), "", "L", false)
+			pdf.MultiCell(0, 5, ps(fmt.Sprintf("    [%d] %s", j+1, cmd)), "", "L", false)
 		}
 	}
 	if p.MutativeFix != "" {
 		pdf.SetFont("Helvetica", "B", 9)
 		pdf.CellFormat(0, 5, "  Mutative Fix:", "", 1, "L", false, 0, "")
 		pdf.SetFont("Courier", "", 8)
-		pdf.MultiCell(0, 5, "    "+p.MutativeFix, "", "L", false)
+		pdf.MultiCell(0, 5, ps("    "+p.MutativeFix), "", "L", false)
 	}
 	if len(p.Details) > 0 {
 		pdf.SetFont("Helvetica", "B", 9)
 		pdf.CellFormat(0, 5, "  Details:", "", 1, "L", false, 0, "")
 		pdf.SetFont("Helvetica", "", 9)
 		for _, d := range p.Details {
-			pdf.MultiCell(0, 5, "    • "+d, "", "L", false)
+			pdf.MultiCell(0, 5, ps("    * "+d), "", "L", false)
 		}
 	}
 
@@ -376,9 +402,10 @@ func savePDFIssueReport(p diagnosis.Problem, contextName string) (string, error)
 }
 
 // pdfDetailField writes a bold key + normal value row in a PDF detail section.
-func pdfDetailField(pdf *fpdf.Fpdf, key, val string) {
+// ps is the sanitizer function that converts UTF-8 to CP1252.
+func pdfDetailField(pdf *fpdf.Fpdf, ps func(string) string, key, val string) {
 	pdf.SetFont("Helvetica", "B", 9)
-	pdf.CellFormat(42, 5, "  "+key+":", "", 0, "L", false, 0, "")
+	pdf.CellFormat(42, 5, ps("  "+key+":"), "", 0, "L", false, 0, "")
 	pdf.SetFont("Helvetica", "", 9)
 	pdf.CellFormat(138, 5, val, "", 1, "L", false, 0, "")
 }
