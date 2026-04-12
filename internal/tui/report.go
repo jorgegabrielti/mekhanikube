@@ -325,6 +325,7 @@ func savePDFReport(problems []diagnosis.Problem, contextName, namespace string) 
 			pdf.SetLeftMargin(leftM + 6)
 			pdf.MultiCell(0, 5, ps(p.Explanation), "", "L", false)
 			pdf.SetLeftMargin(leftM)
+			pdf.SetX(leftM)
 		}
 		if len(p.Remediation) > 0 {
 			pdf.SetFont("Helvetica", "B", 9)
@@ -336,6 +337,7 @@ func savePDFReport(problems []diagnosis.Problem, contextName, namespace string) 
 				pdf.MultiCell(0, 5, ps(fmt.Sprintf("[%d] %s", j+1, cmd)), "", "L", false)
 			}
 			pdf.SetLeftMargin(leftM)
+			pdf.SetX(leftM)
 		}
 		pdf.Ln(3)
 	}
@@ -385,6 +387,7 @@ func savePDFIssueReport(p diagnosis.Problem, contextName string) (string, error)
 		pdf.SetLeftMargin(leftM + 6)
 		pdf.MultiCell(0, 5, ps(p.Explanation), "", "L", false)
 		pdf.SetLeftMargin(leftM)
+		pdf.SetX(leftM)
 	}
 	if len(p.Remediation) > 0 {
 		pdf.SetFont("Helvetica", "B", 9)
@@ -396,6 +399,7 @@ func savePDFIssueReport(p diagnosis.Problem, contextName string) (string, error)
 			pdf.MultiCell(0, 5, ps(fmt.Sprintf("[%d] %s", j+1, cmd)), "", "L", false)
 		}
 		pdf.SetLeftMargin(leftM)
+		pdf.SetX(leftM)
 	}
 	if p.MutativeFix != "" {
 		pdf.SetFont("Helvetica", "B", 9)
@@ -405,6 +409,7 @@ func savePDFIssueReport(p diagnosis.Problem, contextName string) (string, error)
 		pdf.SetLeftMargin(leftM + 6)
 		pdf.MultiCell(0, 5, ps(p.MutativeFix), "", "L", false)
 		pdf.SetLeftMargin(leftM)
+		pdf.SetX(leftM)
 	}
 	if len(p.Details) > 0 {
 		pdf.SetFont("Helvetica", "B", 9)
@@ -416,6 +421,7 @@ func savePDFIssueReport(p diagnosis.Problem, contextName string) (string, error)
 			pdf.MultiCell(0, 5, ps("* "+d), "", "L", false)
 		}
 		pdf.SetLeftMargin(leftM)
+		pdf.SetX(leftM)
 	}
 
 	return abs, pdf.OutputFileAndClose(abs)
@@ -433,5 +439,8 @@ func pdfDetailField(pdf *fpdf.Fpdf, ps func(string) string, key, val string) {
 	// Shift left margin so MultiCell wraps within the value column, not at page edge.
 	pdf.SetLeftMargin(leftM + keyColW)
 	pdf.MultiCell(0, 5, val, "", "L", false)
+	// Restore left margin AND X cursor; fpdf leaves X at lMargin after MultiCell,
+	// which at this point is leftM+keyColW, so the next element would start offset.
 	pdf.SetLeftMargin(leftM)
+	pdf.SetX(leftM)
 }
