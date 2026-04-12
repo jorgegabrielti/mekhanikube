@@ -163,7 +163,11 @@ func saveCSVReport(problems []diagnosis.Problem, contextName, namespace string) 
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
+	defer func() {
+		if cerr := f.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
 
 	w := csv.NewWriter(f)
 	_ = w.Write([]string{"Severity", "Resource", "Namespace", "Name", "Score", "Issue", "OffendingProperty", "Explanation", "Remediation"})
@@ -197,7 +201,11 @@ func saveCSVIssueReport(p diagnosis.Problem, contextName string) (string, error)
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
+	defer func() {
+		if cerr := f.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
 
 	w := csv.NewWriter(f)
 	_ = w.Write([]string{"Severity", "Resource", "Namespace", "Name", "Score", "Issue", "OffendingProperty", "Explanation", "Remediation"})
