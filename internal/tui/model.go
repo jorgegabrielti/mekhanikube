@@ -22,6 +22,7 @@ const (
 	stateScanning
 	stateResults
 	stateDetail
+	stateOutput
 	stateError
 )
 
@@ -44,6 +45,11 @@ type model struct {
 	// context selection
 	contexts    []k8s.ContextInfo
 	setupCursor int
+	// command output
+	cmdTitle   string
+	cmdOutput  []string
+	cmdScroll  int
+	cmdRunning bool
 }
 
 func newModel(opts Options, contexts []k8s.ContextInfo) model {
@@ -124,11 +130,21 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case spinner.TickMsg:
-		if m.state == stateScanning {
+		if m.state == stateScanning || m.cmdRunning {
 			var cmd tea.Cmd
 			m.spinner, cmd = m.spinner.Update(msg)
 			return m, cmd
 		}
+
+	case cmdDoneMsg:
+		m.cmdRunning = false
+		if msg.output == "" {
+			m.cmdOutput = []string{"(no output)"}
+		} else {
+			m.cmdOutput = strings.Split(strings.ReplaceAll(msg.output, "\r\n", "\n"), "\n")
+		}
+		m.cmdScroll = 0
+		return m, nil
 
 	case scanDoneMsg:
 		if msg.err != nil {
@@ -149,6 +165,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.updateResults(msg)
 		case stateDetail:
 			return m.updateDetail(msg)
+		case stateOutput:
+			return m.updateOutput(msg)
 		case stateError:
 			if msg.String() == "q" || msg.String() == "ctrl+c" {
 				return m, tea.Quit
@@ -214,6 +232,20 @@ func (m model) updateDetail(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 	case "c":
 		return m.switchContext()
+	default:
+		// Keys 1-9: run the Nth remediation command
+		if len(msg.String()) == 1 && msg.String() >= "1" && msg.String() <= "9" {
+			idx := int(msg.String()[0] - '1')
+			p := m.problems[m.cursor]
+			if idx < len(p.Remediation) {
+				m.cmdTitle = p.Remediation[idx]
+				m.cmdOutput = nil
+				m.cmdScroll = 0
+				m.cmdRunning = true
+				m.state = stateOutput
+				return m, tea.Batch(m.spinner.Tick, runCmd(p.Remediation[idx]))
+			}
+		}
 	}
 	return m, nil
 }
@@ -229,6 +261,8 @@ func (m model) View() string {
 		return m.viewResults()
 	case stateDetail:
 		return m.viewDetail()
+	case stateOutput:
+		return m.viewOutput()
 	case stateError:
 		return m.viewError()
 	}
@@ -414,9 +448,12 @@ func (m model) viewDetail() string {
 		sb.WriteString("\n  ")
 		sb.WriteString(detailKeyStyle.Render("Remediation:"))
 		sb.WriteString("\n")
-		for _, cmd := range p.Remediation {
+		for i, cmd := range p.Remediation {
+			label := fmt.Sprintf("[%d]", i+1)
 			sb.WriteString("    ")
-			sb.WriteString(detailValStyle.Render("• " + cmd))
+			sb.WriteString(detailKeyStyle.Render(label))
+			sb.WriteString(" ")
+			sb.WriteString(detailValStyle.Render(cmd))
 			sb.WriteString("\n")
 		}
 	}
@@ -442,7 +479,67 @@ func (m model) viewDetail() string {
 	sb.WriteString("\n")
 	sb.WriteString(subtitleStyle.Render(nav))
 	sb.WriteString("\n")
-	sb.WriteString(helpStyle.Render("  ↑/↓ next/prev  esc back  c context  r rescan  q quit"))
+	sb.WriteString(helpStyle.Render("  ↑/↓ next/prev  1-9 run cmd  esc back  c context  r rescan  q quit"))
+	return sb.String()
+}
+
+func (m model) updateOutput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "q", "ctrl+c":
+		return m, tea.Quit
+	case "esc", "backspace":
+		m.state = stateDetail
+	case "up", "k":
+		if m.cmdScroll > 0 {
+			m.cmdScroll--
+		}
+	case "down", "j":
+		if m.cmdScroll < len(m.cmdOutput)-1 {
+			m.cmdScroll++
+		}
+	}
+	return m, nil
+}
+
+func (m model) viewOutput() string {
+	var sb strings.Builder
+	sb.WriteString(m.banner())
+
+	if m.cmdRunning {
+		sb.WriteString("\n  ")
+		sb.WriteString(m.spinner.View())
+		sb.WriteString(" Running...\n\n  ")
+		sb.WriteString(detailValStyle.Render(m.cmdTitle))
+		sb.WriteString("\n")
+		return sb.String()
+	}
+
+	sb.WriteString(subtitleStyle.Render("Command Output"))
+	sb.WriteString("\n  ")
+	sb.WriteString(detailKeyStyle.Render("$"))
+	sb.WriteString(" ")
+	sb.WriteString(detailValStyle.Render(m.cmdTitle))
+	sb.WriteString("\n\n")
+
+	// visible lines
+	chrome := m.bannerLines() + 6
+	visible := m.height - chrome
+	if visible < 1 {
+		visible = 1
+	}
+
+	end := m.cmdScroll + visible
+	if end > len(m.cmdOutput) {
+		end = len(m.cmdOutput)
+	}
+	for _, line := range m.cmdOutput[m.cmdScroll:end] {
+		sb.WriteString("  ")
+		sb.WriteString(line)
+		sb.WriteString("\n")
+	}
+
+	sb.WriteString("\n")
+	sb.WriteString(helpStyle.Render("  ↑/↓ scroll  esc back  q quit"))
 	return sb.String()
 }
 
