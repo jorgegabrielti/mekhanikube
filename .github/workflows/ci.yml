@@ -47,7 +47,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: ["1.23", "1.24"]
+        go-version: ["1.25", "1.26"]
     steps:
       - uses: actions/checkout@v6.0.2
 
@@ -67,7 +67,7 @@ jobs:
           go test -coverprofile=coverage.txt -covermode=atomic $PKGS
 
       - name: Upload coverage
-        if: matrix.go-version == '1.24'
+        if: matrix.go-version == '1.26'
         uses: codecov/codecov-action@v6.0.0
         with:
           files: coverage.txt
