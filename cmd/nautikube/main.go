@@ -9,9 +9,9 @@ import (
 )
 
 func main() {
-	ensureConsole()
-	// Disable Cobra's Windows mousetrap: we allocate a console ourselves,
-	// so we don't want the "open cmd.exe" splash screen on double-click.
+	// Disable Cobra's Windows mousetrap so double-clicking nautikube.exe in
+	// Explorer opens the TUI directly instead of showing a "use cmd.exe" prompt.
+	// Go console binaries already get a console window from Windows automatically.
 	cobra.MousetrapHelpText = ""
 	if err := cli.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
