@@ -101,10 +101,10 @@ func TestServiceAccountScanner_Scan(t *testing.T) {
 			wantCount: 0,
 		},
 		{
-			name: "multiple empty ServiceAccounts all detected",
+			name: "multiple empty ServiceAccounts - system namespace filtered",
 			sas: []corev1.ServiceAccount{
 				{
-					ObjectMeta:       metav1.ObjectMeta{Name: "empty-sa-1", Namespace: "default"},
+					ObjectMeta:       metav1.ObjectMeta{Name: "empty-sa-1", Namespace: "production"},
 					Secrets:          []corev1.ObjectReference{},
 					ImagePullSecrets: []corev1.LocalObjectReference{},
 				},
@@ -114,24 +114,51 @@ func TestServiceAccountScanner_Scan(t *testing.T) {
 					ImagePullSecrets: []corev1.LocalObjectReference{},
 				},
 			},
-			wantCount:    2,
+			wantCount:    1, // kube-system SA is filtered
 			wantSeverity: diagnosis.Low,
+		},
+		{
+			name: "default SA in any namespace is skipped",
+			sas: []corev1.ServiceAccount{
+				{
+					ObjectMeta:       metav1.ObjectMeta{Name: "default", Namespace: "production"},
+					Secrets:          []corev1.ObjectReference{},
+					ImagePullSecrets: []corev1.LocalObjectReference{},
+				},
+			},
+			wantCount: 0,
+		},
+		{
+			name: "kube-public and kube-node-lease SAs skipped",
+			sas: []corev1.ServiceAccount{
+				{
+					ObjectMeta:       metav1.ObjectMeta{Name: "my-sa", Namespace: "kube-public"},
+					Secrets:          []corev1.ObjectReference{},
+					ImagePullSecrets: []corev1.LocalObjectReference{},
+				},
+				{
+					ObjectMeta:       metav1.ObjectMeta{Name: "my-sa", Namespace: "kube-node-lease"},
+					Secrets:          []corev1.ObjectReference{},
+					ImagePullSecrets: []corev1.LocalObjectReference{},
+				},
+			},
+			wantCount: 0,
 		},
 		{
 			name: "mixed ServiceAccounts",
 			sas: []corev1.ServiceAccount{
 				{
-					ObjectMeta: metav1.ObjectMeta{Name: "default", Namespace: "default"},
+					ObjectMeta: metav1.ObjectMeta{Name: "deployer", Namespace: "production"},
 					Secrets: []corev1.ObjectReference{
 						{
 							Name:      "sa-token-xyz789",
-							Namespace: "default",
+							Namespace: "production",
 						},
 					},
 					ImagePullSecrets: []corev1.LocalObjectReference{},
 				},
 				{
-					ObjectMeta:       metav1.ObjectMeta{Name: "empty-sa", Namespace: "default"},
+					ObjectMeta:       metav1.ObjectMeta{Name: "empty-sa", Namespace: "production"},
 					Secrets:          []corev1.ObjectReference{},
 					ImagePullSecrets: []corev1.LocalObjectReference{},
 				},

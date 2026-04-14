@@ -141,6 +141,11 @@ func runScan(opts *scanOptions) error {
 		return fmt.Errorf("failed to connect to cluster: %w", err)
 	}
 
+	// Verify cluster connectivity and credentials before scanning
+	if err := k8s.CheckConnection(ctx, client); err != nil {
+		return err
+	}
+
 	// Load knowledge base
 	kb, err := diagnosis.NewKnowledgeBase()
 	if err != nil {

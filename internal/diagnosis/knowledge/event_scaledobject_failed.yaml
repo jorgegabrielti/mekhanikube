@@ -1,0 +1,22 @@
+key: "event-scaledobject-failed"
+title: "KEDA ScaledObject Check Failed"
+explanation: |
+  KEDA's ScaledObject controller failed to reconcile the autoscaler. Common causes:
+
+    - The target Deployment/StatefulSet does not exist.
+    - The HPA created by KEDA has a configuration error.
+    - The ScaledObject references a trigger (e.g., Kafka, SQS) that is unreachable.
+
+  Steps:
+    1. Check the ScaledObject status and conditions.
+    2. Verify the target workload exists.
+    3. Check KEDA operator logs for detailed error messages.
+commands:
+  - "kubectl get scaledobject {name} -n {namespace} -o yaml"
+  - "kubectl describe scaledobject {name} -n {namespace}"
+  - "kubectl logs -l app.kubernetes.io/name=keda-operator -n keda --tail=50"
+  - "kubectl get hpa -n {namespace} | grep {name}"
+windows_commands:
+  - "kubectl get scaledobject {name} -n {namespace} -o yaml"
+  - "kubectl describe scaledobject {name} -n {namespace}"
+  - "kubectl logs -l app.kubernetes.io/name=keda-operator -n keda --tail=50"

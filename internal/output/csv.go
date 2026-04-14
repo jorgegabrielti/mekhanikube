@@ -19,7 +19,7 @@ func (f *CSVFormatter) Format(w io.Writer, problems []diagnosis.Problem, summary
 	defer writer.Flush()
 
 	// Write Header
-	header := []string{"Timestamp", "Version", "Resource", "Namespace", "Name", "Severity", "Score", "Issue", "Cause", "OffendingProperty", "MutativeFix", "Remediation"}
+	header := []string{"Timestamp", "Version", "Resource", "Namespace", "Name", "Severity", "Score", "Issue", "Cause", "OffendingProperty", "Remediation"}
 	if err := writer.Write(header); err != nil {
 		return fmt.Errorf("failed to write CSV header: %w", err)
 	}
@@ -48,7 +48,6 @@ func (f *CSVFormatter) Format(w io.Writer, problems []diagnosis.Problem, summary
 			p.Issue,
 			explanation,
 			p.OffendingProperty,
-			p.MutativeFix,
 			remediation,
 		}
 

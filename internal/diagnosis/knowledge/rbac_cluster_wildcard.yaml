@@ -16,10 +16,6 @@ explanation: |
 commands:
   - "kubectl get clusterrole {name} -o yaml"
   - "kubectl get clusterrolebindings -o wide | grep {name}"
-  - "# Fix: kubectl edit clusterrole {name}  -- replace wildcard verbs/resources with explicit ones"
-  - "kubectl auth can-i --list --as=system:serviceaccount:{namespace}:{name}"
 windows_commands:
   - "kubectl get clusterrole {name} -o yaml"
   - "kubectl get clusterrolebindings -o wide | Select-String '{name}'"
-  - "# Fix: kubectl edit clusterrole {name}  -- replace wildcard verbs/resources with explicit ones"
-  - "kubectl auth can-i --list --as=system:serviceaccount:{namespace}:{name}"

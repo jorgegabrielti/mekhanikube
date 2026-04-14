@@ -1,0 +1,26 @@
+key: cluster-coredns-missing
+title: CoreDNS pods not found
+explanation: |
+  No CoreDNS pods were found in kube-system with the label k8s-app=kube-dns. CoreDNS provides
+  DNS resolution for all Services and Pods in the cluster. Without it, service discovery fails
+  and pods cannot resolve internal DNS names (e.g., my-service.my-namespace.svc.cluster.local).
+
+  Possible causes:
+    - CoreDNS Deployment was accidentally deleted
+    - CoreDNS pods are crashing and not being recreated
+    - The label selector has been modified
+
+  Steps:
+    1. Check if the CoreDNS Deployment exists.
+    2. If missing, re-apply the CoreDNS manifest for your cluster version.
+    3. If present but pods are failing, check events and logs.
+commands:
+  - "kubectl get deployment coredns -n kube-system"
+  - "kubectl get pods -n kube-system -l k8s-app=kube-dns"
+  - "kubectl describe deployment coredns -n kube-system"
+  - "kubectl get events -n kube-system --field-selector involvedObject.name=coredns --sort-by='.lastTimestamp'"
+windows_commands:
+  - "kubectl get deployment coredns -n kube-system"
+  - "kubectl get pods -n kube-system -l k8s-app=kube-dns"
+  - "kubectl describe deployment coredns -n kube-system"
+  - "kubectl get events -n kube-system --field-selector involvedObject.name=coredns --sort-by='.lastTimestamp'"

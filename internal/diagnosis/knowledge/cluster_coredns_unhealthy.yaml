@@ -1,0 +1,27 @@
+key: cluster-coredns-unhealthy
+title: No healthy CoreDNS pods available
+explanation: |
+  CoreDNS pods exist but none are in a healthy Running+Ready state. DNS resolution is currently
+  broken across the cluster. Services cannot be discovered by DNS name and many applications
+  will fail to connect to dependencies.
+
+  Possible causes:
+    - CoreDNS pods are CrashLooping (bad config, corrupted Corefile)
+    - Resource limits too low causing OOMKill
+    - Node pressure preventing scheduling
+    - ConfigMap corefile contains syntax errors
+
+  Steps:
+    1. Check CoreDNS pod statuses and logs.
+    2. Inspect the CoreDNS ConfigMap for configuration errors.
+    3. Verify resource limits are adequate.
+commands:
+  - "kubectl get pods -n kube-system -l k8s-app=kube-dns -o wide"
+  - "kubectl logs -n kube-system -l k8s-app=kube-dns --tail=50"
+  - "kubectl get configmap coredns -n kube-system -o yaml"
+  - "kubectl describe pods -n kube-system -l k8s-app=kube-dns"
+windows_commands:
+  - "kubectl get pods -n kube-system -l k8s-app=kube-dns -o wide"
+  - "kubectl logs -n kube-system -l k8s-app=kube-dns --tail=50"
+  - "kubectl get configmap coredns -n kube-system -o yaml"
+  - "kubectl describe pods -n kube-system -l k8s-app=kube-dns"

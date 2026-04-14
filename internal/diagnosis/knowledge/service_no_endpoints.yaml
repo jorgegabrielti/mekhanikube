@@ -6,7 +6,7 @@ explanation: |
   Verify if the pods have the exact labels specified in the service selector, and ensure those pods are actually in a "Ready" state (Services only route to Ready pods).
 commands:
   - "kubectl get service {name} -n {namespace} -o jsonpath='{.spec.selector}'"
-  - "kubectl get pods --show-labels -n {namespace} | grep -E '$(kubectl get service {name} -n {namespace} -o jsonpath='{.spec.selector}' | jq -r 'to_entries | map(\"\\(.value)\") | join(\"|\")')'"
+  - "kubectl get pods --show-labels -n {namespace} | grep -E \"$(kubectl get service {name} -n {namespace} -o jsonpath='{.spec.selector}' | jq -r 'to_entries | map(\"\\(.value)\") | join(\"|\")')\""
   - "kubectl get endpoints {name} -n {namespace}"
 windows_commands:
   - "kubectl get service {name} -n {namespace} -o jsonpath='{.spec.selector}'"

@@ -134,6 +134,39 @@ func TestProblemCalculateScore(t *testing.T) {
 			},
 			wantScore: 10,
 		},
+		{
+			name: "high restart count adds bonus",
+			problem: Problem{
+				Resource:  "Pod",
+				Namespace: "production",
+				Name:      "app",
+				Issue:     "Container main has restarted 55 times",
+				Severity:  High,
+			},
+			wantScore: 77, // 70 + 7 (50<55<=100)
+		},
+		{
+			name: "very high restart count adds max bonus",
+			problem: Problem{
+				Resource:  "Pod",
+				Namespace: "production",
+				Name:      "app",
+				Issue:     "Container main has restarted 200 times",
+				Severity:  Critical,
+			},
+			wantScore: 100, // 90 + 10, capped
+		},
+		{
+			name: "event count adds bonus",
+			problem: Problem{
+				Resource:  "ExternalSecret",
+				Namespace: "production",
+				Name:      "vault-secret",
+				Issue:     "UpdateFailed: cannot read secret (seen 100 times)",
+				Severity:  High,
+			},
+			wantScore: 73, // 70 + 3 (log2(100/10) = 3.32 → 3)
+		},
 	}
 
 	for _, tt := range tests {
@@ -153,7 +186,7 @@ func TestCalculateScoreRange(t *testing.T) {
 
 	severities := []Severity{Critical, High, Medium, Low, Info}
 	namespaces := []string{"default", "kube-system", "production", "test"}
-	issues := []string{"CrashLoopBackOff", "ImagePullBackOff", "OOMKilled", "no endpoints", "Normal error"}
+	issues := []string{"CrashLoopBackOff", "ImagePullBackOff", "OOMKilled", "no endpoints", "Normal error", "has restarted 200 times", "something (seen 5000 times)"}
 
 	for _, sev := range severities {
 		for _, ns := range namespaces {

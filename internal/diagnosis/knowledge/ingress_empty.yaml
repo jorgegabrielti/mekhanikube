@@ -4,4 +4,4 @@ explanation: |
   The Ingress resource is defined but does not route traffic to any backends. It lacks both rules and a default backend, making it ineffective for traffic routing.
 commands:
   - "kubectl describe ingress {name} -n {namespace}"
-  - "kubectl edit ingress {name} -n {namespace} # Add rules or a default backend"
+  - "kubectl get ingress {name} -n {namespace} -o yaml"

@@ -4,4 +4,4 @@ explanation: |
   This ClusterRoleBinding exists but does not bind the ClusterRole to any subjects. It is ineffective and should be removed if it's not being actively managed by an external tool.
 commands:
   - "kubectl describe clusterrolebinding {name}"
-  - "kubectl delete clusterrolebinding {name} # Delete if no longer needed"
+  - "kubectl get clusterrolebinding {name} -o yaml"

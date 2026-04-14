@@ -12,6 +12,7 @@ import (
 	"github.com/jorgegabrielti/nautikube/internal/k8s"
 	"github.com/jorgegabrielti/nautikube/internal/scanner"
 	"github.com/jorgegabrielti/nautikube/internal/version"
+	"k8s.io/client-go/kubernetes"
 )
 
 // viewState represents which screen the TUI is on.
@@ -19,6 +20,7 @@ type viewState int
 
 const (
 	stateSetup viewState = iota
+	stateConnecting
 	stateScanning
 	stateResults
 	stateDetail
@@ -28,6 +30,12 @@ const (
 	stateReportSaved
 	stateError
 )
+
+// connectDoneMsg is sent when the cluster connectivity check completes.
+type connectDoneMsg struct {
+	client kubernetes.Interface
+	err    error
+}
 
 // scanDoneMsg is sent when the background scan completes.
 type scanDoneMsg struct {
@@ -43,6 +51,7 @@ type model struct {
 	problems []diagnosis.Problem
 	cursor   int
 	err      error
+	errStep  string // which checklist step failed
 	width    int
 	height   int
 	// context selection
@@ -66,7 +75,7 @@ func newModel(opts Options, contexts []k8s.ContextInfo) model {
 	sp.Spinner = spinner.Dot
 	sp.Style = spinnerStyle
 
-	state := stateScanning
+	state := stateConnecting
 	setupCursor := 0
 	// Show context selection only when there are multiple contexts to choose from.
 	if len(contexts) > 1 {
@@ -88,16 +97,16 @@ func newModel(opts Options, contexts []k8s.ContextInfo) model {
 	}
 }
 
-// Init starts the spinner and launches the scan goroutine.
+// Init starts the spinner and launches the connect check.
 func (m model) Init() tea.Cmd {
 	if m.state == stateSetup {
 		return nil
 	}
-	return tea.Batch(m.spinner.Tick, doScan(m.opts))
+	return tea.Batch(m.spinner.Tick, doConnect(m.opts))
 }
 
-// doScan runs the cluster scan asynchronously and returns a Cmd.
-func doScan(opts Options) tea.Cmd {
+// doConnect checks cluster connectivity and returns the client.
+func doConnect(opts Options) tea.Cmd {
 	return func() tea.Msg {
 		ctx := context.Background()
 
@@ -111,8 +120,21 @@ func doScan(opts Options) tea.Cmd {
 
 		client, err := k8s.NewClient(k8sOpts...)
 		if err != nil {
-			return scanDoneMsg{err: fmt.Errorf("failed to connect to cluster: %w", err)}
+			return connectDoneMsg{err: fmt.Errorf("failed to connect to cluster: %w", err)}
 		}
+
+		if err := k8s.CheckConnection(ctx, client); err != nil {
+			return connectDoneMsg{err: err}
+		}
+
+		return connectDoneMsg{client: client}
+	}
+}
+
+// doScan runs the cluster scan using an already-connected client.
+func doScan(opts Options, client kubernetes.Interface) tea.Cmd {
+	return func() tea.Msg {
+		ctx := context.Background()
 
 		kb, err := diagnosis.NewKnowledgeBase()
 		if err != nil {
@@ -139,11 +161,22 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case spinner.TickMsg:
-		if m.state == stateScanning || m.cmdRunning {
+		if m.state == stateConnecting || m.state == stateScanning || m.cmdRunning {
 			var cmd tea.Cmd
 			m.spinner, cmd = m.spinner.Update(msg)
 			return m, cmd
 		}
+
+	case connectDoneMsg:
+		if msg.err != nil {
+			m.state = stateError
+			m.err = msg.err
+			m.errStep = "connect"
+		} else {
+			m.state = stateScanning
+			return m, doScan(m.opts, msg.client)
+		}
+		return m, nil
 
 	case cmdDoneMsg:
 		m.cmdRunning = false
@@ -159,6 +192,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.err != nil {
 			m.state = stateError
 			m.err = msg.err
+			m.errStep = "scan"
 		} else {
 			m.state = stateResults
 			m.problems = msg.problems
@@ -188,15 +222,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Quit
 			}
 			if msg.String() == "r" {
-				m.state = stateScanning
+				m.state = stateConnecting
 				m.err = nil
-				return m, tea.Batch(m.spinner.Tick, doScan(m.opts))
+				m.errStep = ""
+				return m, tea.Batch(m.spinner.Tick, doConnect(m.opts))
 			}
 			if msg.String() == "c" {
 				m.err = nil
 				return m.switchContext()
 			}
-		case stateScanning:
+		case stateConnecting, stateScanning:
 			if msg.String() == "ctrl+c" {
 				return m, tea.Quit
 			}
@@ -222,10 +257,11 @@ func (m model) updateResults(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.state = stateDetail
 		}
 	case "r":
-		m.state = stateScanning
+		m.state = stateConnecting
 		m.problems = nil
 		m.cursor = 0
-		return m, tea.Batch(m.spinner.Tick, doScan(m.opts))
+		m.errStep = ""
+		return m, tea.Batch(m.spinner.Tick, doConnect(m.opts))
 	case "e":
 		if len(m.problems) > 0 {
 			m.reportOrigin = stateResults
@@ -281,8 +317,8 @@ func (m model) View() string {
 	switch m.state {
 	case stateSetup:
 		return m.viewSetup()
-	case stateScanning:
-		return m.viewScanning()
+	case stateConnecting, stateScanning:
+		return m.viewProgress()
 	case stateResults:
 		return m.viewResults()
 	case stateDetail:
@@ -336,8 +372,8 @@ func (m model) updateSetup(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "enter", " ":
 		selected := m.contexts[m.setupCursor]
 		m.opts.Context = selected.Name
-		m.state = stateScanning
-		return m, tea.Batch(m.spinner.Tick, doScan(m.opts))
+		m.state = stateConnecting
+		return m, tea.Batch(m.spinner.Tick, doConnect(m.opts))
 	}
 	return m, nil
 }
@@ -366,21 +402,37 @@ func (m model) viewSetup() string {
 		sb.WriteString("\n")
 	}
 
-	sb.WriteString(helpStyle.Render("  ↑/↓ navigate  enter select  q quit"))
+	sb.WriteString(helpStyle.Render("  [↑/↓] navigate  [enter] select  [q] quit"))
 	return sb.String()
 }
 
-func (m model) viewScanning() string {
+func (m model) viewProgress() string {
+	var sb strings.Builder
+	sb.WriteString(m.banner())
+
+	ctxName := m.opts.Context
+	if ctxName == "" {
+		ctxName = "current context"
+	}
 	ns := m.opts.Namespace
 	if ns == "" {
 		ns = "all namespaces"
 	}
-	return fmt.Sprintf("%s\n  %s Scanning cluster (%s)...\n\n  %s",
-		m.banner(),
-		m.spinner.View(),
-		ns,
-		helpStyle.Render("ctrl+c to quit"),
-	)
+
+	switch m.state {
+	case stateConnecting:
+		sb.WriteString(fmt.Sprintf("  %s Connecting to cluster (%s)...\n", m.spinner.View(), ctxName))
+		sb.WriteString(subtitleStyle.Render(fmt.Sprintf("    Scanning resources (%s)", ns)))
+		sb.WriteString("\n")
+	case stateScanning:
+		sb.WriteString(infoStyle.Render("  ✓"))
+		sb.WriteString(fmt.Sprintf(" Connected to cluster (%s)\n", ctxName))
+		sb.WriteString(fmt.Sprintf("  %s Scanning resources (%s)...\n", m.spinner.View(), ns))
+	}
+
+	sb.WriteString("\n")
+	sb.WriteString(helpStyle.Render("  ctrl+c to quit"))
+	return sb.String()
 }
 
 func (m model) viewResults() string {
@@ -437,7 +489,7 @@ func (m model) viewResults() string {
 		}
 	}
 
-	sb.WriteString(helpStyle.Render("  ↑/↓ navigate  enter detail  e export  r rescan  c context  q quit"))
+	sb.WriteString(helpStyle.Render("  [↑/↓] navigate  [enter] detail  [e] export  [r] rescan  [c] context  [q] quit"))
 	return sb.String()
 }
 
@@ -493,13 +545,6 @@ func (m model) viewDetail() string {
 			sb.WriteString("\n")
 		}
 	}
-	if p.MutativeFix != "" {
-		sb.WriteString("\n  ")
-		sb.WriteString(detailKeyStyle.Render("Mutative Fix:"))
-		sb.WriteString("\n    ")
-		sb.WriteString(detailValStyle.Render(p.MutativeFix))
-		sb.WriteString("\n")
-	}
 	if len(p.Details) > 0 {
 		sb.WriteString("\n  ")
 		sb.WriteString(detailKeyStyle.Render("Details:"))
@@ -515,7 +560,7 @@ func (m model) viewDetail() string {
 	sb.WriteString("\n")
 	sb.WriteString(subtitleStyle.Render(nav))
 	sb.WriteString("\n")
-	sb.WriteString(helpStyle.Render("  ↑/↓ next/prev  1-9 run cmd  e export  esc back  c context  r rescan  q quit"))
+	sb.WriteString(helpStyle.Render("  [↑/↓] next/prev  [1-9] run cmd  [e] export  [esc] back  [c] context  [r] rescan  [q] quit"))
 	return sb.String()
 }
 
@@ -575,7 +620,7 @@ func (m model) viewOutput() string {
 	}
 
 	sb.WriteString("\n")
-	sb.WriteString(helpStyle.Render("  ↑/↓ scroll  esc back  q quit"))
+	sb.WriteString(helpStyle.Render("  [↑/↓] scroll  [esc] back  [q] quit"))
 	return sb.String()
 }
 
@@ -679,7 +724,7 @@ func (m model) viewReportFormat() string {
 		sb.WriteString("\n")
 	}
 
-	sb.WriteString(helpStyle.Render("  ↑/↓ select  enter confirm  esc back  q quit"))
+	sb.WriteString(helpStyle.Render("  [↑/↓] select  [enter] confirm  [esc] back  [q] quit"))
 	return sb.String()
 }
 
@@ -708,7 +753,7 @@ func (m model) viewReportMenu() string {
 		sb.WriteString("\n")
 	}
 
-	sb.WriteString(helpStyle.Render("  ↑/↓ select  enter confirm  esc back  q quit"))
+	sb.WriteString(helpStyle.Render("  [↑/↓] select  [enter] confirm  [esc] back  [q] quit"))
 	return sb.String()
 }
 
@@ -732,11 +777,36 @@ func (m model) viewReportSaved() string {
 func (m model) viewError() string {
 	var sb strings.Builder
 	sb.WriteString(m.banner())
-	sb.WriteString(errorStyle.Render("  Error running scan:"))
-	sb.WriteString("\n\n  ")
+
+	ctxName := m.opts.Context
+	if ctxName == "" {
+		ctxName = "current context"
+	}
+	ns := m.opts.Namespace
+	if ns == "" {
+		ns = "all namespaces"
+	}
+
+	switch m.errStep {
+	case "connect":
+		sb.WriteString(errorStyle.Render("  ✗"))
+		sb.WriteString(fmt.Sprintf(" Connection failed (%s)\n", ctxName))
+		sb.WriteString(subtitleStyle.Render(fmt.Sprintf("    Scanning resources (%s)", ns)))
+		sb.WriteString("\n")
+	case "scan":
+		sb.WriteString(infoStyle.Render("  ✓"))
+		sb.WriteString(fmt.Sprintf(" Connected to cluster (%s)\n", ctxName))
+		sb.WriteString(errorStyle.Render("  ✗"))
+		sb.WriteString(fmt.Sprintf(" Scan failed (%s)\n", ns))
+	default:
+		sb.WriteString(errorStyle.Render("  ✗ Error"))
+		sb.WriteString("\n")
+	}
+
+	sb.WriteString("\n  ")
 	sb.WriteString(detailValStyle.Render(m.err.Error()))
 	sb.WriteString("\n\n")
-	sb.WriteString(helpStyle.Render("  r retry  c context  q quit"))
+	sb.WriteString(helpStyle.Render("  [r] retry  [c] context  [q] quit"))
 	return sb.String()
 }
 

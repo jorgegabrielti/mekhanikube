@@ -1,0 +1,21 @@
+key: "event-invalid-image"
+title: "Invalid Container Image"
+explanation: |
+  The container image reference is malformed or cannot be resolved. Common causes:
+
+    - The image name contains invalid characters or an unsupported tag format.
+    - The registry hostname is misspelled or unreachable.
+    - The image tag does not exist (e.g., typo in version number).
+    - "latest" tag was used and the registry doesn't have it.
+
+  Steps:
+    1. Check the exact image reference in the pod spec.
+    2. Verify the image exists in the registry (pull it locally to test).
+    3. Fix the image name and redeploy.
+commands:
+  - "kubectl get {kind} {name} -n {namespace} -o jsonpath='{.spec.containers[*].image}'"
+  - "kubectl describe {kind} {name} -n {namespace} | grep -A2 'Image'"
+  - "kubectl get events -n {namespace} --field-selector involvedObject.name={name} --sort-by='.lastTimestamp'"
+windows_commands:
+  - "kubectl get {kind} {name} -n {namespace} -o jsonpath='{.spec.containers[*].image}'"
+  - "kubectl describe {kind} {name} -n {namespace}"

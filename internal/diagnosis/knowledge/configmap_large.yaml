@@ -5,5 +5,5 @@ explanation: |
   They also increase the time for pod initialization as the entire ConfigMap is often mounted.
 commands:
   - "kubectl describe configmap {name} -n {namespace}"
-  - "kubectl get configmap {name} -n {namespace} -o jsonpath='{{.data}}' | wc -c # Check total data size"
+  - "kubectl get configmap {name} -n {namespace} -o jsonpath='{.data}' | wc -c # Check total data size"
   - "# Consider splitting large ConfigMaps or using Secret for sensitive but large configuration"

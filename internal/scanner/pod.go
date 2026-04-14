@@ -76,11 +76,9 @@ func (s *PodScanner) checkContainerStatuses(pod corev1.Pod) []diagnosis.Problem 
 				if cs.LastTerminationState.Terminated != nil && cs.LastTerminationState.Terminated.Reason == "OOMKilled" {
 					var details []string
 					var offendingProp string
-					var mutativeFix string
 					if containerSpec != nil && containerSpec.Resources.Limits.Memory().Value() > 0 {
 						details = append(details, fmt.Sprintf("Exact Cause: Container exceeded its strict memory limit of %s.", containerSpec.Resources.Limits.Memory().String()))
 						offendingProp = fmt.Sprintf(".spec.containers[%s].resources.limits.memory = %s", cs.Name, containerSpec.Resources.Limits.Memory().String())
-						mutativeFix = fmt.Sprintf("kubectl edit pod %s -n %s", pod.Name, pod.Namespace)
 					} else {
 						details = append(details, "Exact Cause: Container consumed all available node memory (No limits were set).")
 					}
@@ -94,7 +92,6 @@ func (s *PodScanner) checkContainerStatuses(pod corev1.Pod) []diagnosis.Problem 
 						RemediationKey:    "oomkilled",
 						Details:           details,
 						OffendingProperty: offendingProp,
-						MutativeFix:       mutativeFix,
 					})
 				} else {
 					problems = append(problems, diagnosis.Problem{
@@ -108,10 +105,8 @@ func (s *PodScanner) checkContainerStatuses(pod corev1.Pod) []diagnosis.Problem 
 				}
 			case "ImagePullBackOff", "ErrImagePull":
 				var offendingProp string
-				var mutativeFix string
 				if containerSpec != nil {
 					offendingProp = fmt.Sprintf(".spec.containers[%s].image = %s", cs.Name, containerSpec.Image)
-					mutativeFix = fmt.Sprintf("kubectl set image pod %s %s=NEW_IMAGE_NAME -n %s", pod.Name, cs.Name, pod.Namespace)
 				}
 
 				problems = append(problems, diagnosis.Problem{
@@ -122,7 +117,6 @@ func (s *PodScanner) checkContainerStatuses(pod corev1.Pod) []diagnosis.Problem 
 					Severity:          diagnosis.High,
 					RemediationKey:    "imagepullbackoff",
 					OffendingProperty: offendingProp,
-					MutativeFix:       mutativeFix,
 				})
 			case "CreateContainerConfigError":
 				var details []string
@@ -161,11 +155,9 @@ func (s *PodScanner) checkContainerStatuses(pod corev1.Pod) []diagnosis.Problem 
 			if reason == "OOMKilled" {
 				var details []string
 				var offendingProp string
-				var mutativeFix string
 				if containerSpec != nil && containerSpec.Resources.Limits.Memory().Value() > 0 {
 					details = append(details, fmt.Sprintf("Exact Cause: Container exceeded its strict memory limit of %s.", containerSpec.Resources.Limits.Memory().String()))
 					offendingProp = fmt.Sprintf(".spec.containers[%s].resources.limits.memory = %s", cs.Name, containerSpec.Resources.Limits.Memory().String())
-					mutativeFix = fmt.Sprintf("kubectl edit pod %s -n %s", pod.Name, pod.Namespace)
 				} else {
 					details = append(details, "Exact Cause: Container consumed all available node memory (No limits were set).")
 				}
@@ -179,7 +171,6 @@ func (s *PodScanner) checkContainerStatuses(pod corev1.Pod) []diagnosis.Problem 
 					RemediationKey:    "oomkilled",
 					Details:           details,
 					OffendingProperty: offendingProp,
-					MutativeFix:       mutativeFix,
 				})
 			}
 		}

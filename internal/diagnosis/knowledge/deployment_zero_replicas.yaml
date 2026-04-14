@@ -5,4 +5,5 @@ explanation: |
   No pods are running for this workload. If this is unexpected, verify if an autoscaler is misbehaving or if human error occurred.
 commands:
   - "kubectl get hpa -n {namespace}"
-  - "kubectl scale deployment/{name} -n {namespace} --replicas=1"
+  - "kubectl describe deployment {name} -n {namespace}"
+  - "kubectl get events -n {namespace} --field-selector involvedObject.name={name} --sort-by='.lastTimestamp'"

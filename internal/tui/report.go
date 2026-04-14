@@ -122,10 +122,6 @@ func issueDetail(p diagnosis.Problem) string {
 			sb.WriteString(fmt.Sprintf("    [%d] %s\n", i+1, cmd))
 		}
 	}
-	if p.MutativeFix != "" {
-		sb.WriteString(fmt.Sprintf("  %-20s\n", "Mutative Fix:"))
-		sb.WriteString("    " + p.MutativeFix + "\n")
-	}
 	if len(p.Details) > 0 {
 		sb.WriteString(fmt.Sprintf("  %-20s\n", "Details:"))
 		for _, d := range p.Details {
@@ -406,16 +402,6 @@ func savePDFIssueReport(p diagnosis.Problem, contextName string) (string, error)
 		for j, cmd := range p.Remediation {
 			pdf.MultiCell(0, 5, ps(fmt.Sprintf("[%d] %s", j+1, cmd)), "", "L", false)
 		}
-		pdf.SetLeftMargin(leftM)
-		pdf.SetX(leftM)
-	}
-	if p.MutativeFix != "" {
-		pdf.SetFont("Helvetica", "B", 9)
-		pdf.CellFormat(0, 5, "  Mutative Fix:", "", 1, "L", false, 0, "")
-		pdf.SetFont("Courier", "", 8)
-		leftM, _, _, _ := pdf.GetMargins()
-		pdf.SetLeftMargin(leftM + 6)
-		pdf.MultiCell(0, 5, ps(p.MutativeFix), "", "L", false)
 		pdf.SetLeftMargin(leftM)
 		pdf.SetX(leftM)
 	}

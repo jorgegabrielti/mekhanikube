@@ -94,15 +94,9 @@ func (f *TableFormatter) formatProblem(w io.Writer, p diagnosis.Problem) {
 	}
 
 	// Remediation (Diagnostic Commands)
-	var fixes []string
-	if p.MutativeFix != "" {
-		fixes = append(fixes, p.MutativeFix)
-	}
-	fixes = append(fixes, p.Remediation...)
-
-	if len(fixes) > 0 {
-		fmt.Fprintf(w, "   Fix:   %s\n", fixes[0])
-		for _, cmd := range fixes[1:] {
+	if len(p.Remediation) > 0 {
+		fmt.Fprintf(w, "   Fix:   %s\n", p.Remediation[0])
+		for _, cmd := range p.Remediation[1:] {
 			fmt.Fprintf(w, "          %s\n", cmd)
 		}
 	}

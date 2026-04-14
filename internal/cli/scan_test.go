@@ -18,10 +18,14 @@ func isClusterError(err error) bool {
 	if err == nil {
 		return false
 	}
-	return strings.Contains(err.Error(), "failed to connect") ||
-		strings.Contains(err.Error(), "no configuration") ||
-		strings.Contains(err.Error(), "kubeconfig") ||
-		strings.Contains(err.Error(), "connect:")
+	msg := err.Error()
+	return strings.Contains(msg, "failed to connect") ||
+		strings.Contains(msg, "no configuration") ||
+		strings.Contains(msg, "kubeconfig") ||
+		strings.Contains(msg, "connect:") ||
+		strings.Contains(msg, "cluster unreachable") ||
+		strings.Contains(msg, "authentication failed") ||
+		strings.Contains(msg, "TLS/certificate error")
 }
 
 // ---- Validation errors (no cluster needed) ----------------------------------

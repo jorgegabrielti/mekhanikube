@@ -18,8 +18,7 @@ explanation: |
 commands:
   - "kubectl get rs {name} -n {namespace} -o jsonpath='{.metadata.ownerReferences}'"
   - "kubectl get pods -n {namespace} -l $(kubectl get rs {name} -n {namespace} -o jsonpath='{.spec.selector.matchLabels}' | tr -d '{}\"' | tr ':' '=' | tr ',' ',') -o wide"
-  - "kubectl delete rs {name} -n {namespace}"
+  - "kubectl describe rs {name} -n {namespace}"
 windows_commands:
   - "kubectl get rs {name} -n {namespace} -o jsonpath='{.metadata.ownerReferences}'"
   - "kubectl describe rs {name} -n {namespace}"
-  - "kubectl delete rs {name} -n {namespace}"

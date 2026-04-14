@@ -13,8 +13,6 @@ explanation: |
 commands:
   - "kubectl get role {name} -n {namespace} -o yaml"
   - "kubectl get rolebindings -n {namespace} -o wide | grep {name}"
-  - "# Fix: kubectl edit role {name} -n {namespace}  -- replace '*' with explicit verbs/resources"
 windows_commands:
   - "kubectl get role {name} -n {namespace} -o yaml"
   - "kubectl get rolebindings -n {namespace} -o wide | Select-String '{name}'"
-  - "# Fix: kubectl edit role {name} -n {namespace}  -- replace '*' with explicit verbs/resources"

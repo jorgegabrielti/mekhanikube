@@ -4,4 +4,5 @@ explanation: |
   The claim previously bound to this volume was deleted, but the volume is retained because its reclaim policy is set to 'Retain'. It cannot be automatically bound to a new claim until manual cleanup is performed.
 commands:
   - "kubectl describe pv {name}"
-  - "kubectl edit pv {name} # Clear the claimRef to make it Available again if safe"
+  - "kubectl get pv {name} -o jsonpath='{.spec.claimRef}'"
+  - "kubectl get pv {name} -o jsonpath='{.spec.persistentVolumeReclaimPolicy}'"

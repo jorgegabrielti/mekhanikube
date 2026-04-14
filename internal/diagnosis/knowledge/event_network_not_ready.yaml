@@ -1,0 +1,23 @@
+key: "event-network-not-ready"
+title: "Network Plugin Not Ready"
+explanation: |
+  The CNI (Container Network Interface) plugin is not ready on the node, preventing
+  pod networking from being configured. This typically means:
+
+    - The CNI DaemonSet pods (e.g., aws-node, calico-node, cilium) are not running.
+    - The CNI binary or config is missing on the node.
+    - The node was recently added and CNI hasn't initialized yet.
+
+  Steps:
+    1. Check the CNI DaemonSet pods across all nodes.
+    2. Verify the node conditions for NetworkUnavailable.
+    3. Check the CNI pod logs on the affected node.
+commands:
+  - "kubectl get ds -n kube-system | grep -iE 'aws-node|calico|cilium|flannel|weave|kindnet'"
+  - "kubectl get nodes -o wide"
+  - "kubectl get pods -n kube-system -o wide | grep -iE 'aws-node|calico|cilium'"
+  - "kubectl get events --field-selector involvedObject.name={name},type=Warning --sort-by='.lastTimestamp'"
+windows_commands:
+  - "kubectl get ds -n kube-system"
+  - "kubectl get nodes -o wide"
+  - "kubectl get events --field-selector involvedObject.name={name},type=Warning --sort-by='.lastTimestamp'"

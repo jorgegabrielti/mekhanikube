@@ -4,4 +4,4 @@ explanation: |
   This RoleBinding exists but does not bind the Role to any subjects (Users, Groups, or ServiceAccounts). It provides no permissions and adds clutter to the configuration.
 commands:
   - "kubectl describe rolebinding {name} -n {namespace}"
-  - "kubectl delete rolebinding {name} -n {namespace} # Delete if no longer needed"
+  - "kubectl get rolebinding {name} -n {namespace} -o yaml"

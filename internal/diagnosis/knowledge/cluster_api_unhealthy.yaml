@@ -1,0 +1,24 @@
+key: cluster-api-unhealthy
+title: API Server health check failed
+explanation: |
+  The Kubernetes API Server /healthz endpoint returned an error. This indicates the control plane
+  is degraded or unreachable. All cluster operations depend on a healthy API Server.
+
+  Possible causes:
+    - etcd is down or unreachable
+    - API Server process crashed or is overloaded
+    - Network issues between the client and the control plane
+    - TLS certificate expiration on the API Server
+
+  Steps:
+    1. Verify network connectivity to the API Server endpoint.
+    2. Check if managed (EKS/GKE/AKS) — review the cloud provider's control plane health dashboard.
+    3. For self-managed clusters, check API Server and etcd logs.
+commands:
+  - "kubectl cluster-info"
+  - "kubectl get --raw /healthz?verbose"
+  - "kubectl get componentstatuses"
+windows_commands:
+  - "kubectl cluster-info"
+  - "kubectl get --raw /healthz?verbose"
+  - "kubectl get componentstatuses"

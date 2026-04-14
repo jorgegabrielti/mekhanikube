@@ -2,6 +2,9 @@ package diagnosis
 
 import (
 	"fmt"
+	"math"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -50,7 +53,6 @@ type Problem struct {
 	Issue             string   `json:"issue" yaml:"issue"`
 	Explanation       string   `json:"explanation,omitempty" yaml:"explanation,omitempty"`
 	OffendingProperty string   `json:"offendingProperty,omitempty" yaml:"offendingProperty,omitempty"`
-	MutativeFix       string   `json:"mutativeFix,omitempty" yaml:"mutativeFix,omitempty"`
 	Severity          Severity `json:"severity" yaml:"severity"`
 	Score             int      `json:"score" yaml:"score"`
 	Remediation       []string `json:"remediation" yaml:"remediation"`
@@ -86,6 +88,10 @@ func (p *Problem) CalculateScore() {
 		score += 10
 	}
 
+	// Quantitative factors: extract numbers from Issue string
+	score += restartCountBonus(p.Issue)
+	score += eventCountBonus(p.Issue)
+
 	// Clamp to [0, 100]
 	if score > 100 {
 		score = 100
@@ -94,6 +100,54 @@ func (p *Problem) CalculateScore() {
 		score = 0
 	}
 	p.Score = score
+}
+
+var reRestarted = regexp.MustCompile(`restarted (\d+) times`)
+var reSeenTimes = regexp.MustCompile(`seen (\d+) times`)
+
+// restartCountBonus returns a score bonus based on restart count (log-scale).
+//
+//	>100 restarts: +10, >50: +7, >20: +5, >10: +3
+func restartCountBonus(issue string) int {
+	m := reRestarted.FindStringSubmatch(issue)
+	if m == nil {
+		return 0
+	}
+	n, err := strconv.Atoi(m[1])
+	if err != nil {
+		return 0
+	}
+	switch {
+	case n > 100:
+		return 10
+	case n > 50:
+		return 7
+	case n > 20:
+		return 5
+	case n > 10:
+		return 3
+	default:
+		return 0
+	}
+}
+
+// eventCountBonus returns a score bonus for event-based problems based on
+// the "seen N times" count (log-scale capped at +10).
+func eventCountBonus(issue string) int {
+	m := reSeenTimes.FindStringSubmatch(issue)
+	if m == nil {
+		return 0
+	}
+	n, err := strconv.Atoi(m[1])
+	if err != nil || n <= 10 {
+		return 0
+	}
+	// log2-scale: bonus = min(10, floor(log2(n/10)))
+	bonus := int(math.Log2(float64(n) / 10))
+	if bonus > 10 {
+		bonus = 10
+	}
+	return bonus
 }
 
 // containsAny checks if s contains any of the substrings (case-insensitive).

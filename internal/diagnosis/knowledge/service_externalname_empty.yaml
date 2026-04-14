@@ -1,0 +1,16 @@
+key: service-externalname-empty
+title: ExternalName Service has no target DNS
+explanation: |
+  This Service is of type ExternalName but has no spec.externalName set. ExternalName Services
+  act as a DNS CNAME alias — without a target, DNS resolution for this Service will fail and
+  any pod trying to connect to it will get a DNS lookup error.
+
+  Steps:
+    1. Check if the externalName was accidentally removed.
+    2. Set the correct external DNS target for the service.
+commands:
+  - "kubectl get service {name} -n {namespace} -o yaml"
+  - "kubectl get endpoints {name} -n {namespace}"
+windows_commands:
+  - "kubectl get service {name} -n {namespace} -o yaml"
+  - "kubectl get endpoints {name} -n {namespace}"
