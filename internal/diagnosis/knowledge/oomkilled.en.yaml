@@ -1,0 +1,27 @@
+﻿key: "oomkilled"
+title: "Container OOMKilled"
+explanation: |
+  The container exceeded its memory limit (resources.limits.memory) and was killed by the Linux
+  kernel OOM killer (exit code 137). The pod will restart, but will keep being killed if the
+  limit is not increased or the memory leak is not fixed.
+
+  Resolution flow:
+    1. Confirm the OOMKill reason in the pod's last state.
+    2. Check current memory usage vs. configured limits.
+    3. Increase the memory limit to a safe value (start with 2x current limit).
+    4. If the problem recurs, the application has a memory leak â€” profile the application.
+    5. Verify the pod runs stably after the change.
+commands:
+  - "kubectl get pod {pod} -n {namespace} -o jsonpath='{.status.containerStatuses[0].lastState.terminated}'"
+  - "kubectl top pod {pod} -n {namespace}"
+  - "kubectl get pod {pod} -n {namespace} -o jsonpath='{.spec.containers[0].resources}'"
+  - "kubectl set resources deployment/{name} -n {namespace} --limits=memory=1Gi --requests=memory=512Mi"
+  - "kubectl rollout status deployment/{name} -n {namespace} --timeout=120s"
+  - "kubectl top pod -n {namespace} -l app={name} --sort-by=memory"
+windows_commands:
+  - "kubectl get pod {pod} -n {namespace} -o jsonpath='{.status.containerStatuses[0].lastState.terminated}'"
+  - "kubectl top pod {pod} -n {namespace}"
+  - "kubectl get pod {pod} -n {namespace} -o jsonpath='{.spec.containers[0].resources}'"
+  - "kubectl set resources deployment/{name} -n {namespace} --limits=memory=1Gi --requests=memory=512Mi"
+  - "kubectl rollout status deployment/{name} -n {namespace} --timeout=120s"
+  - "kubectl top pod -n {namespace} -l app={name} --sort-by=memory"

@@ -1,0 +1,26 @@
+﻿key: "node-memory-pressure"
+title: "Node Under Memory Pressure"
+explanation: |
+  The node is dangerously low on available memory. The kubelet will start evicting pods
+  that lack resource limits or have the lowest QoS class (BestEffort first, then Burstable).
+
+  Resolution flow:
+    1. Identify which pods on this node consume the most memory.
+    2. Set or reduce memory limits on the heaviest consumers.
+    3. If critical, drain the node to redistribute workloads across the cluster.
+    4. Consider adding more nodes or increasing node memory.
+    5. Verify the condition clears after workloads are redistributed.
+commands:
+  - "kubectl top node {name}"
+  - "kubectl top pods --field-selector spec.nodeName={name} -A --sort-by=memory"
+  - "kubectl get pods --field-selector spec.nodeName={name} -A -o jsonpath='{range .items[*]}{.metadata.namespace}/{.metadata.name} limits={.spec.containers[0].resources.limits.memory}{\"\\n\"}{end}'"
+  - "kubectl drain {name} --ignore-daemonsets --delete-emptydir-data --timeout=120s"
+  - "kubectl uncordon {name}"
+  - "kubectl get node {name} -o jsonpath='{.status.conditions[?(@.type==\"MemoryPressure\")].status}'"
+windows_commands:
+  - "kubectl top node {name}"
+  - "kubectl top pods -A --sort-by=memory"
+  - "kubectl get pods --field-selector spec.nodeName={name} -A"
+  - "kubectl drain {name} --ignore-daemonsets --delete-emptydir-data --timeout=120s"
+  - "kubectl uncordon {name}"
+  - "kubectl get node {name} -o jsonpath='{.status.conditions[?(@.type==\"MemoryPressure\")].status}'"

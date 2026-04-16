@@ -1,0 +1,106 @@
+version: 2
+
+before:
+  hooks:
+    - go mod tidy
+    - go vet ./...
+    - go test -race ./...
+
+builds:
+  - id: nautikube-linux
+    main: ./cmd/nautikube
+    binary: nautikube
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w
+      - -X github.com/jorgegabrielti/nautikube/internal/version.Version={{ .Version }}
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+
+  - id: nautikube-darwin
+    main: ./cmd/nautikube
+    binary: nautikube
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w
+      - -X github.com/jorgegabrielti/nautikube/internal/version.Version={{ .Version }}
+    goos:
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+
+  - id: nautikube-windows
+    main: ./cmd/nautikube
+    binary: nautikube
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w
+      - -X github.com/jorgegabrielti/nautikube/internal/version.Version={{ .Version }}
+    goos:
+      - windows
+    goarch:
+      - amd64
+
+archives:
+  - id: linux
+    builds: [nautikube-linux]
+    format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+  - id: darwin
+    builds: [nautikube-darwin]
+    format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - src: scripts/nautikube.command
+        dst: .
+        info:
+          mode: 0755
+
+  - id: windows
+    builds: [nautikube-windows]
+    format: zip
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - src: scripts/nautikube.bat
+        dst: .
+
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+      - "^chore:"
+  groups:
+    - title: "✨ Features"
+      regexp: "^feat"
+      order: 0
+    - title: "🐛 Bug Fixes"
+      regexp: "^fix"
+      order: 1
+    - title: "🔧 Refactoring"
+      regexp: "^refactor"
+      order: 2
+    - title: "📦 Other"
+      order: 999
+
+release:
+  github:
+    owner: jorgegabrielti
+    name: nautikube
+  prerelease: auto
+  name_template: "v{{ .Version }}"

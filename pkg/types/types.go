@@ -46,13 +46,13 @@ func (p *Problem) CalculateScore() {
 		score += 10 // Namespaces críticos
 	}
 
-	if p.Kind == "Pod" && (containsCaseInsensitive(p.Error, "CrashLoopBackOff") ||
-		containsCaseInsensitive(p.Error, "ImagePullBackOff") ||
-		containsCaseInsensitive(p.Error, "OOMKilled")) {
+	if p.Kind == "Pod" && (ContainsCaseInsensitive(p.Error, "CrashLoopBackOff") ||
+		ContainsCaseInsensitive(p.Error, "ImagePullBackOff") ||
+		ContainsCaseInsensitive(p.Error, "OOMKilled")) {
 		score += 10 // Problemas críticos de Pod
 	}
 
-	if p.Kind == "Service" && containsCaseInsensitive(p.Error, "no endpoints") {
+	if p.Kind == "Service" && ContainsCaseInsensitive(p.Error, "no endpoints") {
 		score += 10 // Service sem endpoints
 	}
 
@@ -67,15 +67,15 @@ func (p *Problem) CalculateScore() {
 	p.Score = score
 }
 
-// containsCaseInsensitive verifica se uma string contém outra (case-insensitive)
-func containsCaseInsensitive(s, substr string) bool {
-	return indexCaseInsensitive(s, substr) >= 0
+// ContainsCaseInsensitive verifica se uma string contém outra (case-insensitive)
+func ContainsCaseInsensitive(s, substr string) bool {
+	return IndexCaseInsensitive(s, substr) >= 0
 }
 
-// indexCaseInsensitive encontra substr em s ignorando case
-func indexCaseInsensitive(s, substr string) int {
-	s = toLower(s)
-	substr = toLower(substr)
+// IndexCaseInsensitive encontra substr em s ignorando case
+func IndexCaseInsensitive(s, substr string) int {
+	s = ToLower(s)
+	substr = ToLower(substr)
 	for i := 0; i <= len(s)-len(substr); i++ {
 		if s[i:i+len(substr)] == substr {
 			return i
@@ -84,8 +84,8 @@ func indexCaseInsensitive(s, substr string) int {
 	return -1
 }
 
-// toLower converte string para lowercase
-func toLower(s string) string {
+// ToLower converte string para lowercase
+func ToLower(s string) string {
 	result := make([]byte, len(s))
 	for i := 0; i < len(s); i++ {
 		c := s[i]
@@ -95,6 +95,16 @@ func toLower(s string) string {
 		result[i] = c
 	}
 	return string(result)
+}
+
+// ContainsString verifica se uma string está em um slice
+func ContainsString(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
 }
 
 // AnalyzeOptions define as opções para análise

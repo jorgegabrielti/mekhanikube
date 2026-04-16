@@ -1,253 +1,127 @@
-# Política de Segurança
+# Security Policy
 
-## Versões Suportadas
+## Supported Versions
 
-As seguintes versões do NautiKube estão atualmente recebendo atualizações de segurança:
+| Version | Supported | Notes |
+|---------|-----------|-------|
+| 1.0.x   | ✅         | Current stable release |
+| < 1.0   | ❌         | Not supported |
 
-| Versão  | Suportada          | Observações |
-| ------- | ------------------ | ----------- |
-| 2.0.x   | :white_check_mark: | Engine nativo Go (recomendado) |
-| < 2.0   | :x:                | Não suportado |
+## Security Model
 
-## Considerações de Segurança
+NautiKube is designed as a **read-only diagnostic tool**. It performs no writes to your Kubernetes cluster.
 
-### Implantação Apenas Local
+### What NautiKube Does
 
-O NautiKube foi projetado para ser executado **localmente** na sua infraestrutura. Não deve ser exposto à internet pública.
+- ✅ Read-only access to the Kubernetes API (Pods, Deployments, Services, Nodes, Events)
+- ✅ All processing runs locally — no external API calls
+- ✅ No telemetry, tracking, or data collection
+- ✅ Single static binary — no runtime dependencies
 
-**Recursos de Segurança Principais**:
-- ✅ Nenhuma chamada de API externa (exceto downloads de modelos do Ollama)
-- ✅ Todos os dados permanecem locais
-- ✅ Sem telemetria ou rastreamento
-- ✅ Acesso somente leitura ao cluster Kubernetes
-- ✅ Kubeconfig montado como somente leitura
+### What NautiKube Does NOT Do
 
-### O que o NautiKube NÃO Faz
+- ❌ Does not modify any cluster resources
+- ❌ Does not send data to external services
+- ❌ Does not store credentials
+- ❌ Does not require privileged access
 
-- ❌ Não modifica seu cluster Kubernetes
-- ❌ Não envia dados para serviços externos
-- ❌ Não armazena credenciais sensíveis externamente
-- ❌ Não expõe APIs publicamente
+## Reporting a Vulnerability
 
-## Reportar uma Vulnerabilidade
+If you discover a security vulnerability in NautiKube, please report it responsibly.
 
-Se você descobrir uma vulnerabilidade de segurança no NautiKube, por favor reporte-a de forma responsável:
-
-### Como Reportar
+### How to Report
 
 **Email**: [jorgegabrielti@gmail.com](mailto:jorgegabrielti@gmail.com)
 
-**Assunto**: `[SEGURANÇA] Breve descrição do problema`
+**Subject**: `[SECURITY] Brief description`
 
-**Por favor, inclua**:
-1. Descrição da vulnerabilidade
-2. Passos para reproduzir
-3. Impacto potencial
-4. Correção sugerida (se disponível)
-5. Suas informações de contato (opcional, para acompanhamento)
+**Please include**:
+1. Description of the vulnerability
+2. Steps to reproduce
+3. Potential impact
+4. Suggested fix (if available)
 
-### O que Esperar
+### Response Timeline
 
-- **Resposta Inicial**: Dentro de 48 horas
-- **Atualização de Status**: Dentro de 7 dias
-- **Prazo para Correção**: Depende da severidade (veja abaixo)
-- **Divulgação Pública**: Após a correção ser lançada ou 90 dias (o que vier primeiro)
+| Severity | Target Fix Time |
+|----------|-----------------|
+| **Critical** — RCE, credential exposure, unauthorized cluster modification | 7 days |
+| **High** — information disclosure, access control bypass | 14 days |
+| **Medium** — local DoS, non-sensitive information leak | 30 days |
+| **Low** — minor issues, best practice violations | Best effort |
 
-### Níveis de Severidade
+### Disclosure Policy
 
-#### Crítico (Correção em 7 dias)
-- Execução remota de código
-- Escalação de privilégios
-- Exposição de kubeconfig ou credenciais
-- Modificação de cluster sem autorização
+- Vulnerabilities are disclosed **after a fix is released**, or after **90 days** (whichever comes first).
+- Credit is given to the reporter upon request.
 
-#### Alto (Correção em 14 dias)
-- Divulgação de informações (dados do cluster)
-- Negação de serviço afetando o cluster
-- Bypass de controles de acesso
+## Best Practices
 
-#### Médio (Correção em 30 dias)
-- Negação de serviço (apenas local)
-- Vazamento de informações (não sensíveis)
-- Problemas de configuração
+### For Users
 
-#### Baixo (Correção quando possível)
-- Problemas menores com impacto limitado
-- Erros de documentação
-- Violações de boas práticas
-
-## Melhores Práticas de Segurança
-
-### Para Usuários
-
-1. **Isolamento de Rede**
-   ```yaml
-   # Mantenha contêineres na rede do host (padrão)
-   # Ou use rede Docker privada
-   network_mode: host
-   ```
-
-2. **Proteção do Kubeconfig**
-   ```yaml
-   # Sempre monte como somente leitura
-   volumes:
-     - ~/.kube/config:/root/.kube/config:ro
-   ```
-
-3. **Atualizações Regulares**
+1. **Use a dedicated kubeconfig** with read-only permissions:
    ```bash
-   # Mantenha o NautiKube atualizado
-   git pull origin main
-   make build
-   make restart
+   # Create a read-only ClusterRole for NautiKube
+   kubectl create clusterrolebinding nautikube-reader \
+     --clusterrole=view \
+     --serviceaccount=default:nautikube
    ```
 
-4. **Limitar Acesso ao Cluster**
+2. **Keep NautiKube updated**:
    ```bash
-   # Use service account com permissões somente leitura
-   # Crie kubeconfig dedicado para o NautiKube
+   # Check your version
+   nautikube version
+
+   # Download latest from GitHub Releases
    ```
 
-5. **Monitorar Logs**
+3. **Restrict namespace access** when possible:
    ```bash
-   # Verifique os logs regularmente para anomalias
-   make logs
+   # Scan only specific namespaces
+   nautikube scan -n production
    ```
 
-### Para Desenvolvedores
+### For Developers
 
-1. **Gerenciamento de Dependências**
-   - Mantenha as imagens base atualizadas
-   - Faça varredura de vulnerabilidades regularmente
-   - Fixe versões de dependências
+1. **Dependency management** — run `govulncheck ./...` regularly
+2. **Code review** — all PRs require review; security-sensitive changes need extra scrutiny
+3. **No secrets in code** — never commit credentials or kubeconfig files
+4. **Quality gates** — `make check` runs lint, vet, vuln, and tests before merge
 
-2. **Revisão de Código**
-   - Todos os PRs requerem revisão
-   - Mudanças sensíveis à segurança precisam de escrutínio extra
-   - Execute verificações de segurança no CI/CD
+## Automated Security Checks
 
-3. **Gerenciamento de Segredos**
-   - Nunca faça commit de segredos no git
-   - Use arquivos `.env` (já no `.gitignore`)
-   - Rotacione credenciais regularmente
+NautiKube CI includes:
 
-4. **Segurança de Contêineres**
-   - Execute contêineres como não-root quando possível
-   - Minimize o tamanho da imagem
-   - Use imagens base oficiais
-   - Habilite varredura de segurança
+- **golangci-lint** — static analysis with 50+ linters
+- **govulncheck** — known CVE scanning for Go dependencies
+- **Race detector** — data race detection in tests
 
-## Testes de Segurança
-
-### Verificações Automáticas de Segurança
-
-O NautiKube inclui:
-
-- **Varredura de vulnerabilidades Trivy** (no CI/CD)
-- **ShellCheck** para lint de scripts
-- **Validação do Docker Compose**
-
-Execute localmente:
 ```bash
-# Lint de configuração
-make lint
-
-# Executar testes
-make test
-
-# Verificar saúde
-make health
+# Run locally
+make lint          # Static analysis
+make vuln          # Vulnerability scan
+make test          # Tests with race detector
 ```
 
-### Revisão Manual de Segurança
+## Data Privacy
 
-Antes de cada lançamento:
-- [ ] Revisar todas as dependências
-- [ ] Verificar vulnerabilidades conhecidas
-- [ ] Testar com permissões mínimas
-- [ ] Verificar que não há exposição de dados sensíveis
-- [ ] Confirmar acesso somente leitura ao cluster
+NautiKube is fully compliant with data privacy requirements:
+- No data collection of any kind
+- No external communications
+- No telemetry or analytics
+- GDPR compatible (no personal data processed)
 
-## Limitações Conhecidas
+## Security Resources
 
-### 1. Exposição do Kubeconfig no Contêiner
+- [Kubernetes Security](https://kubernetes.io/docs/concepts/security/)
+- [Go Vulnerability Database](https://vuln.go.dev/)
 
-**Problema**: Kubeconfig é montado no sistema de arquivos do contêiner.
+## Contact
 
-**Mitigação**:
-- Montado como somente leitura
-- Sistema de arquivos do contêiner é efêmero
-- Não exposto externamente
-
-**Recomendação**: Use kubeconfig dedicado com permissões mínimas.
-
-### 2. Acesso ao Socket do Docker (Não Necessário)
-
-**Status**: O NautiKube NÃO requer acesso ao socket do Docker.
-
-**Se você ver solicitações para `/var/run/docker.sock`**: Isso não é necessário e não deve ser concedido.
-
-### 3. Modo de Rede Host
-
-**Trade-off**: O modo de rede host simplifica a conectividade, mas compartilha a pilha de rede do host.
-
-**Alternativa**: Use modo bridge com mapeamentos explícitos de porta:
-```yaml
-network_mode: bridge
-ports:
-  - "11434:11434"
-```
-
-## Política de Divulgação de Segurança
-
-### Divulgação Pública
-
-Vulnerabilidades de segurança serão divulgadas:
-
-1. **Após uma correção ser lançada**
-2. **Após 90 dias** (se nenhuma correção estiver disponível)
-3. **Com crédito ao relator** (se desejado)
-
-### Mural da Fama
-
-Reconhecemos pesquisadores de segurança que divulgam vulnerabilidades de forma responsável:
-
-- *Seja o primeiro!*
-
-## Conformidade
-
-### Privacidade de Dados
-
-O NautiKube foi projetado para privacidade:
-- Sem coleta de dados
-- Sem comunicações externas
-- Sem telemetria
-- Compatível com GDPR (nenhum dado pessoal processado)
-
-### Trilha de Auditoria
-
-Para fins de conformidade:
-```bash
-# Todas as ações são registradas
-docker logs NautiKube
-
-# Logs de auditoria da API Kubernetes (no seu cluster)
-kubectl logs -n kube-system kube-apiserver-*
-```
-
-## Recursos de Segurança
-
-- [Melhores Práticas de Segurança do Docker](https://docs.docker.com/engine/security/)
-- [Segurança do Kubernetes](https://kubernetes.io/docs/concepts/security/)
-- [Segurança do Ollama](https://github.com/ollama/ollama/blob/main/docs/security.md)
-
-## Contato
-
-Para questões de segurança:
 - **Email**: [jorgegabrielti@gmail.com](mailto:jorgegabrielti@gmail.com)
-- **GitHub Issues**: Para problemas não sensíveis
-- **GitHub Security Advisory**: Para divulgação responsável
+- **GitHub Issues**: For non-sensitive problems
+- **GitHub Security Advisory**: For responsible disclosure
 
 ---
 
-**Última Atualização**: 2025-11-09
+**Last Updated**: 2026-03-14

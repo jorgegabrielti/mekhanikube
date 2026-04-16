@@ -1,0 +1,30 @@
+key: "event-scaledobject-failed"
+title: "Verificação do ScaledObject KEDA Falhou"
+explanation: |
+  O controller do ScaledObject do KEDA falhou ao reconciliar o autoscaler.
+
+  Causas comuns:
+    - Deployment/StatefulSet alvo não existe ou foi deletado.
+    - A fonte do trigger (Kafka, SQS, Prometheus) está inacessível.
+    - O próprio operador KEDA não está saudável.
+
+  Fluxo de resolução:
+    1. Verifique o status e condições do ScaledObject para o erro específico.
+    2. Verifique se o workload alvo existe.
+    3. Verifique os logs do pod do operador KEDA para erros detalhados.
+    4. Corrija a configuração do trigger ou recrie o ScaledObject.
+    5. Verifique se o KEDA reconcilia com sucesso.
+commands:
+  - "kubectl describe scaledobject {name} -n {namespace}"
+  - "kubectl get deployment -n {namespace} | grep {name}"
+  - "kubectl logs -n keda -l app=keda-operator --tail=50"
+  - "kubectl delete scaledobject {name} -n {namespace}"
+  - "kubectl apply -f <scaledobject-manifest.yaml>"
+  - "kubectl get scaledobject {name} -n {namespace}"
+windows_commands:
+  - "kubectl describe scaledobject {name} -n {namespace}"
+  - "kubectl get deployment -n {namespace}"
+  - "kubectl logs -n keda -l app=keda-operator --tail=50"
+  - "kubectl delete scaledobject {name} -n {namespace}"
+  - "kubectl apply -f <scaledobject-manifest.yaml>"
+  - "kubectl get scaledobject {name} -n {namespace}"

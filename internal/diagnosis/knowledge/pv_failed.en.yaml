@@ -1,0 +1,31 @@
+﻿key: pv_failed
+title: "PV in Failed State"
+explanation: |
+  The PersistentVolume failed during the reclaim process (recycle or delete). The backing
+  storage could not be cleaned up by the provisioner.
+
+  Common causes:
+    - Backing storage (EBS, NFS) was manually deleted outside Kubernetes.
+    - The provisioner lacks IAM/RBAC permissions to delete the volume.
+    - Network connectivity issue to the storage backend.
+
+  Resolution flow:
+    1. Check PV events and the reclaim policy.
+    2. If data is not needed, change the reclaim policy to Retain and manually clean up.
+    3. Delete the failed PV from Kubernetes.
+    4. If the backing storage still exists, recreate the PV with the correct reference.
+    5. Verify the volume state.
+commands:
+  - "kubectl describe pv {name}"
+  - "kubectl get pv {name} -o jsonpath='{.spec.persistentVolumeReclaimPolicy}'"
+  - "kubectl patch pv {name} -p '{\"spec\":{\"persistentVolumeReclaimPolicy\":\"Retain\"}}'"
+  - "kubectl patch pv {name} -p '{\"spec\":{\"claimRef\":null}}'"
+  - "kubectl delete pv {name}"
+  - "kubectl get pv"
+windows_commands:
+  - "kubectl describe pv {name}"
+  - "kubectl get pv {name} -o jsonpath='{.spec.persistentVolumeReclaimPolicy}'"
+  - "kubectl patch pv {name} -p '{\"spec\":{\"persistentVolumeReclaimPolicy\":\"Retain\"}}'"
+  - "kubectl patch pv {name} -p '{\"spec\":{\"claimRef\":null}}'"
+  - "kubectl delete pv {name}"
+  - "kubectl get pv"

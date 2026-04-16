@@ -1,0 +1,21 @@
+﻿key: service-externalname-empty
+title: "ExternalName Service Has No Target DNS"
+explanation: |
+  This ExternalName Service has no spec.externalName set. ExternalName Services act as a
+  DNS CNAME alias â€” without a target, DNS resolution fails and any pod connecting to this
+  Service gets a DNS lookup error.
+
+  Resolution flow:
+    1. Identify the correct external DNS target this Service should point to.
+    2. Patch the Service with the correct externalName.
+    3. Verify DNS resolution works from within a pod.
+commands:
+  - "kubectl get svc {name} -n {namespace} -o yaml"
+  - "kubectl patch svc {name} -n {namespace} -p '{\"spec\":{\"externalName\":\"target.example.com\"}}'"
+  - "kubectl run dns-test --rm -it --image=busybox:1.36 --restart=Never -- nslookup {name}.{namespace}.svc.cluster.local"
+  - "kubectl get svc {name} -n {namespace}"
+windows_commands:
+  - "kubectl get svc {name} -n {namespace} -o yaml"
+  - "kubectl patch svc {name} -n {namespace} -p '{\"spec\":{\"externalName\":\"target.example.com\"}}'"
+  - "kubectl run dns-test --rm -it --image=busybox:1.36 --restart=Never -- nslookup {name}.{namespace}.svc.cluster.local"
+  - "kubectl get svc {name} -n {namespace}"

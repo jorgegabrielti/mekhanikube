@@ -1,0 +1,25 @@
+﻿key: job_failed
+title: "Job Has Failed Executions"
+explanation: |
+  The Job has one or more failed pods. If the backoffLimit is reached, the Job stops retrying
+  and remains in a permanently failed state.
+
+  Resolution flow:
+    1. Check the Job events and its pod logs to understand the failure reason.
+    2. Fix the root cause (image, command, config, permissions).
+    3. Delete the failed Job and create a retry from the original spec.
+    4. Verify the retried Job completes successfully.
+commands:
+  - "kubectl describe job {name} -n {namespace}"
+  - "kubectl logs -l job-name={name} -n {namespace} --tail=100"
+  - "kubectl get pods -l job-name={name} -n {namespace} -o wide"
+  - "kubectl delete job {name} -n {namespace}"
+  - "kubectl create job {name}-retry --from=job/{name} -n {namespace}"
+  - "kubectl get job -n {namespace} | grep {name}"
+windows_commands:
+  - "kubectl describe job {name} -n {namespace}"
+  - "kubectl logs -l job-name={name} -n {namespace} --tail=100"
+  - "kubectl get pods -l job-name={name} -n {namespace} -o wide"
+  - "kubectl delete job {name} -n {namespace}"
+  - "kubectl create job {name}-retry --from=job/{name} -n {namespace}"
+  - "kubectl get job -n {namespace}"

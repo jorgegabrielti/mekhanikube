@@ -1,0 +1,27 @@
+key: "crashloopbackoff"
+title: "Container in CrashLoopBackOff"
+explanation: |
+  The container is crashing immediately after starting. Kubernetes restarts it with exponential
+  backoff (30s → 60s → 120s → up to 5 min between attempts).
+
+  Diagnose by exit code:
+    - Exit 0:   Process exited cleanly but unexpectedly — wrong entrypoint or one-shot command
+    - Exit 1/2: Application error — bad config, missing env var, or startup check failed
+    - Exit 127:  Binary not found — wrong image or wrong CMD/entrypoint
+    - Exit 137:  OOMKilled — container exceeded its memory limit; increase resources.limits.memory
+
+  Steps:
+    1. Read the PREVIOUS container logs (the current instance may have no output yet).
+    2. Check the exit code to classify the failure type.
+    3. Describe the pod to inspect env vars, volume mounts, and probe settings.
+    4. Fix the root cause (image, config, resources) and re-apply the manifest.
+commands:
+  - "kubectl logs {pod} -n {namespace} --previous --tail=100"
+  - "kubectl get pod {pod} -n {namespace} -o jsonpath='{.status.containerStatuses[*].lastState.terminated}'"
+  - "kubectl describe pod {pod} -n {namespace}"
+  - "kubectl get events -n {namespace} --field-selector involvedObject.name={pod} --sort-by='.lastTimestamp'"
+windows_commands:
+  - "kubectl logs {pod} -n {namespace} --previous --tail=100"
+  - "kubectl get pod {pod} -n {namespace} -o jsonpath='{.status.containerStatuses[*].lastState.terminated}'"
+  - "kubectl describe pod {pod} -n {namespace}"
+  - "kubectl get events -n {namespace} --field-selector involvedObject.name={pod} --sort-by='.lastTimestamp'"

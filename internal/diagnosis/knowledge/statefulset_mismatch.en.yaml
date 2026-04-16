@@ -1,0 +1,31 @@
+﻿key: statefulset_mismatch
+title: "StatefulSet Replicas Mismatch"
+explanation: |
+  The StatefulSet has fewer ready replicas than desired. StatefulSets create pods sequentially
+  (pod-0, pod-1, ...) and will not proceed to the next pod if the current one is not Ready.
+
+  Common causes:
+    - PVCs cannot be bound (missing StorageClass or no available PVs).
+    - Pod initialization is failing (init containers, app startup issues).
+    - The headless Service required for DNS is misconfigured.
+
+  Resolution flow:
+    1. Check the StatefulSet events and identify which pod is stuck.
+    2. Inspect that specific pod for PVC, init container, or application errors.
+    3. Fix the issue (create PV, fix StorageClass, fix app config).
+    4. If a pod is stuck and cannot recover, delete it to trigger recreation.
+    5. Verify all replicas become ready.
+commands:
+  - "kubectl describe sts {name} -n {namespace}"
+  - "kubectl get pods -n {namespace} -l app={name} -o wide"
+  - "kubectl get pvc -n {namespace} -l app={name}"
+  - "kubectl logs {name}-0 -n {namespace} --tail=100"
+  - "kubectl delete pod {name}-0 -n {namespace}"
+  - "kubectl rollout status statefulset/{name} -n {namespace} --timeout=180s"
+windows_commands:
+  - "kubectl describe sts {name} -n {namespace}"
+  - "kubectl get pods -n {namespace} -l app={name} -o wide"
+  - "kubectl get pvc -n {namespace} -l app={name}"
+  - "kubectl logs {name}-0 -n {namespace} --tail=100"
+  - "kubectl delete pod {name}-0 -n {namespace}"
+  - "kubectl rollout status statefulset/{name} -n {namespace} --timeout=180s"

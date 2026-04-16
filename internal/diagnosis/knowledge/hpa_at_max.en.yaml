@@ -1,0 +1,26 @@
+﻿key: hpa_at_max
+title: "HPA at Maximum Replicas"
+explanation: |
+  The HorizontalPodAutoscaler has reached its maximum replica count and cannot scale further.
+  The workload is under heavy load and may experience degraded performance.
+
+  Resolution flow:
+    1. Check current HPA metrics and target utilization.
+    2. Check if pods are actually CPU/memory constrained.
+    3. Increase maxReplicas if the cluster has capacity.
+    4. Alternatively, optimize the application to handle more load per pod.
+    5. Verify the HPA state after the change.
+commands:
+  - "kubectl describe hpa {name} -n {namespace}"
+  - "kubectl top pods -n {namespace} --sort-by=cpu"
+  - "kubectl get nodes -o custom-columns=NAME:.metadata.name,CPU:.status.allocatable.cpu,MEM:.status.allocatable.memory"
+  - "kubectl patch hpa {name} -n {namespace} -p '{\"spec\":{\"maxReplicas\":20}}'"
+  - "kubectl set resources deployment/{name} -n {namespace} --requests=cpu=200m --limits=cpu=500m"
+  - "kubectl get hpa {name} -n {namespace}"
+windows_commands:
+  - "kubectl describe hpa {name} -n {namespace}"
+  - "kubectl top pods -n {namespace} --sort-by=cpu"
+  - "kubectl get nodes -o custom-columns=NAME:.metadata.name,CPU:.status.allocatable.cpu,MEM:.status.allocatable.memory"
+  - "kubectl patch hpa {name} -n {namespace} -p '{\"spec\":{\"maxReplicas\":20}}'"
+  - "kubectl set resources deployment/{name} -n {namespace} --requests=cpu=200m --limits=cpu=500m"
+  - "kubectl get hpa {name} -n {namespace}"

@@ -4,22 +4,31 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jorgegabrielti/nautikube/internal/ollama"
-	"github.com/jorgegabrielti/nautikube/internal/scanner"
 	"github.com/jorgegabrielti/nautikube/pkg/types"
 )
 
+// ClusterScanner define a interface para escanear recursos do cluster
+type ClusterScanner interface {
+	ScanPods(ctx context.Context, namespace string) ([]types.Problem, error)
+	ScanConfigMaps(ctx context.Context, namespace string) ([]types.Problem, error)
+}
+
+// Explainer define a interface para explicar problemas com IA
+type Explainer interface {
+	Explain(ctx context.Context, problem *types.Problem, language string) (string, error)
+}
+
 // Analyzer coordena o scanning e análise de problemas
 type Analyzer struct {
-	scanner      *scanner.Scanner
-	ollamaClient *ollama.Client
+	scanner   ClusterScanner
+	explainer Explainer
 }
 
 // New cria um novo Analyzer
-func New(scanner *scanner.Scanner, ollamaClient *ollama.Client) *Analyzer {
+func New(scanner ClusterScanner, explainer Explainer) *Analyzer {
 	return &Analyzer{
-		scanner:      scanner,
-		ollamaClient: ollamaClient,
+		scanner:   scanner,
+		explainer: explainer,
 	}
 }
 
@@ -28,8 +37,8 @@ func (a *Analyzer) Analyze(ctx context.Context, opts types.AnalyzeOptions) ([]ty
 	var allProblems []types.Problem
 
 	// Define quais recursos escanear baseado nos filtros
-	shouldScanPods := len(opts.Filter) == 0 || contains(opts.Filter, "Pod")
-	shouldScanConfigMaps := len(opts.Filter) == 0 || contains(opts.Filter, "ConfigMap")
+	shouldScanPods := len(opts.Filter) == 0 || types.ContainsString(opts.Filter, "Pod")
+	shouldScanConfigMaps := len(opts.Filter) == 0 || types.ContainsString(opts.Filter, "ConfigMap")
 
 	// Escaneia Pods
 	if shouldScanPods {
@@ -56,9 +65,9 @@ func (a *Analyzer) Analyze(ctx context.Context, opts types.AnalyzeOptions) ([]ty
 	}
 
 	// Se deve explicar com IA, processa cada problema
-	if opts.Explain && a.ollamaClient != nil {
+	if opts.Explain && a.explainer != nil {
 		for i := range allProblems {
-			explanation, err := a.ollamaClient.Explain(ctx, &allProblems[i], opts.Language)
+			explanation, err := a.explainer.Explain(ctx, &allProblems[i], opts.Language)
 			if err != nil {
 				// Continua mesmo se falhar em um problema
 				allProblems[i].Explanation = fmt.Sprintf("Erro ao obter explicação: %v", err)
@@ -73,7 +82,7 @@ func (a *Analyzer) Analyze(ctx context.Context, opts types.AnalyzeOptions) ([]ty
 
 // assignSeverity define a severidade baseada no tipo de problema
 func (a *Analyzer) assignSeverity(p *types.Problem) {
-	errorLower := toLower(p.Error)
+	errorLower := types.ToLower(p.Error)
 
 	// Critical: Problemas que afetam diretamente a disponibilidade
 	if containsAny(errorLower, []string{"crashloopbackoff", "oomkilled", "error", "failed"}) {
@@ -100,42 +109,7 @@ func (a *Analyzer) assignSeverity(p *types.Problem) {
 // containsAny verifica se a string contém alguma das substrings
 func containsAny(s string, substrs []string) bool {
 	for _, substr := range substrs {
-		if indexCaseInsensitive(s, substr) >= 0 {
-			return true
-		}
-	}
-	return false
-}
-
-// indexCaseInsensitive encontra substr em s ignorando case
-func indexCaseInsensitive(s, substr string) int {
-	s = toLower(s)
-	substr = toLower(substr)
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return i
-		}
-	}
-	return -1
-}
-
-// toLower converte string para lowercase
-func toLower(s string) string {
-	result := make([]byte, len(s))
-	for i := 0; i < len(s); i++ {
-		c := s[i]
-		if c >= 'A' && c <= 'Z' {
-			c = c + ('a' - 'A')
-		}
-		result[i] = c
-	}
-	return string(result)
-}
-
-// contains verifica se uma string está em um slice
-func contains(slice []string, item string) bool {
-	for _, s := range slice {
-		if s == item {
+		if types.IndexCaseInsensitive(s, substr) >= 0 {
 			return true
 		}
 	}

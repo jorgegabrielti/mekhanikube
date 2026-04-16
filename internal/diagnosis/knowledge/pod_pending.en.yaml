@@ -1,0 +1,35 @@
+﻿key: "pod-pending"
+title: "Pod Stuck in Pending State"
+explanation: |
+  The scheduler cannot place this pod on any node. It will remain Pending until the constraint
+  is resolved.
+
+  Common causes and fixes:
+    1. Insufficient CPU/Memory â€” no node has the requested capacity. Scale up the cluster or
+       reduce the pod's resource requests.
+    2. NodeSelector/Affinity â€” no node matches the required labels. Add the label to a node
+       or relax the affinity rules.
+    3. Taints â€” all candidate nodes have taints the pod does not tolerate. Remove the taint
+       or add a toleration to the pod spec.
+    4. PVC not bound â€” a volume claim cannot be satisfied. Check StorageClass and PV availability.
+
+  Resolution flow:
+    1. Read the scheduler events to identify the exact rejection reason.
+    2. Apply the targeted fix based on the cause.
+    3. Verify the pod transitions to Running.
+commands:
+  - "kubectl describe pod {pod} -n {namespace} | grep -A10 'Events:'"
+  - "kubectl get nodes -o custom-columns=NAME:.metadata.name,CPU:.status.allocatable.cpu,MEM:.status.allocatable.memory,TAINTS:.spec.taints[*].key"
+  - "kubectl get pvc -n {namespace} -o wide"
+  - "kubectl set resources deployment/{name} -n {namespace} --requests=cpu=100m,memory=128Mi"
+  - "kubectl label node <node-name> <key>=<value>"
+  - "kubectl taint nodes <node-name> <key>:NoSchedule-"
+  - "kubectl get pod {pod} -n {namespace} -o wide"
+windows_commands:
+  - "kubectl describe pod {pod} -n {namespace}"
+  - "kubectl get nodes -o custom-columns=NAME:.metadata.name,CPU:.status.allocatable.cpu,MEM:.status.allocatable.memory,TAINTS:.spec.taints[*].key"
+  - "kubectl get pvc -n {namespace} -o wide"
+  - "kubectl set resources deployment/{name} -n {namespace} --requests=cpu=100m,memory=128Mi"
+  - "kubectl label node <node-name> <key>=<value>"
+  - "kubectl taint nodes <node-name> <key>:NoSchedule-"
+  - "kubectl get pod {pod} -n {namespace} -o wide"

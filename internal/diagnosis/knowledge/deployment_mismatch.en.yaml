@@ -1,0 +1,26 @@
+﻿key: "deployment-mismatch"
+title: "Deployment Replicas Mismatch"
+explanation: |
+  The number of ready replicas does not match the desired count. Some pods are failing to
+  become ready (CrashLoop, Pending, ImagePullBackOff, or failing readiness probes).
+
+  Resolution flow:
+    1. Check the rollout status â€” if a rollout is in progress, the mismatch may be transient.
+    2. List pods to identify which ones are failing and why.
+    3. Fix the underlying issue (resources, image, config) or rollback.
+    4. If pods are healthy but stuck, force a rollout restart.
+    5. Verify all replicas become ready.
+commands:
+  - "kubectl rollout status deployment/{name} -n {namespace} --watch=false"
+  - "kubectl get pods -n {namespace} -l app={name} -o wide"
+  - "kubectl describe deployment {name} -n {namespace} | grep -A10 'Conditions:'"
+  - "kubectl rollout restart deployment/{name} -n {namespace}"
+  - "kubectl rollout status deployment/{name} -n {namespace} --timeout=120s"
+  - "kubectl get deployment {name} -n {namespace}"
+windows_commands:
+  - "kubectl rollout status deployment/{name} -n {namespace} --watch=false"
+  - "kubectl get pods -n {namespace} -l app={name} -o wide"
+  - "kubectl describe deployment {name} -n {namespace}"
+  - "kubectl rollout restart deployment/{name} -n {namespace}"
+  - "kubectl rollout status deployment/{name} -n {namespace} --timeout=120s"
+  - "kubectl get deployment {name} -n {namespace}"

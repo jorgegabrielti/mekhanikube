@@ -1,0 +1,22 @@
+﻿key: pv_released
+title: "PV Released but Not Recycled"
+explanation: |
+  The PVC that was bound to this PV was deleted, but the PV has a Retain reclaim policy,
+  so it stays in Released state. It cannot be automatically bound to a new PVC until the
+  old claimRef is manually cleared.
+
+  Resolution flow:
+    1. Check if the data on the volume is still needed.
+    2. If data is needed, back it up before making changes.
+    3. Clear the claimRef to make the PV Available again for new PVCs.
+    4. Verify the PV transitions to Available and can bind to a new PVC.
+commands:
+  - "kubectl describe pv {name}"
+  - "kubectl get pv {name} -o jsonpath='{.spec.claimRef}'"
+  - "kubectl patch pv {name} --type=json -p '[{\"op\":\"remove\",\"path\":\"/spec/claimRef\"}]'"
+  - "kubectl get pv {name}"
+windows_commands:
+  - "kubectl describe pv {name}"
+  - "kubectl get pv {name} -o jsonpath='{.spec.claimRef}'"
+  - "kubectl patch pv {name} --type=json -p '[{\"op\":\"remove\",\"path\":\"/spec/claimRef\"}]'"
+  - "kubectl get pv {name}"

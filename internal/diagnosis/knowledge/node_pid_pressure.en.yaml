@@ -1,0 +1,31 @@
+﻿key: "node-pid-pressure"
+title: "Node Under PID Pressure"
+explanation: |
+  The node is running out of process IDs. Too many processes/threads are running, risking
+  system instability. The kubelet will start evicting pods to reduce the PID count.
+
+  Common causes:
+    - Application spawning excessive child processes or threads without reaping.
+    - Fork bombs or runaway processes.
+    - Too many pods scheduled on a single node.
+
+  Resolution flow:
+    1. Check node conditions to confirm PID pressure.
+    2. Identify the top CPU-consuming pods on this node (high CPU often correlates with many PIDs).
+    3. Set PID limits on containers or reduce pod density on the node.
+    4. If critical, drain the node.
+    5. Verify the condition clears.
+commands:
+  - "kubectl describe node {name} | grep -A15 'Conditions:'"
+  - "kubectl top pods --field-selector spec.nodeName={name} -A --sort-by=cpu"
+  - "kubectl get pods --field-selector spec.nodeName={name} -A --no-headers | wc -l"
+  - "kubectl drain {name} --ignore-daemonsets --delete-emptydir-data --timeout=120s"
+  - "kubectl uncordon {name}"
+  - "kubectl get node {name} -o jsonpath='{.status.conditions[?(@.type==\"PIDPressure\")].status}'"
+windows_commands:
+  - "kubectl describe node {name}"
+  - "kubectl top pods -A --sort-by=cpu"
+  - "kubectl get pods --field-selector spec.nodeName={name} -A --no-headers"
+  - "kubectl drain {name} --ignore-daemonsets --delete-emptydir-data --timeout=120s"
+  - "kubectl uncordon {name}"
+  - "kubectl get node {name} -o jsonpath='{.status.conditions[?(@.type==\"PIDPressure\")].status}'"

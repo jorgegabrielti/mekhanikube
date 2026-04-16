@@ -1,0 +1,32 @@
+﻿key: "node-disk-pressure"
+title: "Node Under Disk Pressure"
+explanation: |
+  The node is critically low on disk space. Kubernetes will aggressively evict pods and
+  refuse to schedule new ones until space is freed.
+
+  Common causes:
+    - Container images filling up the image filesystem.
+    - Application logs writing to the node filesystem (not stdout).
+    - Unused volumes or orphan container layers.
+    - Large emptyDir volumes consuming ephemeral storage.
+
+  Resolution flow:
+    1. Check node conditions to confirm disk pressure.
+    2. Identify pods on this node that consume the most ephemeral storage.
+    3. Clean up unused images and containers on the node (via SSH or node debug pod).
+    4. If critical, drain the node to move workloads while you clean up.
+    5. Verify the condition clears.
+commands:
+  - "kubectl describe node {name} | grep -A15 'Conditions:'"
+  - "kubectl get pods --field-selector spec.nodeName={name} -A --sort-by='.metadata.creationTimestamp'"
+  - "kubectl debug node/{name} -it --image=busybox -- sh -c 'df -h /host; du -sh /host/var/lib/containerd/io.containerd.snapshotter/*/snapshots/* 2>/dev/null | sort -rh | head -20'"
+  - "kubectl drain {name} --ignore-daemonsets --delete-emptydir-data --timeout=120s"
+  - "kubectl uncordon {name}"
+  - "kubectl get node {name} -o jsonpath='{.status.conditions[?(@.type==\"DiskPressure\")].status}'"
+windows_commands:
+  - "kubectl describe node {name}"
+  - "kubectl get pods --field-selector spec.nodeName={name} -A --sort-by='.metadata.creationTimestamp'"
+  - "kubectl debug node/{name} -it --image=busybox -- sh -c 'df -h /host'"
+  - "kubectl drain {name} --ignore-daemonsets --delete-emptydir-data --timeout=120s"
+  - "kubectl uncordon {name}"
+  - "kubectl get node {name} -o jsonpath='{.status.conditions[?(@.type==\"DiskPressure\")].status}'"

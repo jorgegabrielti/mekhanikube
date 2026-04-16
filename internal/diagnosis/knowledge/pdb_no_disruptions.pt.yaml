@@ -1,0 +1,25 @@
+key: pdb_no_disruptions
+title: "PDB Bloqueia Todas as Interrupções"
+explanation: |
+  O PodDisruptionBudget tem DisruptionsAllowed=0, significando que nenhuma interrupção voluntária
+  é permitida. Isso bloqueia drains de node, upgrades do cluster e operações de scaling.
+
+  Isso acontece quando o número de pods prontos é igual a minAvailable, ou maxUnavailable foi atingido.
+
+  Fluxo de resolução:
+    1. Verifique a configuração do PDB e contagem atual de pods.
+    2. Escale o Deployment para ter mais réplicas que minAvailable.
+    3. Ou ajuste temporariamente o PDB para permitir interrupções durante manutenção.
+    4. Após a manutenção, restaure as configurações originais do PDB.
+commands:
+  - "kubectl describe pdb {name} -n {namespace}"
+  - "kubectl get pods -n {namespace} -l app={name} -o wide"
+  - "kubectl scale deployment/{name} -n {namespace} --replicas=3"
+  - "kubectl patch pdb {name} -n {namespace} -p '{\"spec\":{\"minAvailable\":1}}'"
+  - "kubectl get pdb {name} -n {namespace}"
+windows_commands:
+  - "kubectl describe pdb {name} -n {namespace}"
+  - "kubectl get pods -n {namespace} -l app={name} -o wide"
+  - "kubectl scale deployment/{name} -n {namespace} --replicas=3"
+  - "kubectl patch pdb {name} -n {namespace} -p '{\"spec\":{\"minAvailable\":1}}'"
+  - "kubectl get pdb {name} -n {namespace}"

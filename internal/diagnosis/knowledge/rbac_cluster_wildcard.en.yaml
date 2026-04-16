@@ -1,0 +1,27 @@
+﻿key: rbac_cluster_wildcard
+title: "ClusterRole Has Wildcard Permissions"
+explanation: |
+  This ClusterRole grants cluster-wide permissions using '*' wildcard for verbs, resources,
+  or apiGroups. Any bound subject gets unrestricted access to that resource type across ALL
+  namespaces â€” a significant security risk.
+
+  Note: Built-in ClusterRoles (cluster-admin, admin, edit, view) are intentionally broad.
+  Only take action on custom ClusterRoles.
+
+  Resolution flow:
+    1. Check if this is a built-in or custom ClusterRole.
+    2. Find all ClusterRoleBindings referencing this role.
+    3. Replace wildcards with explicit verbs, resources, and apiGroups.
+    4. Verify restricted permissions work correctly.
+commands:
+  - "kubectl get clusterrole {name} -o yaml"
+  - "kubectl get clusterrolebindings -o wide | grep {name}"
+  - "kubectl auth can-i --list --as=system:serviceaccount:<namespace>:<sa-name>"
+  - "kubectl edit clusterrole {name}"
+  - "kubectl auth can-i get secrets --as=system:serviceaccount:<namespace>:<sa-name> -A"
+windows_commands:
+  - "kubectl get clusterrole {name} -o yaml"
+  - "kubectl get clusterrolebindings -o wide"
+  - "kubectl auth can-i --list --as=system:serviceaccount:<namespace>:<sa-name>"
+  - "kubectl edit clusterrole {name}"
+  - "kubectl auth can-i get secrets --as=system:serviceaccount:<namespace>:<sa-name> -A"

@@ -1,0 +1,26 @@
+key: "deployment-mismatch"
+title: "Incompatibilidade de Réplicas do Deployment"
+explanation: |
+  O número de réplicas prontas não corresponde à contagem desejada. Alguns pods estão falhando
+  ao ficar prontos (CrashLoop, Pending, ImagePullBackOff ou readiness probes falhando).
+
+  Fluxo de resolução:
+    1. Verifique o status do rollout — se um rollout está em progresso, a incompatibilidade pode ser transitória.
+    2. Liste os pods para identificar quais estão falhando e por quê.
+    3. Corrija o problema subjacente (recursos, imagem, config) ou faça rollback.
+    4. Se os pods estão saudáveis mas travados, force um rollout restart.
+    5. Verifique se todas as réplicas ficam prontas.
+commands:
+  - "kubectl rollout status deployment/{name} -n {namespace} --watch=false"
+  - "kubectl get pods -n {namespace} -l app={name} -o wide"
+  - "kubectl describe deployment {name} -n {namespace} | grep -A10 'Conditions:'"
+  - "kubectl rollout restart deployment/{name} -n {namespace}"
+  - "kubectl rollout status deployment/{name} -n {namespace} --timeout=120s"
+  - "kubectl get deployment {name} -n {namespace}"
+windows_commands:
+  - "kubectl rollout status deployment/{name} -n {namespace} --watch=false"
+  - "kubectl get pods -n {namespace} -l app={name} -o wide"
+  - "kubectl describe deployment {name} -n {namespace}"
+  - "kubectl rollout restart deployment/{name} -n {namespace}"
+  - "kubectl rollout status deployment/{name} -n {namespace} --timeout=120s"
+  - "kubectl get deployment {name} -n {namespace}"

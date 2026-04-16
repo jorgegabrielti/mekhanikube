@@ -1,0 +1,31 @@
+﻿key: "container-not-ready"
+title: "Container Not Ready (Readiness Probe Failed)"
+explanation: |
+  The container is running but its readiness probe keeps failing. Kubernetes removes it from
+  all Service endpoints, so no traffic is routed to this pod.
+
+  Common causes:
+    - The application is deadlocked or stuck in initialization.
+    - The readiness probe path/port is misconfigured.
+    - initialDelaySeconds is too short for the app to start.
+    - The health endpoint returns 5xx under load.
+
+  Resolution flow:
+    1. Check which probe is failing and its exact configuration.
+    2. Read the application logs to see if it started correctly.
+    3. Adjust the probe timing (increase initialDelaySeconds, periodSeconds, or timeoutSeconds).
+    4. Verify the pod becomes Ready and appears in Service endpoints.
+commands:
+  - "kubectl describe pod {pod} -n {namespace} | grep -A3 'Readiness:'"
+  - "kubectl logs {pod} -n {namespace} --tail=100"
+  - "kubectl get events -n {namespace} --field-selector involvedObject.name={pod},reason=Unhealthy --sort-by='.lastTimestamp'"
+  - "kubectl patch deployment/{name} -n {namespace} --type=strategic -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"{name}\",\"readinessProbe\":{\"initialDelaySeconds\":30,\"periodSeconds\":10,\"timeoutSeconds\":5,\"failureThreshold\":5}}]}}}}'"
+  - "kubectl rollout status deployment/{name} -n {namespace} --timeout=120s"
+  - "kubectl get endpoints {name} -n {namespace}"
+windows_commands:
+  - "kubectl describe pod {pod} -n {namespace}"
+  - "kubectl logs {pod} -n {namespace} --tail=100"
+  - "kubectl get events -n {namespace} --field-selector involvedObject.name={pod},reason=Unhealthy --sort-by='.lastTimestamp'"
+  - "kubectl patch deployment/{name} -n {namespace} --type=strategic -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"{name}\",\"readinessProbe\":{\"initialDelaySeconds\":30,\"periodSeconds\":10,\"timeoutSeconds\":5,\"failureThreshold\":5}}]}}}}'"
+  - "kubectl rollout status deployment/{name} -n {namespace} --timeout=120s"
+  - "kubectl get endpoints {name} -n {namespace}"

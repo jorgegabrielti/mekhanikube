@@ -1,0 +1,25 @@
+key: "deployment-unavailable"
+title: "Deployment com Réplicas Indisponíveis"
+explanation: |
+  Uma ou mais réplicas não estão disponíveis (status.unavailableReplicas > 0). Pods estão
+  falhando ao iniciar, crashando, falhando probes ou presos em Pending.
+
+  Fluxo de resolução:
+    1. Verifique quais pods não estão prontos e identifique o erro específico.
+    2. Se rollout ruim, desfaça para a última revisão funcional conhecida.
+    3. Se problema transitório, reinicie o deployment para recriar os pods.
+    4. Verifique se todas as réplicas ficam disponíveis.
+commands:
+  - "kubectl get pods -n {namespace} -l app={name} -o wide"
+  - "kubectl describe deployment {name} -n {namespace} | grep -A10 'Conditions:'"
+  - "kubectl get events -n {namespace} --field-selector involvedObject.name={name} --sort-by='.lastTimestamp'"
+  - "kubectl rollout undo deployment/{name} -n {namespace}"
+  - "kubectl rollout status deployment/{name} -n {namespace} --timeout=120s"
+  - "kubectl get deployment {name} -n {namespace}"
+windows_commands:
+  - "kubectl get pods -n {namespace} -l app={name} -o wide"
+  - "kubectl describe deployment {name} -n {namespace}"
+  - "kubectl get events -n {namespace} --field-selector involvedObject.name={name} --sort-by='.lastTimestamp'"
+  - "kubectl rollout undo deployment/{name} -n {namespace}"
+  - "kubectl rollout status deployment/{name} -n {namespace} --timeout=120s"
+  - "kubectl get deployment {name} -n {namespace}"

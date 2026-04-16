@@ -1,0 +1,28 @@
+key: "service-lb-pending"
+title: "LoadBalancer com IP Externo Pendente"
+explanation: |
+  Este Service LoadBalancer não recebeu um IP externo do provedor cloud.
+
+  Causas comuns e correções:
+    - Cota cloud: Cota de LB excedida. Verifique cotas do provedor cloud.
+    - Permissões IAM: Cloud Controller Manager não tem permissão para criar LBs.
+    - Cluster bare-metal: LoadBalancer precisa de MetalLB ou similar. Mude para NodePort como alternativa.
+    - Erro de annotation: Annotations específicas do cloud estão mal configuradas.
+
+  Fluxo de resolução:
+    1. Verifique os eventos do Service para o erro do provedor cloud.
+    2. Corrija a causa raiz (cota, IAM, annotations).
+    3. Se em bare-metal, mude para NodePort ou instale MetalLB.
+    4. Verifique se o IP externo é atribuído.
+commands:
+  - "kubectl describe svc {name} -n {namespace}"
+  - "kubectl get events -n {namespace} --field-selector involvedObject.name={name} --sort-by='.lastTimestamp'"
+  - "kubectl patch svc {name} -n {namespace} -p '{\"spec\":{\"type\":\"NodePort\"}}'"
+  - "kubectl annotate svc {name} -n {namespace} service.beta.kubernetes.io/aws-load-balancer-type=nlb --overwrite"
+  - "kubectl get svc {name} -n {namespace} -w"
+windows_commands:
+  - "kubectl describe svc {name} -n {namespace}"
+  - "kubectl get events -n {namespace} --field-selector involvedObject.name={name} --sort-by='.lastTimestamp'"
+  - "kubectl patch svc {name} -n {namespace} -p '{\"spec\":{\"type\":\"NodePort\"}}'"
+  - "kubectl annotate svc {name} -n {namespace} service.beta.kubernetes.io/aws-load-balancer-type=nlb --overwrite"
+  - "kubectl get svc {name} -n {namespace} -w"

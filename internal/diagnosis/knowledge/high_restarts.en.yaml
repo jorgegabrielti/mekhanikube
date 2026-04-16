@@ -1,0 +1,31 @@
+﻿key: "high-restarts"
+title: "High Container Restart Count"
+explanation: |
+  A container in this pod has restarted an abnormally high number of times, indicating a
+  recurring failure that Kubernetes keeps recovering from.
+
+  Root-cause by exit code:
+    - Exit 137 (OOMKilled): Increase resources.limits.memory.
+    - Exit 1/2 (App crash): Fix application config, env vars, or startup logic.
+    - Exit 0 (Unexpected exit): Fix entrypoint â€” the process should not terminate.
+    - Liveness probe failure: The probe is too aggressive or the endpoint is too slow.
+
+  Resolution flow:
+    1. Read logs from the PREVIOUS crashed instance.
+    2. Check the exit code and last state to classify the failure type.
+    3. Apply the targeted fix and restart the deployment.
+    4. Monitor restart count to verify it stabilizes at zero.
+commands:
+  - "kubectl logs {pod} -n {namespace} --previous --tail=100"
+  - "kubectl get pod {pod} -n {namespace} -o jsonpath='{.status.containerStatuses[0].lastState.terminated}'"
+  - "kubectl describe pod {pod} -n {namespace} | grep -A5 'Liveness\\|Readiness'"
+  - "kubectl set resources deployment/{name} -n {namespace} --limits=memory=512Mi --requests=memory=256Mi"
+  - "kubectl rollout restart deployment/{name} -n {namespace}"
+  - "kubectl get pod -n {namespace} -l app={name} -w"
+windows_commands:
+  - "kubectl logs {pod} -n {namespace} --previous --tail=100"
+  - "kubectl get pod {pod} -n {namespace} -o jsonpath='{.status.containerStatuses[0].lastState.terminated}'"
+  - "kubectl describe pod {pod} -n {namespace}"
+  - "kubectl set resources deployment/{name} -n {namespace} --limits=memory=512Mi --requests=memory=256Mi"
+  - "kubectl rollout restart deployment/{name} -n {namespace}"
+  - "kubectl get pod -n {namespace} -l app={name} -w"

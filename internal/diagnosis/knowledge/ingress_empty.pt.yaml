@@ -1,0 +1,22 @@
+key: ingress_empty
+title: "Ingress Sem Regras ou Backend"
+explanation: |
+  Este recurso Ingress não tem regras de roteamento e nenhum backend padrão configurado. É
+  completamente inefetivo — nenhum tráfego externo será roteado para nenhum Service.
+
+  Fluxo de resolução:
+    1. Liste os Services disponíveis no namespace para identificar o backend pretendido.
+    2. Adicione regras de roteamento que mapeiam paths/hosts para os Services alvo.
+    3. Verifique se o Ingress controller aplica as regras e atribui um endereço.
+commands:
+  - "kubectl get ingress {name} -n {namespace} -o yaml"
+  - "kubectl get svc -n {namespace}"
+  - "kubectl patch ingress {name} -n {namespace} --type=json -p '[{\"op\":\"add\",\"path\":\"/spec/rules\",\"value\":[{\"host\":\"app.example.com\",\"http\":{\"paths\":[{\"path\":\"/\",\"pathType\":\"Prefix\",\"backend\":{\"service\":{\"name\":\"<svc-name>\",\"port\":{\"number\":80}}}}]}}]}]'"
+  - "kubectl patch ingress {name} -n {namespace} --type=json -p '[{\"op\":\"add\",\"path\":\"/spec/defaultBackend\",\"value\":{\"service\":{\"name\":\"<svc-name>\",\"port\":{\"number\":80}}}}]'"
+  - "kubectl get ingress {name} -n {namespace}"
+windows_commands:
+  - "kubectl get ingress {name} -n {namespace} -o yaml"
+  - "kubectl get svc -n {namespace}"
+  - "kubectl patch ingress {name} -n {namespace} --type=json -p '[{\"op\":\"add\",\"path\":\"/spec/rules\",\"value\":[{\"host\":\"app.example.com\",\"http\":{\"paths\":[{\"path\":\"/\",\"pathType\":\"Prefix\",\"backend\":{\"service\":{\"name\":\"<svc-name>\",\"port\":{\"number\":80}}}}]}}]}]'"
+  - "kubectl patch ingress {name} -n {namespace} --type=json -p '[{\"op\":\"add\",\"path\":\"/spec/defaultBackend\",\"value\":{\"service\":{\"name\":\"<svc-name>\",\"port\":{\"number\":80}}}}]'"
+  - "kubectl get ingress {name} -n {namespace}"

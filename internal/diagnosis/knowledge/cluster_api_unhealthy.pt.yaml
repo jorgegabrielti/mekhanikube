@@ -1,0 +1,32 @@
+key: cluster-api-unhealthy
+title: "Verificação de Saúde do API Server Falhou"
+explanation: |
+  O endpoint /healthz do Kubernetes API Server retornou um erro. O control plane está
+  degradado ou inacessível. Todas as operações do cluster dependem de um API Server saudável.
+
+  Causas comuns:
+    - etcd está parado ou inacessível.
+    - Processo do API Server crashou ou está sobrecarregado.
+    - Problemas de rede entre o cliente e o control plane.
+    - Certificado TLS expirado no API Server.
+
+  Fluxo de resolução:
+    1. Execute verificação de saúde detalhada para ver qual componente está falhando.
+    2. Para clusters gerenciados (EKS/GKE/AKS), verifique o dashboard de saúde do provedor cloud.
+    3. Para clusters auto-gerenciados, verifique os logs dos pods do API Server e etcd.
+    4. Reinicie o componente do control plane que está falhando.
+    5. Verifique se a verificação de saúde passa.
+commands:
+  - "kubectl get --raw /healthz?verbose"
+  - "kubectl get componentstatuses"
+  - "kubectl get pods -n kube-system -l component=kube-apiserver -o wide"
+  - "kubectl logs -n kube-system -l component=kube-apiserver --tail=50"
+  - "kubectl logs -n kube-system -l component=etcd --tail=50"
+  - "kubectl get --raw /healthz"
+windows_commands:
+  - "kubectl get --raw /healthz?verbose"
+  - "kubectl get componentstatuses"
+  - "kubectl get pods -n kube-system -l component=kube-apiserver -o wide"
+  - "kubectl logs -n kube-system -l component=kube-apiserver --tail=50"
+  - "kubectl logs -n kube-system -l component=etcd --tail=50"
+  - "kubectl get --raw /healthz"

@@ -1,0 +1,27 @@
+﻿key: "event-invalid-image"
+title: "Invalid Container Image"
+explanation: |
+  The container image reference is malformed or cannot be resolved.
+
+  Common causes:
+    - Typo in image name, tag, or registry hostname.
+    - The image tag does not exist in the registry.
+    - Using "latest" tag but it doesn't exist.
+
+  Resolution flow:
+    1. Check the exact image reference in the pod spec.
+    2. Verify the image exists in the registry (try pulling locally).
+    3. Fix the image reference in the Deployment.
+    4. Verify the pod starts with the corrected image.
+commands:
+  - "kubectl get pod {pod} -n {namespace} -o jsonpath='{.spec.containers[0].image}'"
+  - "kubectl describe pod {pod} -n {namespace} | grep -A5 'Events:'"
+  - "kubectl set image deployment/{name} -n {namespace} {name}=<correct-image:tag>"
+  - "kubectl rollout status deployment/{name} -n {namespace} --timeout=120s"
+  - "kubectl get pods -n {namespace} -l app={name}"
+windows_commands:
+  - "kubectl get pod {pod} -n {namespace} -o jsonpath='{.spec.containers[0].image}'"
+  - "kubectl describe pod {pod} -n {namespace}"
+  - "kubectl set image deployment/{name} -n {namespace} {name}=<correct-image:tag>"
+  - "kubectl rollout status deployment/{name} -n {namespace} --timeout=120s"
+  - "kubectl get pods -n {namespace} -l app={name}"

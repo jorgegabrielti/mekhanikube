@@ -1,0 +1,32 @@
+key: "node-not-ready"
+title: "Node Não Pronto"
+explanation: |
+  O node parou de reportar saúde ao control plane. Não pode agendar novos pods, e pods
+  existentes serão despejados após o pod-eviction-timeout (padrão 5 minutos).
+
+  Causas comuns:
+    - O processo kubelet crashou ou não está respondendo.
+    - Partição de rede entre o node e o API server.
+    - A VM/máquina subjacente crashou ou ficou sem recursos.
+    - Certificado TLS expirado no kubelet.
+
+  Fluxo de resolução:
+    1. Verifique as condições do node para identificar a falha específica (kubelet, rede, disco).
+    2. Verifique os eventos deste node.
+    3. Se o node é recuperável, reinicie o kubelet na máquina.
+    4. Se irrecuperável, drene o node para mover workloads com segurança, depois remova-o.
+    5. Faça uncordon após recuperação, ou substitua o node.
+commands:
+  - "kubectl describe node {name} | grep -A15 'Conditions:'"
+  - "kubectl get events --field-selector involvedObject.name={name} --sort-by='.lastTimestamp'"
+  - "kubectl get pods --field-selector spec.nodeName={name} -A -o wide"
+  - "kubectl drain {name} --ignore-daemonsets --delete-emptydir-data --timeout=120s"
+  - "kubectl uncordon {name}"
+  - "kubectl get node {name}"
+windows_commands:
+  - "kubectl describe node {name}"
+  - "kubectl get events --field-selector involvedObject.name={name} --sort-by='.lastTimestamp'"
+  - "kubectl get pods --field-selector spec.nodeName={name} -A -o wide"
+  - "kubectl drain {name} --ignore-daemonsets --delete-emptydir-data --timeout=120s"
+  - "kubectl uncordon {name}"
+  - "kubectl get node {name}"

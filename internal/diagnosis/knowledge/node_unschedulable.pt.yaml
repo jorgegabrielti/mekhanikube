@@ -1,0 +1,24 @@
+key: "node-unschedulable"
+title: "Node em Cordon (Não Agendável)"
+explanation: |
+  Este node está marcado como não agendável (cordoned). Nenhum novo pod será agendado nele.
+  Isso é tipicamente intencional durante manutenção ou operações de drain do node.
+
+  Se inesperado, alguém ou um processo automatizado fez cordon por engano.
+
+  Fluxo de resolução:
+    1. Verifique se o node está em cordon e quem/quando fez o cordon.
+    2. Se a manutenção está completa, faça uncordon para aceitar workloads novamente.
+    3. Verifique se novos pods podem ser agendados no node.
+commands:
+  - "kubectl get node {name} -o jsonpath='{.spec.unschedulable}'"
+  - "kubectl get events --field-selector involvedObject.name={name} --sort-by='.lastTimestamp'"
+  - "kubectl uncordon {name}"
+  - "kubectl get node {name}"
+  - "kubectl get pods --field-selector spec.nodeName={name} -A"
+windows_commands:
+  - "kubectl get node {name} -o jsonpath='{.spec.unschedulable}'"
+  - "kubectl get events --field-selector involvedObject.name={name} --sort-by='.lastTimestamp'"
+  - "kubectl uncordon {name}"
+  - "kubectl get node {name}"
+  - "kubectl get pods --field-selector spec.nodeName={name} -A"

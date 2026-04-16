@@ -1,0 +1,22 @@
+﻿key: ingress_empty
+title: "Ingress Has No Rules or Backend"
+explanation: |
+  This Ingress resource has no routing rules and no default backend configured. It is
+  completely ineffective â€” no external traffic will be routed to any Service.
+
+  Resolution flow:
+    1. List available Services in the namespace to identify the intended backend.
+    2. Add routing rules that map paths/hosts to the target Services.
+    3. Verify the Ingress controller picks up the rules and assigns an address.
+commands:
+  - "kubectl get ingress {name} -n {namespace} -o yaml"
+  - "kubectl get svc -n {namespace}"
+  - "kubectl patch ingress {name} -n {namespace} --type=json -p '[{\"op\":\"add\",\"path\":\"/spec/rules\",\"value\":[{\"host\":\"app.example.com\",\"http\":{\"paths\":[{\"path\":\"/\",\"pathType\":\"Prefix\",\"backend\":{\"service\":{\"name\":\"<svc-name>\",\"port\":{\"number\":80}}}}]}}]}]'"
+  - "kubectl patch ingress {name} -n {namespace} --type=json -p '[{\"op\":\"add\",\"path\":\"/spec/defaultBackend\",\"value\":{\"service\":{\"name\":\"<svc-name>\",\"port\":{\"number\":80}}}}]'"
+  - "kubectl get ingress {name} -n {namespace}"
+windows_commands:
+  - "kubectl get ingress {name} -n {namespace} -o yaml"
+  - "kubectl get svc -n {namespace}"
+  - "kubectl patch ingress {name} -n {namespace} --type=json -p '[{\"op\":\"add\",\"path\":\"/spec/rules\",\"value\":[{\"host\":\"app.example.com\",\"http\":{\"paths\":[{\"path\":\"/\",\"pathType\":\"Prefix\",\"backend\":{\"service\":{\"name\":\"<svc-name>\",\"port\":{\"number\":80}}}}]}}]}]'"
+  - "kubectl patch ingress {name} -n {namespace} --type=json -p '[{\"op\":\"add\",\"path\":\"/spec/defaultBackend\",\"value\":{\"service\":{\"name\":\"<svc-name>\",\"port\":{\"number\":80}}}}]'"
+  - "kubectl get ingress {name} -n {namespace}"

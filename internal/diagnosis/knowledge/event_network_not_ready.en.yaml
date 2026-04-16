@@ -1,0 +1,28 @@
+﻿key: "event-network-not-ready"
+title: "Network Plugin Not Ready"
+explanation: |
+  The CNI (Container Network Interface) plugin is not ready on one or more nodes, preventing
+  pod networking from being configured. Pods on affected nodes cannot start.
+
+  Common causes:
+    - CNI DaemonSet pods (calico-node, aws-node, cilium, kindnet) are not running.
+    - CNI binary or config is missing/corrupted on the node.
+    - Newly added node where CNI hasn't initialized yet.
+
+  Resolution flow:
+    1. Identify which CNI is installed and check its DaemonSet status.
+    2. Check CNI pod logs on the affected node for initialization errors.
+    3. Restart the CNI DaemonSet to reinitialize on all nodes.
+    4. Verify the NetworkReady condition clears on all nodes.
+commands:
+  - "kubectl get pods -n kube-system -o wide | grep -E 'calico|cilium|aws-node|kindnet|flannel'"
+  - "kubectl logs -n kube-system -l k8s-app=calico-node --tail=50"
+  - "kubectl rollout restart daemonset/calico-node -n kube-system"
+  - "kubectl rollout status daemonset/calico-node -n kube-system --timeout=120s"
+  - "kubectl get nodes -o custom-columns=NAME:.metadata.name,READY:.status.conditions[?(@.type==\"Ready\")].status"
+windows_commands:
+  - "kubectl get pods -n kube-system -o wide"
+  - "kubectl logs -n kube-system -l k8s-app=calico-node --tail=50"
+  - "kubectl rollout restart daemonset/calico-node -n kube-system"
+  - "kubectl rollout status daemonset/calico-node -n kube-system --timeout=120s"
+  - "kubectl get nodes -o custom-columns=NAME:.metadata.name,READY:.status.conditions[?(@.type==\"Ready\")].status"

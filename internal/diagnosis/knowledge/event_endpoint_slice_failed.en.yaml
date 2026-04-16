@@ -1,0 +1,26 @@
+﻿key: "event-endpoint-slice-failed"
+title: "EndpointSlice Update Failure"
+explanation: |
+  The EndpointSlice controller failed to update endpoint information for a Service. Traffic
+  routing to backend pods may be affected.
+
+  This is usually transient (API server load, too many endpoints). If persistent, it may
+  indicate RBAC issues or controller problems.
+
+  Resolution flow:
+    1. Check Service and EndpointSlice status.
+    2. If transient, restart the Deployment to regenerate endpoints.
+    3. If persistent, delete stale EndpointSlices to force recreation.
+    4. Verify endpoints are correctly populated.
+commands:
+  - "kubectl get endpointslice -n {namespace} -l kubernetes.io/service-name={name}"
+  - "kubectl describe service {name} -n {namespace}"
+  - "kubectl rollout restart deployment/{name} -n {namespace}"
+  - "kubectl delete endpointslice -n {namespace} -l kubernetes.io/service-name={name}"
+  - "kubectl get endpoints {name} -n {namespace}"
+windows_commands:
+  - "kubectl get endpointslice -n {namespace} -l kubernetes.io/service-name={name}"
+  - "kubectl describe service {name} -n {namespace}"
+  - "kubectl rollout restart deployment/{name} -n {namespace}"
+  - "kubectl delete endpointslice -n {namespace} -l kubernetes.io/service-name={name}"
+  - "kubectl get endpoints {name} -n {namespace}"

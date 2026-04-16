@@ -1,0 +1,25 @@
+﻿key: "deployment-zero-replicas"
+title: "Deployment Scaled to Zero"
+explanation: |
+  This deployment has zero replicas â€” no pods are running. This could be intentional
+  (maintenance) or caused by an autoscaler (HPA/KEDA) scaling down, or human error.
+
+  Resolution flow:
+    1. Check if an HPA or KEDA ScaledObject is controlling this deployment.
+    2. If intentional, no action needed.
+    3. If accidental, scale back up to the desired replica count.
+    4. Verify pods start successfully.
+commands:
+  - "kubectl get hpa -n {namespace} | grep {name}"
+  - "kubectl get scaledobject -n {namespace} 2>/dev/null | grep {name}"
+  - "kubectl describe deployment {name} -n {namespace} | grep -E 'Replicas|Annotations'"
+  - "kubectl scale deployment/{name} -n {namespace} --replicas=2"
+  - "kubectl rollout status deployment/{name} -n {namespace} --timeout=120s"
+  - "kubectl get pods -n {namespace} -l app={name}"
+windows_commands:
+  - "kubectl get hpa -n {namespace}"
+  - "kubectl get scaledobject -n {namespace} 2>$null"
+  - "kubectl describe deployment {name} -n {namespace}"
+  - "kubectl scale deployment/{name} -n {namespace} --replicas=2"
+  - "kubectl rollout status deployment/{name} -n {namespace} --timeout=120s"
+  - "kubectl get pods -n {namespace} -l app={name}"

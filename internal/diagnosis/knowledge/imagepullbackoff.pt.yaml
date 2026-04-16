@@ -1,0 +1,31 @@
+key: "imagepullbackoff"
+title: "Falha no Pull da Imagem (ImagePullBackOff)"
+explanation: |
+  O kubelet não consegue puxar a imagem do container do registry.
+
+  Causas comuns e correções:
+    - Imagem não encontrada: O nome ou tag da imagem está errado. Corrija a referência.
+    - Não autorizado: O registry requer autenticação. Crie um imagePullSecret.
+    - Registry inacessível: O node não consegue alcançar o registry. Verifique rede/firewall.
+    - Rate limited: Limite do Docker Hub atingido. Use cache pull-through ou autentique.
+
+  Fluxo de resolução:
+    1. Leia os eventos do pod para ver o erro exato do registry (unauthorized, not found, timeout).
+    2. Verifique se o nome e tag da imagem estão corretos.
+    3. Se problema de auth, crie um secret docker-registry e faça patch no ServiceAccount.
+    4. Se imagem errada, corrija a referência da imagem no deployment.
+    5. Verifique se o pod puxa a imagem e inicia.
+commands:
+  - "kubectl describe pod {pod} -n {namespace} | grep -A5 'Events:'"
+  - "kubectl get pod {pod} -n {namespace} -o jsonpath='{.spec.containers[0].image}'"
+  - "kubectl create secret docker-registry regcred -n {namespace} --docker-server=<registry> --docker-username=<user> --docker-password=<pass>"
+  - "kubectl patch serviceaccount default -n {namespace} -p '{\"imagePullSecrets\":[{\"name\":\"regcred\"}]}'"
+  - "kubectl set image deployment/{name} -n {namespace} {name}=<correct-image:tag>"
+  - "kubectl rollout status deployment/{name} -n {namespace} --timeout=120s"
+windows_commands:
+  - "kubectl describe pod {pod} -n {namespace}"
+  - "kubectl get pod {pod} -n {namespace} -o jsonpath='{.spec.containers[0].image}'"
+  - "kubectl create secret docker-registry regcred -n {namespace} --docker-server=<registry> --docker-username=<user> --docker-password=<pass>"
+  - "kubectl patch serviceaccount default -n {namespace} -p '{\"imagePullSecrets\":[{\"name\":\"regcred\"}]}'"
+  - "kubectl set image deployment/{name} -n {namespace} {name}=<correct-image:tag>"
+  - "kubectl rollout status deployment/{name} -n {namespace} --timeout=120s"

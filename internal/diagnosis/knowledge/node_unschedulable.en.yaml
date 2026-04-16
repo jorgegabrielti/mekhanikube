@@ -1,0 +1,24 @@
+﻿key: "node-unschedulable"
+title: "Node Cordoned (Unschedulable)"
+explanation: |
+  This node is marked as unschedulable (cordoned). No new pods will be scheduled on it.
+  This is typically intentional during maintenance or node drain operations.
+
+  If unexpected, someone or an automated process cordoned it by mistake.
+
+  Resolution flow:
+    1. Verify the node is cordoned and check who/when it was cordoned.
+    2. If maintenance is complete, uncordon to accept workloads again.
+    3. Verify new pods can be scheduled on the node.
+commands:
+  - "kubectl get node {name} -o jsonpath='{.spec.unschedulable}'"
+  - "kubectl get events --field-selector involvedObject.name={name} --sort-by='.lastTimestamp'"
+  - "kubectl uncordon {name}"
+  - "kubectl get node {name}"
+  - "kubectl get pods --field-selector spec.nodeName={name} -A"
+windows_commands:
+  - "kubectl get node {name} -o jsonpath='{.spec.unschedulable}'"
+  - "kubectl get events --field-selector involvedObject.name={name} --sort-by='.lastTimestamp'"
+  - "kubectl uncordon {name}"
+  - "kubectl get node {name}"
+  - "kubectl get pods --field-selector spec.nodeName={name} -A"

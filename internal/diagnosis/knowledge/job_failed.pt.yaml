@@ -1,0 +1,25 @@
+key: job_failed
+title: "Job com Execuções Falhadas"
+explanation: |
+  O Job tem um ou mais pods falhados. Se o backoffLimit for atingido, o Job para de tentar
+  novamente e permanece em estado permanentemente falhado.
+
+  Fluxo de resolução:
+    1. Verifique os eventos do Job e os logs dos pods para entender o motivo da falha.
+    2. Corrija a causa raiz (imagem, comando, config, permissões).
+    3. Delete o Job falhado e crie uma retentativa a partir do spec original.
+    4. Verifique se o Job retentado completa com sucesso.
+commands:
+  - "kubectl describe job {name} -n {namespace}"
+  - "kubectl logs -l job-name={name} -n {namespace} --tail=100"
+  - "kubectl get pods -l job-name={name} -n {namespace} -o wide"
+  - "kubectl delete job {name} -n {namespace}"
+  - "kubectl create job {name}-retry --from=job/{name} -n {namespace}"
+  - "kubectl get job -n {namespace} | grep {name}"
+windows_commands:
+  - "kubectl describe job {name} -n {namespace}"
+  - "kubectl logs -l job-name={name} -n {namespace} --tail=100"
+  - "kubectl get pods -l job-name={name} -n {namespace} -o wide"
+  - "kubectl delete job {name} -n {namespace}"
+  - "kubectl create job {name}-retry --from=job/{name} -n {namespace}"
+  - "kubectl get job -n {namespace}"

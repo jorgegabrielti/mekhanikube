@@ -1,0 +1,309 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nautikube-qa
+---
+# 1. CrashLoopBackOff Pod
+apiVersion: v1
+kind: Pod
+metadata:
+  name: crashing-pod
+  namespace: nautikube-qa
+spec:
+  containers:
+  - name: crasher
+    image: busybox
+    command: ["sh", "-c", "echo 'I am purposely crashing!'; exit 1"]
+---
+# 2. OOMKilled Pod
+apiVersion: v1
+kind: Pod
+metadata:
+  name: oom-pod
+  namespace: nautikube-qa
+spec:
+  containers:
+  - name: memory-hog
+    image: python:3.9-slim
+    command: ["python", "-c", "a = []\nwhile True:\n  a.append(' ' * 10**6)"]
+    resources:
+      limits:
+        memory: "10Mi"
+---
+# 3. Pending Pod (Impossible CPU request)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pending-cpu-pod
+  namespace: nautikube-qa
+spec:
+  containers:
+  - name: idle
+    image: alpine
+    command: ["sleep", "3600"]
+    resources:
+      requests:
+        cpu: "999"
+---
+# 4. Orphaned Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: orphan-service
+  namespace: nautikube-qa
+spec:
+  selector:
+    app: does-not-exist
+  ports:
+  - port: 80
+    targetPort: 8080
+---
+# 5. Missing Image Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bad-image-deploy
+  namespace: nautikube-qa
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bad-image
+  template:
+    metadata:
+      labels:
+        app: bad-image
+    spec:
+      containers:
+      - name: oops
+        image: nautikube-invalid-image:999.9.9
+---
+# 6. ConfigMap Missing (CreateContainerConfigError)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: missing-config-pod
+  namespace: nautikube-qa
+spec:
+  containers:
+  - name: app
+    image: nginx:alpine
+    envFrom:
+    - configMapRef:
+        name: non-existent-configmap
+---
+# 7. Liveness Probe Failure
+apiVersion: v1
+kind: Pod
+metadata:
+  name: liveness-fail-pod
+  namespace: nautikube-qa
+spec:
+  containers:
+  - name: app
+    image: busybox
+    command: ["sh", "-c", "touch /tmp/healthy; sleep 30; rm -f /tmp/healthy; sleep 600"]
+    livenessProbe:
+      exec:
+        command: ["cat", "/tmp/healthy"]
+      initialDelaySeconds: 5
+      periodSeconds: 5
+---
+# 8. RunContainerError (Bad Mount)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: bad-mount-pod
+  namespace: nautikube-qa
+spec:
+  containers:
+  - name: app
+    image: alpine
+    command: ["sleep", "3600"]
+    volumeMounts:
+    - name: bad-volume
+      mountPath: /data
+  volumes:
+  - name: bad-volume
+    persistentVolumeClaim:
+      claimName: non-existent-pvc
+---
+# 9. Oversized ConfigMap (>500KB)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oversized-configmap
+  namespace: nautikube-qa
+data:
+  large-key: |
+    # This value should be padded to exceed 500KB in a real test.
+    # In CI, generate with: python -c "print('x' * 600000)" > /tmp/large.txt
+    # kubectl create configmap oversized-configmap --from-file=large-key=/tmp/large.txt -n nautikube-qa
+    placeholder-value-to-indicate-intent
+---
+# 10. Pending PersistentVolumeClaim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pending-pvc
+  namespace: nautikube-qa
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 999Ti
+  storageClassName: does-not-exist
+---
+# 11. Suspended CronJob
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: suspended-cronjob
+  namespace: nautikube-qa
+spec:
+  schedule: "*/5 * * * *"
+  suspend: true
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: job
+            image: busybox
+            command: ["echo", "hello"]
+          restartPolicy: Never
+---
+# 12. Failed Job
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: failing-job
+  namespace: nautikube-qa
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      containers:
+      - name: fail
+        image: busybox
+        command: ["sh", "-c", "exit 1"]
+      restartPolicy: Never
+---
+# 13. DaemonSet Not Fully Scheduled
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: partial-daemonset
+  namespace: nautikube-qa
+spec:
+  selector:
+    matchLabels:
+      app: partial-ds
+  template:
+    metadata:
+      labels:
+        app: partial-ds
+    spec:
+      nodeSelector:
+        dedicated: "non-existent-pool"
+      containers:
+      - name: agent
+        image: busybox
+        command: ["sleep", "3600"]
+---
+# 14. StatefulSet Replica Mismatch
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mismatch-statefulset
+  namespace: nautikube-qa
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mismatch-sts
+  serviceName: mismatch-sts
+  template:
+    metadata:
+      labels:
+        app: mismatch-sts
+    spec:
+      containers:
+      - name: app
+        image: busybox
+        command: ["sh", "-c", "exit 1"]
+---
+# 15. HPA at Maximum Replicas (requires metrics-server)
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: maxed-out-hpa
+  namespace: nautikube-qa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: bad-image-deploy
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 10
+---
+# 16. ClusterRole with Wildcard Verbs
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: wildcard-clusterrole
+rules:
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs: ["*"]
+---
+# 17. RoleBinding with No Subjects
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: empty-rolebinding
+  namespace: nautikube-qa
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: wildcard-clusterrole
+subjects: []
+---
+# 18. NetworkPolicy Allow-All Ingress
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-all-ingress
+  namespace: nautikube-qa
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - {}
+---
+# 19. PodDisruptionBudget Blocking Disruptions
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: blocking-pdb
+  namespace: nautikube-qa
+spec:
+  minAvailable: 100
+  selector:
+    matchLabels:
+      app: bad-image
+---
+# 20. ResourceQuota Near Exhaustion
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: tight-quota
+  namespace: nautikube-qa
+spec:
+  hard:
+    pods: "2"
+    requests.cpu: "100m"
+    requests.memory: "128Mi"

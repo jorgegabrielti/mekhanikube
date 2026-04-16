@@ -2,74 +2,103 @@ package scanner
 
 import (
 	"testing"
+
+	"github.com/jorgegabrielti/nautikube/internal/diagnosis"
 )
 
-// TestNew testa a criação de um novo scanner
-func TestNew(t *testing.T) {
-	scanner, err := New()
-	if err != nil {
-		// É esperado falhar fora de um cluster K8s
-		t.Logf("Scanner creation failed (expected outside cluster): %v", err)
-		return
-	}
+func TestDeduplicateProblems(t *testing.T) {
+	t.Parallel()
 
-	if scanner == nil {
-		t.Error("Scanner should not be nil when no error")
-	}
-
-	if scanner.Client == nil {
-		t.Error("Clientset should be initialized")
-	}
-}
-
-// TestCheckPodStatus testa a verificação de status de pods
-func TestCheckPodStatus(t *testing.T) {
 	tests := []struct {
-		name           string
-		podName        string
-		namespace      string
-		containerState string
-		reason         string
-		wantProblem    bool
+		name      string
+		problems  []diagnosis.Problem
+		wantCount int
+		wantIssue string // if set, verify first remaining problem contains this
 	}{
 		{
-			name:           "CrashLoopBackOff detectado",
-			podName:        "test-pod",
-			namespace:      "default",
-			containerState: "waiting",
-			reason:         "CrashLoopBackOff",
-			wantProblem:    true,
+			name: "CrashLoopBackOff suppresses high-restarts for same pod",
+			problems: []diagnosis.Problem{
+				{Resource: "Pod", Namespace: "default", Name: "app-abc-123", Issue: "Container main in CrashLoopBackOff", Severity: diagnosis.Critical},
+				{Resource: "Pod", Namespace: "default", Name: "app-abc-123", Issue: "Container main has restarted 42 times", Severity: diagnosis.High},
+			},
+			wantCount: 1,
+			wantIssue: "CrashLoopBackOff",
 		},
 		{
-			name:           "ImagePullBackOff detectado",
-			podName:        "test-pod",
-			namespace:      "default",
-			containerState: "waiting",
-			reason:         "ImagePullBackOff",
-			wantProblem:    true,
+			name: "CrashLoopBackOff OOMKilled suppresses standalone OOMKilled for same pod",
+			problems: []diagnosis.Problem{
+				{Resource: "Pod", Namespace: "default", Name: "app-abc-123", Issue: "Container main in CrashLoopBackOff (OOMKilled)", Severity: diagnosis.Critical},
+				{Resource: "Pod", Namespace: "default", Name: "app-abc-123", Issue: "Container main was OOMKilled", Severity: diagnosis.Critical},
+				{Resource: "Pod", Namespace: "default", Name: "app-abc-123", Issue: "Container main has restarted 55 times", Severity: diagnosis.Critical},
+			},
+			wantCount: 1,
+			wantIssue: "CrashLoopBackOff",
 		},
 		{
-			name:           "Pod rodando normalmente",
-			podName:        "test-pod",
-			namespace:      "default",
-			containerState: "running",
-			reason:         "",
-			wantProblem:    false,
+			name: "different pods are not deduplicated",
+			problems: []diagnosis.Problem{
+				{Resource: "Pod", Namespace: "default", Name: "app-1", Issue: "Container main in CrashLoopBackOff", Severity: diagnosis.Critical},
+				{Resource: "Pod", Namespace: "default", Name: "app-2", Issue: "Container main has restarted 42 times", Severity: diagnosis.High},
+			},
+			wantCount: 2,
+		},
+		{
+			name: "non-Pod resources are never deduplicated",
+			problems: []diagnosis.Problem{
+				{Resource: "Deployment", Namespace: "default", Name: "app", Issue: "unavailable replicas", Severity: diagnosis.High},
+				{Resource: "Service", Namespace: "default", Name: "app-svc", Issue: "no endpoints", Severity: diagnosis.High},
+			},
+			wantCount: 2,
+		},
+		{
+			name: "high-restarts without CrashLoopBackOff is kept",
+			problems: []diagnosis.Problem{
+				{Resource: "Pod", Namespace: "default", Name: "app-abc-123", Issue: "Container main has restarted 42 times", Severity: diagnosis.High},
+			},
+			wantCount: 1,
+		},
+		{
+			name:      "empty input returns empty",
+			problems:  nil,
+			wantCount: 0,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Test logic would go here
-			// This is a placeholder since we need actual pod objects
-			t.Logf("Test case: %s", tt.name)
+			t.Parallel()
+			got := deduplicateProblems(tt.problems)
+			if len(got) != tt.wantCount {
+				issues := make([]string, len(got))
+				for i, p := range got {
+					issues[i] = p.Issue
+				}
+				t.Fatalf("deduplicateProblems() returned %d problems %v, want %d", len(got), issues, tt.wantCount)
+			}
+			if tt.wantIssue != "" && len(got) > 0 {
+				found := false
+				for _, p := range got {
+					if containsCI(p.Issue, tt.wantIssue) {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("expected remaining problem to contain %q", tt.wantIssue)
+				}
+			}
 		})
 	}
 }
 
-// BenchmarkNew benchmarks scanner creation
-func BenchmarkNew(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		_, _ = New()
-	}
+func containsCI(s, sub string) bool {
+	return len(s) >= len(sub) && (s == sub || len(sub) == 0 ||
+		func() bool {
+			for i := 0; i <= len(s)-len(sub); i++ {
+				if s[i:i+len(sub)] == sub {
+					return true
+				}
+			}
+			return false
+		}())
 }
