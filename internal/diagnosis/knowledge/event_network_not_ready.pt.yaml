@@ -1,0 +1,28 @@
+key: "event-network-not-ready"
+title: "Plugin de Rede Não Pronto"
+explanation: |
+  O plugin CNI (Container Network Interface) não está pronto em um ou mais nodes, impedindo
+  que a rede dos pods seja configurada. Pods nos nodes afetados não podem iniciar.
+
+  Causas comuns:
+    - Pods do DaemonSet CNI (calico-node, aws-node, cilium, kindnet) não estão rodando.
+    - Binário ou config do CNI está ausente/corrompido no node.
+    - Node recém-adicionado onde o CNI ainda não inicializou.
+
+  Fluxo de resolução:
+    1. Identifique qual CNI está instalado e verifique o status do DaemonSet.
+    2. Verifique os logs do pod CNI no node afetado para erros de inicialização.
+    3. Reinicie o DaemonSet do CNI para reinicializar em todos os nodes.
+    4. Verifique se a condição NetworkReady é resolvida em todos os nodes.
+commands:
+  - "kubectl get pods -n kube-system -o wide | grep -E 'calico|cilium|aws-node|kindnet|flannel'"
+  - "kubectl logs -n kube-system -l k8s-app=calico-node --tail=50"
+  - "kubectl rollout restart daemonset/calico-node -n kube-system"
+  - "kubectl rollout status daemonset/calico-node -n kube-system --timeout=120s"
+  - "kubectl get nodes -o custom-columns=NAME:.metadata.name,READY:.status.conditions[?(@.type==\"Ready\")].status"
+windows_commands:
+  - "kubectl get pods -n kube-system -o wide"
+  - "kubectl logs -n kube-system -l k8s-app=calico-node --tail=50"
+  - "kubectl rollout restart daemonset/calico-node -n kube-system"
+  - "kubectl rollout status daemonset/calico-node -n kube-system --timeout=120s"
+  - "kubectl get nodes -o custom-columns=NAME:.metadata.name,READY:.status.conditions[?(@.type==\"Ready\")].status"

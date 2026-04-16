@@ -286,7 +286,15 @@ func savePDFReport(problems []diagnosis.Problem, contextName, namespace string) 
 	pdf.CellFormat(67, 7, "ISSUE", "1", 1, "C", true, 0, "")
 	pdf.SetTextColor(0, 0, 0)
 
-	// Summary table rows
+	// Summary table rows — ISSUE column wraps via MultiCell for long text.
+	const (
+		colSev  = 25.0
+		colRes  = 28.0
+		colName = 45.0
+		colScr  = 15.0
+		colIss  = 67.0
+		rowH    = 5.0 // base line height
+	)
 	pdf.SetFont("Courier", "", 8)
 	for i, p := range problems {
 		if i%2 == 0 {
@@ -294,13 +302,39 @@ func savePDFReport(problems []diagnosis.Problem, contextName, namespace string) 
 		} else {
 			pdf.SetFillColor(255, 255, 255)
 		}
-		// Truncation limits calculated for Courier 8pt: char width ~1.69 mm
-		// minus 1 char safety margin per column.
-		pdf.CellFormat(25, 6, ps(string(p.Severity)), "1", 0, "L", true, 0, "")
-		pdf.CellFormat(28, 6, ps(truncate(p.Resource, 14)), "1", 0, "L", true, 0, "")
-		pdf.CellFormat(45, 6, ps(truncate(p.Name, 24)), "1", 0, "L", true, 0, "")
-		pdf.CellFormat(15, 6, strconv.Itoa(p.Score), "1", 0, "C", true, 0, "")
-		pdf.CellFormat(67, 6, ps(truncate(p.Issue, 38)), "1", 1, "L", true, 0, "")
+		fill := true
+		issueText := ps(p.Issue)
+
+		// Calculate how tall the ISSUE MultiCell will be.
+		x0, y0 := pdf.GetXY()
+		leftM, _, _, _ := pdf.GetMargins()
+		pdf.SetLeftMargin(x0 + colSev + colRes + colName + colScr)
+		pdf.SetXY(x0+colSev+colRes+colName+colScr, y0)
+		// Dry-run: write to measure, then rewind.
+		pdf.MultiCell(colIss, rowH, issueText, "", "L", false)
+		issueH := pdf.GetY() - y0
+		if issueH < rowH {
+			issueH = rowH
+		}
+		pdf.SetLeftMargin(leftM)
+
+		// Rewind to row start and draw fixed-width columns at the computed height.
+		pdf.SetXY(x0, y0)
+		pdf.CellFormat(colSev, issueH, ps(string(p.Severity)), "1", 0, "L", fill, 0, "")
+		pdf.CellFormat(colRes, issueH, ps(truncate(p.Resource, 14)), "1", 0, "L", fill, 0, "")
+		pdf.CellFormat(colName, issueH, ps(truncate(p.Name, 24)), "1", 0, "L", fill, 0, "")
+		pdf.CellFormat(colScr, issueH, strconv.Itoa(p.Score), "1", 0, "C", fill, 0, "")
+
+		// Draw the ISSUE cell: background rect + MultiCell text.
+		issX := x0 + colSev + colRes + colName + colScr
+		pdf.Rect(issX, y0, colIss, issueH, "FD")
+		pdf.SetLeftMargin(issX)
+		pdf.SetXY(issX, y0)
+		pdf.MultiCell(colIss, rowH, issueText, "", "L", false)
+		pdf.SetLeftMargin(leftM)
+
+		// Advance to next row.
+		pdf.SetXY(x0, y0+issueH)
 	}
 	pdf.Ln(6)
 

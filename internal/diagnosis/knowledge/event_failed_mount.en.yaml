@@ -1,0 +1,30 @@
+﻿key: "event-failed-mount"
+title: "Volume Mount Failure"
+explanation: |
+  A volume could not be mounted to the container.
+
+  Common causes and fixes:
+    - Secret/ConfigMap missing: Create the referenced Secret or ConfigMap.
+    - PVC Pending: Fix the StorageClass or provision a PV.
+    - NFS/EBS unreachable: Check network connectivity and mount target.
+    - ReadWriteOnce conflict: Another pod has exclusive access. Delete that pod or use ReadWriteMany.
+
+  Resolution flow:
+    1. Read the event to identify which volume failed and why.
+    2. Verify the referenced Secret/ConfigMap/PVC exists.
+    3. Create the missing resource or fix the PVC binding issue.
+    4. The pod will auto-retry mounting â€” verify it starts.
+commands:
+  - "kubectl describe pod {pod} -n {namespace} | grep -A10 'Events:\\|Volumes:'"
+  - "kubectl get configmap -n {namespace} -o name"
+  - "kubectl get secret -n {namespace} -o name"
+  - "kubectl get pvc -n {namespace} -o wide"
+  - "kubectl create configmap <cm-name> -n {namespace} --from-literal=<key>=<value>"
+  - "kubectl get pod {pod} -n {namespace} -w"
+windows_commands:
+  - "kubectl describe pod {pod} -n {namespace}"
+  - "kubectl get configmap -n {namespace} -o name"
+  - "kubectl get secret -n {namespace} -o name"
+  - "kubectl get pvc -n {namespace} -o wide"
+  - "kubectl create configmap <cm-name> -n {namespace} --from-literal=<key>=<value>"
+  - "kubectl get pod {pod} -n {namespace} -w"

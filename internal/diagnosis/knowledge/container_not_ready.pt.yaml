@@ -1,0 +1,31 @@
+key: "container-not-ready"
+title: "Container Não Pronto (Falha na Readiness Probe)"
+explanation: |
+  O container está rodando mas sua readiness probe continua falhando. O Kubernetes o remove
+  de todos os endpoints do Service, então nenhum tráfego é roteado para este pod.
+
+  Causas comuns:
+    - A aplicação está em deadlock ou travada na inicialização.
+    - O path/porta da readiness probe está mal configurado.
+    - initialDelaySeconds é muito curto para a app iniciar.
+    - O endpoint de health retorna 5xx sob carga.
+
+  Fluxo de resolução:
+    1. Verifique qual probe está falhando e sua configuração exata.
+    2. Leia os logs da aplicação para ver se iniciou corretamente.
+    3. Ajuste o timing da probe (aumente initialDelaySeconds, periodSeconds ou timeoutSeconds).
+    4. Verifique se o pod fica Ready e aparece nos endpoints do Service.
+commands:
+  - "kubectl describe pod {pod} -n {namespace} | grep -A3 'Readiness:'"
+  - "kubectl logs {pod} -n {namespace} --tail=100"
+  - "kubectl get events -n {namespace} --field-selector involvedObject.name={pod},reason=Unhealthy --sort-by='.lastTimestamp'"
+  - "kubectl patch deployment/{name} -n {namespace} --type=strategic -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"{name}\",\"readinessProbe\":{\"initialDelaySeconds\":30,\"periodSeconds\":10,\"timeoutSeconds\":5,\"failureThreshold\":5}}]}}}}'"
+  - "kubectl rollout status deployment/{name} -n {namespace} --timeout=120s"
+  - "kubectl get endpoints {name} -n {namespace}"
+windows_commands:
+  - "kubectl describe pod {pod} -n {namespace}"
+  - "kubectl logs {pod} -n {namespace} --tail=100"
+  - "kubectl get events -n {namespace} --field-selector involvedObject.name={pod},reason=Unhealthy --sort-by='.lastTimestamp'"
+  - "kubectl patch deployment/{name} -n {namespace} --type=strategic -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"{name}\",\"readinessProbe\":{\"initialDelaySeconds\":30,\"periodSeconds\":10,\"timeoutSeconds\":5,\"failureThreshold\":5}}]}}}}'"
+  - "kubectl rollout status deployment/{name} -n {namespace} --timeout=120s"
+  - "kubectl get endpoints {name} -n {namespace}"

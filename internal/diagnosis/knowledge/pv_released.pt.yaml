@@ -1,0 +1,22 @@
+key: pv_released
+title: "PV Released mas Não Reciclado"
+explanation: |
+  O PVC que estava vinculado a este PV foi deletado, mas o PV tem política de reclaim Retain,
+  então permanece em estado Released. Não pode ser automaticamente vinculado a um novo PVC até
+  que o claimRef antigo seja limpo manualmente.
+
+  Fluxo de resolução:
+    1. Verifique se os dados no volume ainda são necessários.
+    2. Se os dados são necessários, faça backup antes de fazer alterações.
+    3. Limpe o claimRef para tornar o PV Available novamente para novos PVCs.
+    4. Verifique se o PV transiciona para Available e pode vincular a um novo PVC.
+commands:
+  - "kubectl describe pv {name}"
+  - "kubectl get pv {name} -o jsonpath='{.spec.claimRef}'"
+  - "kubectl patch pv {name} --type=json -p '[{\"op\":\"remove\",\"path\":\"/spec/claimRef\"}]'"
+  - "kubectl get pv {name}"
+windows_commands:
+  - "kubectl describe pv {name}"
+  - "kubectl get pv {name} -o jsonpath='{.spec.claimRef}'"
+  - "kubectl patch pv {name} --type=json -p '[{\"op\":\"remove\",\"path\":\"/spec/claimRef\"}]'"
+  - "kubectl get pv {name}"

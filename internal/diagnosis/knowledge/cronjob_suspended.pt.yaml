@@ -1,0 +1,23 @@
+key: cronjob_suspended
+title: "CronJob Está Suspenso"
+explanation: |
+  Este CronJob está suspenso (spec.suspend=true). Não criará novos Jobs de acordo com seu
+  agendamento. Isso pode ser intencional (manutenção) ou uma suspensão manual esquecida.
+
+  Fluxo de resolução:
+    1. Verifique se a suspensão foi intencional.
+    2. Se pronto para retomar, faça patch no CronJob para dessuspendê-lo.
+    3. Opcionalmente acione uma execução manual para verificar se funciona.
+    4. Verifique se o CronJob cria Jobs no agendamento.
+commands:
+  - "kubectl describe cronjob {name} -n {namespace}"
+  - "kubectl get cronjob {name} -n {namespace} -o jsonpath='{.spec.suspend}'  # true = suspenso"
+  - "kubectl patch cronjob {name} -n {namespace} -p '{\"spec\":{\"suspend\":false}}'"
+  - "kubectl create job {name}-manual --from=cronjob/{name} -n {namespace}"
+  - "kubectl get jobs -n {namespace} | grep {name}"
+windows_commands:
+  - "kubectl describe cronjob {name} -n {namespace}"
+  - "kubectl get cronjob {name} -n {namespace} -o jsonpath='{.spec.suspend}'"
+  - "kubectl patch cronjob {name} -n {namespace} -p '{\"spec\":{\"suspend\":false}}'"
+  - "kubectl create job {name}-manual --from=cronjob/{name} -n {namespace}"
+  - "kubectl get jobs -n {namespace}"

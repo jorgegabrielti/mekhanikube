@@ -1,0 +1,30 @@
+﻿key: replicaset_orphaned
+title: "Orphaned ReplicaSet Detected"
+explanation: |
+  This ReplicaSet has no ownerReferences â€” it is not managed by any Deployment. It was either
+  created manually or left behind after a Deployment was deleted with --cascade=orphan.
+
+  Orphaned ReplicaSets consume resources (CPU, memory, IPs) with no lifecycle management â€”
+  no rollouts, no self-healing, no rollback capability.
+
+  Decision tree:
+    - Serving production traffic? -> Wrap it in a new Deployment for proper management.
+    - Leftover from deleted Deployment? -> Verify pods are not in use, then delete it.
+    - Intentional test workload? -> Accept the risk or migrate to a Deployment.
+
+  Resolution flow:
+    1. Confirm it has no owner references.
+    2. Check if its pods are handling traffic (check Service endpoints).
+    3. Delete if unused, or recreate as a Deployment for proper management.
+commands:
+  - "kubectl get rs {name} -n {namespace} -o jsonpath='{.metadata.ownerReferences}'"
+  - "kubectl get pods -n {namespace} --selector=app={name} -o wide"
+  - "kubectl get endpoints -n {namespace} | grep {name}"
+  - "kubectl delete replicaset {name} -n {namespace}"
+  - "kubectl get rs -n {namespace}"
+windows_commands:
+  - "kubectl get rs {name} -n {namespace} -o jsonpath='{.metadata.ownerReferences}'"
+  - "kubectl get pods -n {namespace} --selector=app={name} -o wide"
+  - "kubectl get endpoints -n {namespace}"
+  - "kubectl delete replicaset {name} -n {namespace}"
+  - "kubectl get rs -n {namespace}"

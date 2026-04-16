@@ -1,0 +1,26 @@
+﻿key: "createcontainerconfigerror"
+title: "CreateContainerConfigError"
+explanation: |
+  Kubernetes cannot create the container because a referenced ConfigMap, Secret, or
+  ServiceAccount does not exist in the namespace, or a specific key within the resource
+  does not match the volume mount or env var reference.
+
+  Resolution flow:
+    1. Read the pod events to identify the exact missing resource name and key.
+    2. Check if the ConfigMap/Secret exists in the namespace.
+    3. Create the missing resource or fix the reference in the pod spec.
+    4. The pod will auto-retry â€” verify it transitions to Running.
+commands:
+  - "kubectl describe pod {pod} -n {namespace} | grep -A10 'Events:'"
+  - "kubectl get configmap -n {namespace} -o name"
+  - "kubectl get secret -n {namespace} -o name"
+  - "kubectl create configmap <cm-name> -n {namespace} --from-literal=<key>=<value>"
+  - "kubectl create secret generic <secret-name> -n {namespace} --from-literal=<key>=<value>"
+  - "kubectl get pod {pod} -n {namespace} -w"
+windows_commands:
+  - "kubectl describe pod {pod} -n {namespace}"
+  - "kubectl get configmap -n {namespace} -o name"
+  - "kubectl get secret -n {namespace} -o name"
+  - "kubectl create configmap <cm-name> -n {namespace} --from-literal=<key>=<value>"
+  - "kubectl create secret generic <secret-name> -n {namespace} --from-literal=<key>=<value>"
+  - "kubectl get pod {pod} -n {namespace} -w"

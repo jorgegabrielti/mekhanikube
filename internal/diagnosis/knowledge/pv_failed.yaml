@@ -1,8 +1,0 @@
-key: pv_failed
-title: PV is in Failed state
-explanation: |
-  The volume failed to be recycled or deleted by its provisioner. This can happen if the backing storage (e.g., EBS volume, NFS share) was manually deleted or if the provisioner lacks permissions to clean up resources.
-commands:
-  - "kubectl describe pv {name}"
-  - "kubectl get pv {name} -o jsonpath='{.spec.persistentVolumeReclaimPolicy}'"
-  - "kubectl get events --field-selector involvedObject.name={name} --sort-by='.lastTimestamp'"

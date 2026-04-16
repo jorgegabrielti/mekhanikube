@@ -26,8 +26,15 @@ type KnowledgeBase struct {
 	entries map[string]KnowledgeEntry
 }
 
-// NewKnowledgeBase loads all embedded knowledge entries.
-func NewKnowledgeBase() (*KnowledgeBase, error) {
+// NewKnowledgeBase loads embedded knowledge entries for the given language.
+// It first loads all English (.en.yaml) entries, then overlays the requested
+// language files if available. If lang is empty, "en" is used.
+func NewKnowledgeBase(lang string) (*KnowledgeBase, error) {
+	if lang == "" {
+		lang = "en"
+	}
+	lang = strings.ToLower(lang)
+
 	kb := &KnowledgeBase{
 		entries: make(map[string]KnowledgeEntry),
 	}
@@ -37,8 +44,9 @@ func NewKnowledgeBase() (*KnowledgeBase, error) {
 		return nil, fmt.Errorf("failed to read knowledge directory: %w", err)
 	}
 
+	// First pass: load English entries as base
 	for _, f := range files {
-		if f.IsDir() || !strings.HasSuffix(f.Name(), ".yaml") {
+		if f.IsDir() || !strings.HasSuffix(f.Name(), ".en.yaml") {
 			continue
 		}
 
@@ -53,6 +61,28 @@ func NewKnowledgeBase() (*KnowledgeBase, error) {
 		}
 
 		kb.entries[entry.Key] = entry
+	}
+
+	// Second pass: overlay requested language (if not English)
+	if lang != "en" {
+		suffix := "." + lang + ".yaml"
+		for _, f := range files {
+			if f.IsDir() || !strings.HasSuffix(f.Name(), suffix) {
+				continue
+			}
+
+			data, err := knowledgeFS.ReadFile("knowledge/" + f.Name())
+			if err != nil {
+				return nil, fmt.Errorf("failed to read knowledge file %s: %w", f.Name(), err)
+			}
+
+			var entry KnowledgeEntry
+			if err := yaml.Unmarshal(data, &entry); err != nil {
+				return nil, fmt.Errorf("failed to parse knowledge file %s: %w", f.Name(), err)
+			}
+
+			kb.entries[entry.Key] = entry
+		}
 	}
 
 	return kb, nil

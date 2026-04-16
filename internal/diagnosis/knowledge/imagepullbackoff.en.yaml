@@ -1,0 +1,31 @@
+﻿key: "imagepullbackoff"
+title: "Image Pull Failure (ImagePullBackOff)"
+explanation: |
+  The kubelet cannot pull the container image from the registry.
+
+  Common causes and fixes:
+    - Image not found: The image name or tag is misspelled. Fix the image reference.
+    - Unauthorized: The registry requires authentication. Create an imagePullSecret.
+    - Registry unreachable: The node cannot reach the registry. Check network/firewall.
+    - Rate limited: Docker Hub rate limit hit. Use a pull-through cache or authenticate.
+
+  Resolution flow:
+    1. Read the pod events to see the exact registry error (unauthorized, not found, timeout).
+    2. Verify the image name and tag are correct.
+    3. If auth issue, create a docker-registry secret and patch the ServiceAccount.
+    4. If wrong image, fix the deployment image reference.
+    5. Verify the pod pulls the image and starts.
+commands:
+  - "kubectl describe pod {pod} -n {namespace} | grep -A5 'Events:'"
+  - "kubectl get pod {pod} -n {namespace} -o jsonpath='{.spec.containers[0].image}'"
+  - "kubectl create secret docker-registry regcred -n {namespace} --docker-server=<registry> --docker-username=<user> --docker-password=<pass>"
+  - "kubectl patch serviceaccount default -n {namespace} -p '{\"imagePullSecrets\":[{\"name\":\"regcred\"}]}'"
+  - "kubectl set image deployment/{name} -n {namespace} {name}=<correct-image:tag>"
+  - "kubectl rollout status deployment/{name} -n {namespace} --timeout=120s"
+windows_commands:
+  - "kubectl describe pod {pod} -n {namespace}"
+  - "kubectl get pod {pod} -n {namespace} -o jsonpath='{.spec.containers[0].image}'"
+  - "kubectl create secret docker-registry regcred -n {namespace} --docker-server=<registry> --docker-username=<user> --docker-password=<pass>"
+  - "kubectl patch serviceaccount default -n {namespace} -p '{\"imagePullSecrets\":[{\"name\":\"regcred\"}]}'"
+  - "kubectl set image deployment/{name} -n {namespace} {name}=<correct-image:tag>"
+  - "kubectl rollout status deployment/{name} -n {namespace} --timeout=120s"

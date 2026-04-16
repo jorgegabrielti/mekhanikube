@@ -1,7 +1,0 @@
-key: quota_reached
-title: ResourceQuota limit reached
-explanation: |
-  The ResourceQuota limit for a specific resource (CPU, Memory, Pods, etc.) has been reached in this namespace. Kubernetes will reject any new resource requests that would exceed this limit.
-commands:
-  - "kubectl describe quota {name} -n {namespace}"
-  - "kubectl get pods -n {namespace} --sort-by='.spec.containers[0].resources.requests.cpu'"

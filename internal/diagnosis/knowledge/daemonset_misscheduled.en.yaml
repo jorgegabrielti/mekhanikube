@@ -1,0 +1,29 @@
+﻿key: daemonset_misscheduled
+title: "DaemonSet Not Fully Scheduled"
+explanation: |
+  The DaemonSet is not running on all desired nodes.
+
+  Common causes and fixes:
+    - Taints: Nodes have taints the DaemonSet doesn't tolerate. Add tolerations to the DaemonSet.
+    - NodeSelector: The DaemonSet selector excludes some nodes. Adjust the selector or label nodes.
+    - Insufficient resources: Nodes don't have enough CPU/memory. Reduce DaemonSet resource requests.
+
+  Resolution flow:
+    1. Check which nodes are missing the DaemonSet pod and why.
+    2. Check node taints and DaemonSet tolerations.
+    3. Add the missing toleration or label, or reduce resource requests.
+    4. Verify the DaemonSet rolls out to all desired nodes.
+commands:
+  - "kubectl describe ds {name} -n {namespace}"
+  - "kubectl get nodes -o custom-columns=NAME:.metadata.name,TAINTS:.spec.taints[*].key,LABELS:.metadata.labels"
+  - "kubectl get pods -n {namespace} -l app={name} -o wide"
+  - "kubectl patch daemonset {name} -n {namespace} --type=strategic -p '{\"spec\":{\"template\":{\"spec\":{\"tolerations\":[{\"key\":\"<taint-key>\",\"operator\":\"Exists\",\"effect\":\"NoSchedule\"}]}}}}'"
+  - "kubectl rollout status daemonset/{name} -n {namespace} --timeout=120s"
+  - "kubectl get ds {name} -n {namespace}"
+windows_commands:
+  - "kubectl describe ds {name} -n {namespace}"
+  - "kubectl get nodes -o custom-columns=NAME:.metadata.name,TAINTS:.spec.taints[*].key"
+  - "kubectl get pods -n {namespace} -l app={name} -o wide"
+  - "kubectl patch daemonset {name} -n {namespace} --type=strategic -p '{\"spec\":{\"template\":{\"spec\":{\"tolerations\":[{\"key\":\"<taint-key>\",\"operator\":\"Exists\",\"effect\":\"NoSchedule\"}]}}}}'"
+  - "kubectl rollout status daemonset/{name} -n {namespace} --timeout=120s"
+  - "kubectl get ds {name} -n {namespace}"

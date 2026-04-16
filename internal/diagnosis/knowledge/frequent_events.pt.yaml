@@ -1,0 +1,28 @@
+key: "frequent-events"
+title: "Eventos de Warning Frequentes"
+explanation: |
+  Este recurso está gerando eventos Warning repetidamente. A correção depende do tipo de evento:
+
+    - BackOff/CrashLoopBackOff: Container está crashando. Verifique logs --previous e código de saída.
+    - FailedMount: Um Secret, ConfigMap ou PVC não existe. Crie o recurso ausente.
+    - FailedScheduling: Nenhum node tem recursos suficientes. Escale o cluster ou reduza requests.
+    - Liveness/Readiness ProbeErr: Corrija config da probe (path, porta, delays).
+    - ErrImagePull/ImagePullBackOff: Corrija nome da imagem ou crie imagePullSecret.
+    - Evicted: Node sob pressão. Verifique condições do node e defina resource limits.
+
+  Fluxo de resolução:
+    1. Liste eventos Warning e identifique o Reason recorrente.
+    2. Associe o Reason à categoria acima e aplique a correção direcionada.
+    3. Verifique se os eventos param de se repetir após a correção.
+commands:
+  - "kubectl get events -n {namespace} --field-selector involvedObject.name={name},type=Warning --sort-by='.lastTimestamp'"
+  - "kubectl describe pod {pod} -n {namespace}"
+  - "kubectl logs {pod} -n {namespace} --previous --tail=50 2>/dev/null"
+  - "kubectl rollout restart deployment/{name} -n {namespace}"
+  - "kubectl get events -n {namespace} --field-selector involvedObject.name={name},type=Warning --sort-by='.lastTimestamp'"
+windows_commands:
+  - "kubectl get events -n {namespace} --field-selector involvedObject.name={name},type=Warning --sort-by='.lastTimestamp'"
+  - "kubectl describe pod {pod} -n {namespace}"
+  - "kubectl logs {pod} -n {namespace} --previous --tail=50 2>$null"
+  - "kubectl rollout restart deployment/{name} -n {namespace}"
+  - "kubectl get events -n {namespace} --field-selector involvedObject.name={name},type=Warning --sort-by='.lastTimestamp'"

@@ -1,0 +1,31 @@
+key: "crashloopbackoff"
+title: "Container em CrashLoopBackOff"
+explanation: |
+  O container está falhando imediatamente após iniciar e o Kubernetes reinicia com backoff
+  exponencial (10s -> 20s -> 40s -> ... até 5 min entre tentativas).
+
+  Causa raiz por código de saída:
+    - Exit 0:   Processo terminou mas não deveria — entrypoint errado ou comando one-shot em pod de longa execução.
+    - Exit 1/2: Erro da aplicação — config inválida, variável de ambiente ausente, exceção não tratada no startup.
+    - Exit 127: Binário não encontrado na imagem — CMD/ENTRYPOINT errado ou dependência ausente.
+    - Exit 137: OOMKilled — container excedeu o limite de memória (resources.limits.memory).
+
+  Fluxo de resolução:
+    1. Leia os logs do container ANTERIOR (a instância atual pode não ter saída ainda).
+    2. Verifique o código de saída para classificar a falha.
+    3. Inspecione variáveis de ambiente, montagens de volume e configurações de probe no spec do pod.
+    4. Aplique a correção direcionada (imagem, config, recursos) e verifique se o pod estabiliza.
+commands:
+  - "kubectl logs {pod} -n {namespace} --previous --tail=100"
+  - "kubectl get pod {pod} -n {namespace} -o jsonpath='{.status.containerStatuses[0].lastState.terminated.exitCode}'"
+  - "kubectl describe pod {pod} -n {namespace} | grep -A5 'Environment\\|Mounts\\|Events'"
+  - "kubectl set resources deployment/{name} -n {namespace} --limits=memory=512Mi --requests=memory=256Mi"
+  - "kubectl rollout restart deployment/{name} -n {namespace}"
+  - "kubectl rollout status deployment/{name} -n {namespace} --timeout=120s"
+windows_commands:
+  - "kubectl logs {pod} -n {namespace} --previous --tail=100"
+  - "kubectl get pod {pod} -n {namespace} -o jsonpath='{.status.containerStatuses[0].lastState.terminated.exitCode}'"
+  - "kubectl describe pod {pod} -n {namespace}"
+  - "kubectl set resources deployment/{name} -n {namespace} --limits=memory=512Mi --requests=memory=256Mi"
+  - "kubectl rollout restart deployment/{name} -n {namespace}"
+  - "kubectl rollout status deployment/{name} -n {namespace} --timeout=120s"

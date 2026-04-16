@@ -1,0 +1,31 @@
+key: "deployment-stuck"
+title: "Rollout do Deployment Travado"
+explanation: |
+  O rollout do Deployment não está progredindo — o novo ReplicaSet não consegue escalar seus pods.
+  O Kubernetes marca como travado após o progressDeadlineSeconds (padrão 600s) ser excedido.
+
+  Causas comuns:
+    - Novos pods crasham ao iniciar (CrashLoopBackOff, ImagePullBackOff).
+    - Recursos insuficientes no cluster para agendar novos pods.
+    - Readiness probes falham nos novos pods.
+
+  Fluxo de resolução:
+    1. Verifique o status do rollout e identifique por que o novo ReplicaSet está travado.
+    2. Inspecione os pods do novo ReplicaSet para erros específicos.
+    3. Se a nova versão está quebrada, faça rollback para a última revisão funcional.
+    4. Se corrigível, resolva o problema e deixe o rollout continuar.
+    5. Verifique se o deployment está totalmente disponível.
+commands:
+  - "kubectl rollout status deployment/{name} -n {namespace} --watch=false"
+  - "kubectl get rs -n {namespace} -l app={name} --sort-by='.metadata.creationTimestamp'"
+  - "kubectl describe deployment {name} -n {namespace} | grep -A10 'Conditions:'"
+  - "kubectl rollout undo deployment/{name} -n {namespace}"
+  - "kubectl rollout status deployment/{name} -n {namespace} --timeout=120s"
+  - "kubectl get pods -n {namespace} -l app={name} -o wide"
+windows_commands:
+  - "kubectl rollout status deployment/{name} -n {namespace} --watch=false"
+  - "kubectl get rs -n {namespace} -l app={name} --sort-by='.metadata.creationTimestamp'"
+  - "kubectl describe deployment {name} -n {namespace}"
+  - "kubectl rollout undo deployment/{name} -n {namespace}"
+  - "kubectl rollout status deployment/{name} -n {namespace} --timeout=120s"
+  - "kubectl get pods -n {namespace} -l app={name} -o wide"

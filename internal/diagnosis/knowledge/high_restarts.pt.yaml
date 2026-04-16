@@ -1,0 +1,31 @@
+key: "high-restarts"
+title: "Alto Número de Reinicializações do Container"
+explanation: |
+  Um container neste pod reiniciou um número anormalmente alto de vezes, indicando uma
+  falha recorrente que o Kubernetes continua recuperando.
+
+  Causa raiz por código de saída:
+    - Exit 137 (OOMKilled): Aumente resources.limits.memory.
+    - Exit 1/2 (Crash da app): Corrija config, variáveis de ambiente ou lógica de startup.
+    - Exit 0 (Saída inesperada): Corrija o entrypoint — o processo não deveria terminar.
+    - Falha de liveness probe: A probe está muito agressiva ou o endpoint muito lento.
+
+  Fluxo de resolução:
+    1. Leia os logs da instância ANTERIOR que crashou.
+    2. Verifique o código de saída e último estado para classificar o tipo de falha.
+    3. Aplique a correção direcionada e reinicie o deployment.
+    4. Monitore a contagem de restarts para verificar se estabiliza em zero.
+commands:
+  - "kubectl logs {pod} -n {namespace} --previous --tail=100"
+  - "kubectl get pod {pod} -n {namespace} -o jsonpath='{.status.containerStatuses[0].lastState.terminated}'"
+  - "kubectl describe pod {pod} -n {namespace} | grep -A5 'Liveness\\|Readiness'"
+  - "kubectl set resources deployment/{name} -n {namespace} --limits=memory=512Mi --requests=memory=256Mi"
+  - "kubectl rollout restart deployment/{name} -n {namespace}"
+  - "kubectl get pod -n {namespace} -l app={name} -w"
+windows_commands:
+  - "kubectl logs {pod} -n {namespace} --previous --tail=100"
+  - "kubectl get pod {pod} -n {namespace} -o jsonpath='{.status.containerStatuses[0].lastState.terminated}'"
+  - "kubectl describe pod {pod} -n {namespace}"
+  - "kubectl set resources deployment/{name} -n {namespace} --limits=memory=512Mi --requests=memory=256Mi"
+  - "kubectl rollout restart deployment/{name} -n {namespace}"
+  - "kubectl get pod -n {namespace} -l app={name} -w"

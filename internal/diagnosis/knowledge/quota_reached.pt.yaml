@@ -1,0 +1,25 @@
+key: quota_reached
+title: "Limite do ResourceQuota Atingido"
+explanation: |
+  O limite do ResourceQuota foi atingido para um ou mais recursos (CPU, Memória, Pods, etc.)
+  neste namespace. O Kubernetes rejeitará qualquer nova solicitação de recurso que exceda este limite.
+
+  Fluxo de resolução:
+    1. Verifique quais recursos específicos atingiram o limite da quota.
+    2. Identifique pods/recursos não utilizados ou ociosos que podem ser limpos.
+    3. Se a limpeza não for suficiente, aumente a quota para acomodar crescimento legítimo.
+    4. Verifique se novos recursos podem ser criados.
+commands:
+  - "kubectl describe quota {name} -n {namespace}"
+  - "kubectl get pods -n {namespace} --sort-by='.status.startTime'"
+  - "kubectl top pods -n {namespace} --sort-by=cpu"
+  - "kubectl delete pod <idle-pod> -n {namespace}"
+  - "kubectl patch resourcequota {name} -n {namespace} -p '{\"spec\":{\"hard\":{\"pods\":\"50\",\"requests.cpu\":\"10\",\"requests.memory\":\"20Gi\"}}}'"
+  - "kubectl describe quota {name} -n {namespace}"
+windows_commands:
+  - "kubectl describe quota {name} -n {namespace}"
+  - "kubectl get pods -n {namespace} --sort-by='.status.startTime'"
+  - "kubectl top pods -n {namespace} --sort-by=cpu"
+  - "kubectl delete pod <idle-pod> -n {namespace}"
+  - "kubectl patch resourcequota {name} -n {namespace} -p '{\"spec\":{\"hard\":{\"pods\":\"50\",\"requests.cpu\":\"10\",\"requests.memory\":\"20Gi\"}}}'"
+  - "kubectl describe quota {name} -n {namespace}"

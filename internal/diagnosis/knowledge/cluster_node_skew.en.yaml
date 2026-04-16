@@ -1,0 +1,27 @@
+﻿key: cluster-node-skew
+title: "Node Version Skew Detected"
+explanation: |
+  Nodes in the cluster are running different kubelet versions. Kubernetes allows kubelets
+  to be up to 3 minor versions behind the API server, but mixed versions increase the risk
+  of incompatible behavior and complicate troubleshooting.
+
+  Common causes:
+    - A rolling upgrade was started but not completed.
+    - Auto-scaling groups using an outdated AMI/machine image.
+    - Manually managed nodes that were not upgraded.
+
+  Resolution flow:
+    1. Identify which nodes are on older versions.
+    2. Drain outdated nodes one at a time to safely move workloads.
+    3. Upgrade the node (update AMI, run kubeadm upgrade, or replace the node).
+    4. Uncordon and verify the node rejoins with the correct version.
+commands:
+  - "kubectl get nodes -o custom-columns=NAME:.metadata.name,VERSION:.status.nodeInfo.kubeletVersion,OS:.status.nodeInfo.osImage --sort-by='.status.nodeInfo.kubeletVersion'"
+  - "kubectl drain {name} --ignore-daemonsets --delete-emptydir-data --timeout=120s"
+  - "kubectl uncordon {name}"
+  - "kubectl get nodes -o custom-columns=NAME:.metadata.name,VERSION:.status.nodeInfo.kubeletVersion"
+windows_commands:
+  - "kubectl get nodes -o custom-columns=NAME:.metadata.name,VERSION:.status.nodeInfo.kubeletVersion,OS:.status.nodeInfo.osImage --sort-by='.status.nodeInfo.kubeletVersion'"
+  - "kubectl drain {name} --ignore-daemonsets --delete-emptydir-data --timeout=120s"
+  - "kubectl uncordon {name}"
+  - "kubectl get nodes -o custom-columns=NAME:.metadata.name,VERSION:.status.nodeInfo.kubeletVersion"

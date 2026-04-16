@@ -1,8 +1,0 @@
-key: pvc_pending
-title: PVC is stuck in Pending state
-explanation: |
-  The PersistentVolumeClaim is unable to bind to a volume. This usually happens if the requested StorageClass is missing, has no available capacity, or the underlying provisioner (like AWS EBS or GKE PD) is facing API errors.
-commands:
-  - "kubectl describe pvc {name} -n {namespace}"
-  - "kubectl get sc # Check available StorageClasses"
-  - "kubectl get events -n {namespace} --field-selector involvedObject.name={name} # Check for binding errors"

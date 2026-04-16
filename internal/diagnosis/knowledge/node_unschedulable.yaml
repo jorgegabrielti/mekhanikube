@@ -1,9 +1,0 @@
-key: "node-unschedulable"
-title: "Node Cordoned (Unschedulable)"
-explanation: |
-  This Node has been explicitly cordoned (marked unschedulable = true), meaning no new pods will be allocated to it.
-  This is typically intentional for maintenance (`kubectl cordon`) or during a node drain operation (`kubectl drain`). 
-  If this is unexpected, someone or an automated process may have cordoned it by mistake. Uncordon when ready to accept workloads again.
-commands:
-  - "kubectl get node {name} -o jsonpath='{.spec.unschedulable}'"
-  - "kubectl uncordon {name}"

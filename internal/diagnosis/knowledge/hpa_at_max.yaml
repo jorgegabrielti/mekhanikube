@@ -1,8 +1,0 @@
-key: hpa_at_max
-title: HPA at maximum replicas
-explanation: |
-  The HorizontalPodAutoscaler has reached its maximum replica count. The workload is likely under heavy load and cannot scale further. This can lead to increased latency or service degradation.
-commands:
-  - "kubectl describe hpa {name} -n {namespace}"
-  - "kubectl top pods -n {namespace} -l $(kubectl get deployment $(kubectl get hpa {name} -n {namespace} -o jsonpath='{.spec.scaleTargetRef.name}') -n {namespace} -o jsonpath='{.spec.selector.matchLabels}' | jq -r 'to_entries | map(\"\\(.key)=\\(.value)\") | join(\",\")') # Check resource usage"
-  - "# Consider increasing 'maxReplicas' or optimizing the application"

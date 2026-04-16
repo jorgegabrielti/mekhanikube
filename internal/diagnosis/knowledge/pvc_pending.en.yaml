@@ -1,0 +1,28 @@
+﻿key: pvc_pending
+title: "PVC Stuck in Pending State"
+explanation: |
+  The PersistentVolumeClaim cannot bind to a volume.
+
+  Common causes and fixes:
+    - StorageClass does not exist -> Create the StorageClass or change the PVC to use an existing one.
+    - No PV matches the requested size/access mode -> Create a PV or reduce the request.
+    - Cloud provisioner error (AWS EBS, GCP PD) -> Check IAM permissions and quotas.
+    - WaitForFirstConsumer -> The PVC will bind only when a pod using it is scheduled.
+
+  Resolution flow:
+    1. Check PVC events for the exact provisioning error.
+    2. Verify the StorageClass exists and is configured correctly.
+    3. Fix the StorageClass reference or create the missing StorageClass.
+    4. Verify the PVC transitions to Bound.
+commands:
+  - "kubectl describe pvc {name} -n {namespace}"
+  - "kubectl get storageclass"
+  - "kubectl get pv --sort-by='.spec.capacity.storage'"
+  - "kubectl patch pvc {name} -n {namespace} -p '{\"spec\":{\"storageClassName\":\"standard\"}}'"
+  - "kubectl get pvc {name} -n {namespace} -w"
+windows_commands:
+  - "kubectl describe pvc {name} -n {namespace}"
+  - "kubectl get storageclass"
+  - "kubectl get pv --sort-by='.spec.capacity.storage'"
+  - "kubectl patch pvc {name} -n {namespace} -p '{\"spec\":{\"storageClassName\":\"standard\"}}'"
+  - "kubectl get pvc {name} -n {namespace} -w"

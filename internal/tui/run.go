@@ -10,6 +10,7 @@ type Options struct {
 	Namespace  string
 	Kubeconfig string
 	Context    string
+	Lang       string
 }
 
 // Run starts the interactive TUI mode.

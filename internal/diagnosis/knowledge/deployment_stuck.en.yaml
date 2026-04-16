@@ -1,0 +1,31 @@
+﻿key: "deployment-stuck"
+title: "Deployment Rollout Stuck"
+explanation: |
+  The Deployment rollout is not progressing â€” the new ReplicaSet cannot scale up its pods.
+  Kubernetes marks it as stuck after the progressDeadlineSeconds (default 600s) is exceeded.
+
+  Common causes:
+    - New pods crash on start (CrashLoopBackOff, ImagePullBackOff).
+    - Insufficient cluster resources to schedule new pods.
+    - Readiness probes fail on the new pods.
+
+  Resolution flow:
+    1. Check the rollout status and identify why the new ReplicaSet is stuck.
+    2. Inspect pods from the new ReplicaSet for specific errors.
+    3. If the new version is broken, rollback to the last working revision.
+    4. If fixable, correct the issue and let the rollout resume.
+    5. Verify the deployment is fully available.
+commands:
+  - "kubectl rollout status deployment/{name} -n {namespace} --watch=false"
+  - "kubectl get rs -n {namespace} -l app={name} --sort-by='.metadata.creationTimestamp'"
+  - "kubectl describe deployment {name} -n {namespace} | grep -A10 'Conditions:'"
+  - "kubectl rollout undo deployment/{name} -n {namespace}"
+  - "kubectl rollout status deployment/{name} -n {namespace} --timeout=120s"
+  - "kubectl get pods -n {namespace} -l app={name} -o wide"
+windows_commands:
+  - "kubectl rollout status deployment/{name} -n {namespace} --watch=false"
+  - "kubectl get rs -n {namespace} -l app={name} --sort-by='.metadata.creationTimestamp'"
+  - "kubectl describe deployment {name} -n {namespace}"
+  - "kubectl rollout undo deployment/{name} -n {namespace}"
+  - "kubectl rollout status deployment/{name} -n {namespace} --timeout=120s"
+  - "kubectl get pods -n {namespace} -l app={name} -o wide"

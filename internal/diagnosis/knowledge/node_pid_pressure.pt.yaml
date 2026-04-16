@@ -1,0 +1,31 @@
+key: "node-pid-pressure"
+title: "Node com Pressão de PID"
+explanation: |
+  O node está ficando sem IDs de processo. Muitos processos/threads estão rodando, arriscando
+  instabilidade do sistema. O kubelet vai começar a despejar pods para reduzir a contagem de PIDs.
+
+  Causas comuns:
+    - Aplicação gerando processos filhos ou threads excessivos sem recolhimento.
+    - Fork bombs ou processos descontrolados.
+    - Muitos pods agendados em um único node.
+
+  Fluxo de resolução:
+    1. Verifique as condições do node para confirmar pressão de PID.
+    2. Identifique os pods com maior consumo de CPU neste node (alta CPU frequentemente correlaciona com muitos PIDs).
+    3. Defina limites de PID nos containers ou reduza a densidade de pods no node.
+    4. Se crítico, drene o node.
+    5. Verifique se a condição é resolvida.
+commands:
+  - "kubectl describe node {name} | grep -A15 'Conditions:'"
+  - "kubectl top pods --field-selector spec.nodeName={name} -A --sort-by=cpu"
+  - "kubectl get pods --field-selector spec.nodeName={name} -A --no-headers | wc -l"
+  - "kubectl drain {name} --ignore-daemonsets --delete-emptydir-data --timeout=120s"
+  - "kubectl uncordon {name}"
+  - "kubectl get node {name} -o jsonpath='{.status.conditions[?(@.type==\"PIDPressure\")].status}'"
+windows_commands:
+  - "kubectl describe node {name}"
+  - "kubectl top pods -A --sort-by=cpu"
+  - "kubectl get pods --field-selector spec.nodeName={name} -A --no-headers"
+  - "kubectl drain {name} --ignore-daemonsets --delete-emptydir-data --timeout=120s"
+  - "kubectl uncordon {name}"
+  - "kubectl get node {name} -o jsonpath='{.status.conditions[?(@.type==\"PIDPressure\")].status}'"

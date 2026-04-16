@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/charmbracelet/x/term"
+	"github.com/jorgegabrielti/nautikube/internal/config"
 	"github.com/jorgegabrielti/nautikube/internal/tui"
 	"github.com/spf13/cobra"
 )
@@ -22,7 +23,8 @@ actionable remediation commands.`,
 		SilenceErrors: false,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if term.IsTerminal(os.Stdout.Fd()) {
-				return tui.Run(tui.Options{Namespace: namespace})
+				cfg := config.Load()
+				return tui.Run(tui.Options{Namespace: namespace, Lang: cfg.Language})
 			}
 			return cmd.Help()
 		},
@@ -32,6 +34,8 @@ actionable remediation commands.`,
 
 	cmd.AddCommand(NewScanCmd())
 	cmd.AddCommand(NewVersionCmd())
+	cmd.AddCommand(NewInitCmd())
+	cmd.AddCommand(NewConfigCmd())
 
 	return cmd
 }

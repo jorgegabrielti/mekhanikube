@@ -1,0 +1,23 @@
+﻿key: netpol_allow_all
+title: "Overly Permissive NetworkPolicy (Allow All)"
+explanation: |
+  This NetworkPolicy allows all ingress traffic, bypassing network segmentation. Any pod in
+  any namespace can send traffic to the selected pods, exposing them to unnecessary risk.
+
+  Resolution flow:
+    1. Identify which pods this NetworkPolicy selects.
+    2. Determine which sources actually need to reach those pods (specific namespaces/pods/ports).
+    3. Replace the allow-all rule with specific ingress rules.
+    4. Verify legitimate traffic still flows and unauthorized traffic is blocked.
+commands:
+  - "kubectl get networkpolicy {name} -n {namespace} -o yaml"
+  - "kubectl get pods -n {namespace} --show-labels"
+  - "kubectl patch networkpolicy {name} -n {namespace} --type=merge -p '{\"spec\":{\"ingress\":[{\"from\":[{\"namespaceSelector\":{\"matchLabels\":{\"name\":\"<allowed-ns>\"}}}],\"ports\":[{\"port\":8080,\"protocol\":\"TCP\"}]}]}}'"
+  - "kubectl run nettest --rm -it --image=busybox:1.36 --restart=Never -n {namespace} -- wget -qO- --timeout=3 http://<pod-ip>:8080"
+  - "kubectl get networkpolicy {name} -n {namespace} -o yaml"
+windows_commands:
+  - "kubectl get networkpolicy {name} -n {namespace} -o yaml"
+  - "kubectl get pods -n {namespace} --show-labels"
+  - "kubectl patch networkpolicy {name} -n {namespace} --type=merge -p '{\"spec\":{\"ingress\":[{\"from\":[{\"namespaceSelector\":{\"matchLabels\":{\"name\":\"<allowed-ns>\"}}}],\"ports\":[{\"port\":8080,\"protocol\":\"TCP\"}]}]}}'"
+  - "kubectl run nettest --rm -it --image=busybox:1.36 --restart=Never -n {namespace} -- wget -qO- --timeout=3 http://<pod-ip>:8080"
+  - "kubectl get networkpolicy {name} -n {namespace} -o yaml"

@@ -1,0 +1,30 @@
+key: "service-no-endpoints"
+title: "Service Sem Endpoints"
+explanation: |
+  Nenhum pod corresponde aos labels de selector deste Service. Todo tráfego enviado a este
+  Service falhará com timeouts de conexão. Services só roteiam para pods que estão Running E Ready.
+
+  Causas comuns:
+    - Os labels do selector no Service não correspondem a nenhum label de pod (typo ou incompatibilidade).
+    - Os pods existem mas não estão Ready (readiness probes falhando).
+    - O Deployment está escalado para zero réplicas.
+
+  Fluxo de resolução:
+    1. Verifique os labels do selector do Service.
+    2. Liste pods com labels correspondentes para ver se existem e estão Ready.
+    3. Corrija a incompatibilidade de labels ou escale o Deployment.
+    4. Verifique se os endpoints são populados.
+commands:
+  - "kubectl get svc {name} -n {namespace} -o jsonpath='{.spec.selector}'"
+  - "kubectl get pods -n {namespace} --show-labels"
+  - "kubectl get endpoints {name} -n {namespace}"
+  - "kubectl label pod <pod-name> -n {namespace} <key>=<value> --overwrite"
+  - "kubectl scale deployment/{name} -n {namespace} --replicas=2"
+  - "kubectl get endpoints {name} -n {namespace}"
+windows_commands:
+  - "kubectl get svc {name} -n {namespace} -o jsonpath='{.spec.selector}'"
+  - "kubectl get pods -n {namespace} --show-labels"
+  - "kubectl get endpoints {name} -n {namespace}"
+  - "kubectl label pod <pod-name> -n {namespace} <key>=<value> --overwrite"
+  - "kubectl scale deployment/{name} -n {namespace} --replicas=2"
+  - "kubectl get endpoints {name} -n {namespace}"

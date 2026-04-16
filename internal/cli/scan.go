@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/jorgegabrielti/nautikube/internal/config"
 	"github.com/jorgegabrielti/nautikube/internal/diagnosis"
 	"github.com/jorgegabrielti/nautikube/internal/k8s"
 	"github.com/jorgegabrielti/nautikube/internal/output"
@@ -22,6 +23,7 @@ type scanOptions struct {
 	kubeconfig  string
 	kubecontext string
 	reportFile  string
+	lang        string
 }
 
 // resourceListValue implements pflag.Value to provide a better UX type name
@@ -92,6 +94,15 @@ actionable remediation commands.`,
   # Disable color (useful for CI/CD pipelines)
   nautikube scan --no-color`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Load config defaults, then let CLI flags override
+			cfg := config.Load()
+			if !cmd.Flags().Changed("lang") {
+				opts.lang = cfg.Language
+			}
+			if !cmd.Flags().Changed("min-severity") && cfg.Severity != "" {
+				opts.minSeverity = cfg.Severity
+			}
+
 			// Prevent confusion by making positional args and --resource flag mutually exclusive
 			if len(args) > 0 && cmd.Flags().Changed("resource") {
 				return fmt.Errorf("choose either positional arguments or the --resource flag, but not both (e.g., 'nautikube scan Pod' OR 'nautikube scan --resource Pod')")
@@ -120,6 +131,7 @@ actionable remediation commands.`,
 	scanCmd.Flags().Var(&namedStringValue{ptr: &opts.kubeconfig, typeName: "<FILE>"}, "kubeconfig", "Path to kubeconfig file (default: $KUBECONFIG or ~/.kube/config)")
 	scanCmd.Flags().Var(&namedStringValue{ptr: &opts.kubecontext, typeName: "<KUBE-CONTEXT>"}, "context", "Kubernetes context to use (default: current context)")
 	scanCmd.Flags().VarP(&namedStringValue{ptr: &opts.reportFile, typeName: "<FILE>"}, "report-file", "f", "Write scan results to FILE (format auto-detected from extension: .json, .yaml, .csv, .txt)")
+	scanCmd.Flags().VarP(&namedStringValue{ptr: &opts.lang, typeName: "<LANG>"}, "lang", "l", "Display language for explanations and labels: en, pt (default: en)")
 
 	return scanCmd
 }
@@ -147,7 +159,7 @@ func runScan(opts *scanOptions) error {
 	}
 
 	// Load knowledge base
-	kb, err := diagnosis.NewKnowledgeBase()
+	kb, err := diagnosis.NewKnowledgeBase(opts.lang)
 	if err != nil {
 		return fmt.Errorf("failed to load knowledge base: %w", err)
 	}

@@ -1,0 +1,25 @@
+key: rbac_wildcard
+title: "Role com Permissões Wildcard"
+explanation: |
+  Esta Role usa '*' wildcard para verbs ou resources dentro do namespace, concedendo acesso
+  mais amplo que o necessário. Isso viola o princípio do menor privilégio e pode expor Secrets,
+  ConfigMaps ou specs de workload a acesso não intencional.
+
+  Fluxo de resolução:
+    1. Inspecione a Role para encontrar quais rules usam wildcards.
+    2. Encontre todos os RoleBindings que referenciam esta Role para identificar subjects afetados.
+    3. Determine os verbs mínimos que cada subject realmente precisa (get, list, watch, etc.).
+    4. Substitua entradas wildcard por verbs e nomes de recursos explícitos.
+    5. Verifique se as permissões restritas funcionam corretamente com auth can-i.
+commands:
+  - "kubectl get role {name} -n {namespace} -o yaml"
+  - "kubectl get rolebindings -n {namespace} -o wide | grep {name}"
+  - "kubectl auth can-i --list --as=system:serviceaccount:{namespace}:<sa-name> -n {namespace}"
+  - "kubectl edit role {name} -n {namespace}"
+  - "kubectl auth can-i get pods --as=system:serviceaccount:{namespace}:<sa-name> -n {namespace}"
+windows_commands:
+  - "kubectl get role {name} -n {namespace} -o yaml"
+  - "kubectl get rolebindings -n {namespace} -o wide"
+  - "kubectl auth can-i --list --as=system:serviceaccount:{namespace}:<sa-name> -n {namespace}"
+  - "kubectl edit role {name} -n {namespace}"
+  - "kubectl auth can-i get pods --as=system:serviceaccount:{namespace}:<sa-name> -n {namespace}"

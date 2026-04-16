@@ -1,9 +1,0 @@
-key: "node-pid-pressure"
-title: "Node Under PID Pressure"
-explanation: |
-  The Node is running out of process IDs (PIDs). Too many processes are running simultaneously, risking system instability.
-  The kubelet will start evicting pods to reduce the number of active processes.
-  Identify which application pods on this node are spawning an excessive number of threads or child processes without reaping them, and set PID resource limits.
-commands:
-  - "kubectl describe node {name} | grep -A 10 'Conditions:'"
-  - "kubectl get pods --field-selector spec.nodeName={name} -A"

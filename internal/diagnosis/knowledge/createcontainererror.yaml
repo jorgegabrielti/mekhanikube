@@ -1,9 +1,0 @@
-key: "createcontainererror"
-title: "CreateContainerError"
-explanation: |
-  The container's configuration is valid (ConfigMaps/Secrets exist), but it failed to start up at the runtime level (Docker/containerd).
-  Check the Events to see the CRI error message. Common causes include trying to mount a non-existent or unformatted PersistentVolumeClaim (PVC), specifying an invalid command/entrypoint, permission denied errors when modifying the filesystem, or attempting to write to a read-only filesystem.
-commands:
-  - "kubectl get events -n {namespace} --field-selector involvedObject.name={pod} --sort-by='.lastTimestamp' | tail -n 10"
-  - "kubectl describe pod {pod} -n {namespace} | grep -A 5 -B 5 'Failed to create pod sandbox'"
-  - "kubectl get pvc -n {namespace}"

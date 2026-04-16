@@ -1,0 +1,30 @@
+key: configmap_large
+title: "ConfigMap Excede 500KB"
+explanation: |
+  Este ConfigMap é incomumente grande (>500KB). ConfigMaps grandes degradam a performance do
+  etcd, aumentam a latência do API server e tornam a inicialização dos pods mais lenta quando
+  montados como volumes.
+
+  O limite rígido é 1MB (limite de tamanho de valor do etcd). Aproximar-se deste limite arrisca falhas de escrita.
+
+  Fluxo de resolução:
+    1. Verifique o tamanho real dos dados do ConfigMap.
+    2. Identifique quais chaves contêm os maiores dados.
+    3. Divida em múltiplos ConfigMaps menores, ou mova dados grandes para armazenamento externo
+       (S3, banco de dados, serviço de configuração externo).
+    4. Atualize os specs dos pods para referenciar os novos nomes de ConfigMap.
+    5. Delete o ConfigMap superdimensionado após a migração.
+commands:
+  - "kubectl get configmap {name} -n {namespace} -o jsonpath='{.data}' | wc -c"
+  - "kubectl get configmap {name} -n {namespace} -o json | jq '.data | to_entries[] | {key: .key, size: (.value | length)}' | sort -t: -k2 -rn"
+  - "kubectl get configmap {name} -n {namespace} -o yaml > configmap-{name}-backup.yaml"
+  - "kubectl create configmap {name}-part1 -n {namespace} --from-literal=<key1>=<value1>"
+  - "kubectl create configmap {name}-part2 -n {namespace} --from-literal=<key2>=<value2>"
+  - "kubectl get configmap -n {namespace} | grep {name}"
+windows_commands:
+  - "kubectl get configmap {name} -n {namespace} -o jsonpath='{.data}' | Measure-Object -Character"
+  - "kubectl get configmap {name} -n {namespace} -o json"
+  - "kubectl get configmap {name} -n {namespace} -o yaml > configmap-{name}-backup.yaml"
+  - "kubectl create configmap {name}-part1 -n {namespace} --from-literal=<key1>=<value1>"
+  - "kubectl create configmap {name}-part2 -n {namespace} --from-literal=<key2>=<value2>"
+  - "kubectl get configmap -n {namespace}"

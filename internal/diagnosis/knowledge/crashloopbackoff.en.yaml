@@ -1,0 +1,31 @@
+﻿key: "crashloopbackoff"
+title: "Container in CrashLoopBackOff"
+explanation: |
+  The container crashes immediately after starting and Kubernetes restarts it with exponential
+  backoff (10s -> 20s -> 40s -> ... up to 5 min between attempts).
+
+  Root-cause by exit code:
+    - Exit 0:   Process finished but was not meant to â€” wrong entrypoint or one-shot command in a long-running pod.
+    - Exit 1/2: Application error â€” bad config, missing env var, unhandled exception on startup.
+    - Exit 127: Binary not found inside the image â€” wrong CMD/ENTRYPOINT or missing dependency.
+    - Exit 137: OOMKilled â€” the container exceeded its memory limit (resources.limits.memory).
+
+  Resolution flow:
+    1. Read the PREVIOUS container logs (current instance may not have output yet).
+    2. Check the exit code to classify the failure.
+    3. Inspect env vars, volume mounts, and probe settings in the pod spec.
+    4. Apply the targeted fix (image, config, resources) and verify the pod stabilizes.
+commands:
+  - "kubectl logs {pod} -n {namespace} --previous --tail=100"
+  - "kubectl get pod {pod} -n {namespace} -o jsonpath='{.status.containerStatuses[0].lastState.terminated.exitCode}'"
+  - "kubectl describe pod {pod} -n {namespace} | grep -A5 'Environment\\|Mounts\\|Events'"
+  - "kubectl set resources deployment/{name} -n {namespace} --limits=memory=512Mi --requests=memory=256Mi"
+  - "kubectl rollout restart deployment/{name} -n {namespace}"
+  - "kubectl rollout status deployment/{name} -n {namespace} --timeout=120s"
+windows_commands:
+  - "kubectl logs {pod} -n {namespace} --previous --tail=100"
+  - "kubectl get pod {pod} -n {namespace} -o jsonpath='{.status.containerStatuses[0].lastState.terminated.exitCode}'"
+  - "kubectl describe pod {pod} -n {namespace}"
+  - "kubectl set resources deployment/{name} -n {namespace} --limits=memory=512Mi --requests=memory=256Mi"
+  - "kubectl rollout restart deployment/{name} -n {namespace}"
+  - "kubectl rollout status deployment/{name} -n {namespace} --timeout=120s"

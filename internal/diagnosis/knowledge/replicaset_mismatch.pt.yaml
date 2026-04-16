@@ -1,0 +1,26 @@
+key: replicaset_mismatch
+title: "Incompatibilidade de Réplicas do ReplicaSet"
+explanation: |
+  O ReplicaSet tem menos pods prontos que o desejado. Esta é a causa subjacente para a
+  indisponibilidade do Deployment.
+
+  Fluxo de resolução:
+    1. Identifique quais pods pertencentes a este ReplicaSet estão falhando.
+    2. Verifique esses pods para CrashLoopBackOff, erros de ImagePull ou estado Pending.
+    3. Corrija a causa raiz no spec do Deployment e deixe propagar.
+    4. Se urgente, reinicie o Deployment para forçar a recriação dos pods.
+    5. Verifique se todas as réplicas ficam prontas.
+commands:
+  - "kubectl describe rs {name} -n {namespace}"
+  - "kubectl get pods -n {namespace} --selector=app={name} -o wide"
+  - "kubectl logs -l app={name} -n {namespace} --tail=50"
+  - "kubectl rollout restart deployment/{name} -n {namespace}"
+  - "kubectl rollout status deployment/{name} -n {namespace} --timeout=120s"
+  - "kubectl get rs {name} -n {namespace}"
+windows_commands:
+  - "kubectl describe rs {name} -n {namespace}"
+  - "kubectl get pods -n {namespace} --selector=app={name} -o wide"
+  - "kubectl logs -l app={name} -n {namespace} --tail=50"
+  - "kubectl rollout restart deployment/{name} -n {namespace}"
+  - "kubectl rollout status deployment/{name} -n {namespace} --timeout=120s"
+  - "kubectl get rs {name} -n {namespace}"

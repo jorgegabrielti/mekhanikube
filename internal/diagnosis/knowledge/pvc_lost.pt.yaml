@@ -1,0 +1,24 @@
+key: pvc_lost
+title: "PVC em Estado Lost"
+explanation: |
+  O PersistentVolume que estava vinculado a este PVC foi deletado ou está ausente. Este é um
+  estado crítico que frequentemente implica perda de dados se o armazenamento subjacente também foi deletado.
+
+  Fluxo de resolução:
+    1. Verifique se o PV ainda existe ou foi deletado acidentalmente.
+    2. Se o armazenamento subjacente (volume EBS, share NFS) ainda existe, recrie o PV apontando para ele.
+    3. Se os dados foram perdidos, delete o PVC Lost e crie um novo.
+    4. Atualize o pod/deployment para referenciar o novo PVC se necessário.
+    5. Verifique se o novo PVC está Bound e pods podem montá-lo.
+commands:
+  - "kubectl describe pvc {name} -n {namespace}"
+  - "kubectl get pv | grep {name}"
+  - "kubectl delete pvc {name} -n {namespace}"
+  - "kubectl apply -f <pvc-manifest.yaml>"
+  - "kubectl get pvc {name} -n {namespace} -w"
+windows_commands:
+  - "kubectl describe pvc {name} -n {namespace}"
+  - "kubectl get pv"
+  - "kubectl delete pvc {name} -n {namespace}"
+  - "kubectl apply -f <pvc-manifest.yaml>"
+  - "kubectl get pvc {name} -n {namespace} -w"

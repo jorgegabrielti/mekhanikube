@@ -1,0 +1,25 @@
+﻿key: quota_near_limit
+title: "ResourceQuota Near Limit (>90%)"
+explanation: |
+  The ResourceQuota usage is above 90%. While resources can still be created, the namespace
+  is close to exhaustion and new deployments or scale-ups may soon be blocked.
+
+  Resolution flow:
+    1. Check current quota usage vs. hard limits.
+    2. Identify the top resource consumers.
+    3. Clean up unused resources or increase the quota proactively.
+    4. Monitor usage after changes.
+commands:
+  - "kubectl describe quota {name} -n {namespace}"
+  - "kubectl top pods -n {namespace} --sort-by=memory"
+  - "kubectl get pods -n {namespace} --field-selector=status.phase!=Running"
+  - "kubectl delete pod -n {namespace} --field-selector=status.phase=Succeeded"
+  - "kubectl patch resourcequota {name} -n {namespace} -p '{\"spec\":{\"hard\":{\"pods\":\"50\",\"requests.cpu\":\"10\",\"requests.memory\":\"20Gi\"}}}'"
+  - "kubectl describe quota {name} -n {namespace}"
+windows_commands:
+  - "kubectl describe quota {name} -n {namespace}"
+  - "kubectl top pods -n {namespace} --sort-by=memory"
+  - "kubectl get pods -n {namespace} --field-selector=status.phase!=Running"
+  - "kubectl delete pod -n {namespace} --field-selector=status.phase=Succeeded"
+  - "kubectl patch resourcequota {name} -n {namespace} -p '{\"spec\":{\"hard\":{\"pods\":\"50\",\"requests.cpu\":\"10\",\"requests.memory\":\"20Gi\"}}}'"
+  - "kubectl describe quota {name} -n {namespace}"

@@ -1,8 +1,0 @@
-key: pv_released
-title: PV is Released but not recycled
-explanation: |
-  The claim previously bound to this volume was deleted, but the volume is retained because its reclaim policy is set to 'Retain'. It cannot be automatically bound to a new claim until manual cleanup is performed.
-commands:
-  - "kubectl describe pv {name}"
-  - "kubectl get pv {name} -o jsonpath='{.spec.claimRef}'"
-  - "kubectl get pv {name} -o jsonpath='{.spec.persistentVolumeReclaimPolicy}'"

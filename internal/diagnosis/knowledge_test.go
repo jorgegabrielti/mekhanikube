@@ -4,7 +4,7 @@ import "testing"
 
 func TestNewKnowledgeBase(t *testing.T) {
 	t.Parallel()
-	kb, err := NewKnowledgeBase()
+	kb, err := NewKnowledgeBase("en")
 	if err != nil {
 		t.Fatalf("NewKnowledgeBase() error = %v", err)
 	}
@@ -41,7 +41,7 @@ func TestNewKnowledgeBase(t *testing.T) {
 
 func TestKnowledgeBaseLookupMissing(t *testing.T) {
 	t.Parallel()
-	kb, err := NewKnowledgeBase()
+	kb, err := NewKnowledgeBase("en")
 	if err != nil {
 		t.Fatalf("NewKnowledgeBase() error = %v", err)
 	}
@@ -53,7 +53,7 @@ func TestKnowledgeBaseLookupMissing(t *testing.T) {
 
 func TestKnowledgeBaseEnrich(t *testing.T) {
 	t.Parallel()
-	kb, err := NewKnowledgeBase()
+	kb, err := NewKnowledgeBase("en")
 	if err != nil {
 		t.Fatalf("NewKnowledgeBase() error = %v", err)
 	}
@@ -83,7 +83,7 @@ func TestKnowledgeBaseEnrich(t *testing.T) {
 
 func TestKnowledgeBaseEnrichUnknownKey(t *testing.T) {
 	t.Parallel()
-	kb, err := NewKnowledgeBase()
+	kb, err := NewKnowledgeBase("en")
 	if err != nil {
 		t.Fatalf("NewKnowledgeBase() error = %v", err)
 	}
@@ -101,7 +101,7 @@ func TestKnowledgeBaseEnrichUnknownKey(t *testing.T) {
 
 func TestKnowledgeBaseEnrichEmptyNamespace(t *testing.T) {
 	t.Parallel()
-	kb, err := NewKnowledgeBase()
+	kb, err := NewKnowledgeBase("en")
 	if err != nil {
 		t.Fatalf("NewKnowledgeBase() error = %v", err)
 	}
@@ -137,7 +137,7 @@ func TestKnowledgeBaseEnrichEmptyNamespace(t *testing.T) {
 
 func TestKnowledgeBaseNewEntries(t *testing.T) {
 	t.Parallel()
-	kb, err := NewKnowledgeBase()
+	kb, err := NewKnowledgeBase("en")
 	if err != nil {
 		t.Fatalf("NewKnowledgeBase() error = %v", err)
 	}
@@ -192,7 +192,7 @@ func TestDerivePodBase(t *testing.T) {
 
 func TestEnrichPrependsFindPodForDeploymentPods(t *testing.T) {
 	t.Parallel()
-	kb, err := NewKnowledgeBase()
+	kb, err := NewKnowledgeBase("en")
 	if err != nil {
 		t.Fatalf("NewKnowledgeBase() error = %v", err)
 	}
@@ -223,7 +223,7 @@ func TestEnrichPrependsFindPodForDeploymentPods(t *testing.T) {
 
 func TestEnrichNoPrependForStandalonePod(t *testing.T) {
 	t.Parallel()
-	kb, err := NewKnowledgeBase()
+	kb, err := NewKnowledgeBase("en")
 	if err != nil {
 		t.Fatalf("NewKnowledgeBase() error = %v", err)
 	}

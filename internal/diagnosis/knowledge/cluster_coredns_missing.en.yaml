@@ -1,0 +1,30 @@
+﻿key: cluster-coredns-missing
+title: "CoreDNS Pods Not Found"
+explanation: |
+  No CoreDNS pods were found in kube-system. DNS resolution is completely broken across the
+  cluster â€” Services cannot be discovered by DNS name and most applications will fail.
+
+  Common causes:
+    - CoreDNS Deployment was accidentally deleted.
+    - CoreDNS pods are crash-looping and not being recreated.
+    - The label selector was modified.
+
+  Resolution flow:
+    1. Check if the CoreDNS Deployment still exists.
+    2. If missing, re-apply the CoreDNS manifest for your cluster version.
+    3. If present but failing, check its events and logs.
+    4. Scale up and verify DNS resolution works.
+commands:
+  - "kubectl get deployment coredns -n kube-system"
+  - "kubectl get pods -n kube-system -l k8s-app=kube-dns -o wide"
+  - "kubectl describe deployment coredns -n kube-system"
+  - "kubectl scale deployment coredns -n kube-system --replicas=2"
+  - "kubectl rollout status deployment/coredns -n kube-system --timeout=120s"
+  - "kubectl run dns-test --rm -it --image=busybox:1.36 --restart=Never -- nslookup kubernetes.default"
+windows_commands:
+  - "kubectl get deployment coredns -n kube-system"
+  - "kubectl get pods -n kube-system -l k8s-app=kube-dns -o wide"
+  - "kubectl describe deployment coredns -n kube-system"
+  - "kubectl scale deployment coredns -n kube-system --replicas=2"
+  - "kubectl rollout status deployment/coredns -n kube-system --timeout=120s"
+  - "kubectl run dns-test --rm -it --image=busybox:1.36 --restart=Never -- nslookup kubernetes.default"

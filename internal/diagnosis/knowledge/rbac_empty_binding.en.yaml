@@ -1,0 +1,20 @@
+﻿key: rbac_empty_binding
+title: "RoleBinding Has No Subjects"
+explanation: |
+  This RoleBinding exists but binds the Role to no subjects (Users, Groups, or ServiceAccounts).
+  It provides no permissions and should be cleaned up or properly configured.
+
+  Resolution flow:
+    1. Check if this binding was supposed to have subjects.
+    2. Either add the intended subject or delete the empty binding.
+    3. Verify the change.
+commands:
+  - "kubectl get rolebinding {name} -n {namespace} -o yaml"
+  - "kubectl patch rolebinding {name} -n {namespace} -p '{\"subjects\":[{\"kind\":\"ServiceAccount\",\"name\":\"<sa-name>\",\"namespace\":\"{namespace}\"}]}'"
+  - "kubectl delete rolebinding {name} -n {namespace}"
+  - "kubectl get rolebindings -n {namespace}"
+windows_commands:
+  - "kubectl get rolebinding {name} -n {namespace} -o yaml"
+  - "kubectl patch rolebinding {name} -n {namespace} -p '{\"subjects\":[{\"kind\":\"ServiceAccount\",\"name\":\"<sa-name>\",\"namespace\":\"{namespace}\"}]}'"
+  - "kubectl delete rolebinding {name} -n {namespace}"
+  - "kubectl get rolebindings -n {namespace}"

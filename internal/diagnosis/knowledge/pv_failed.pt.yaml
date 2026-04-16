@@ -1,0 +1,31 @@
+key: pv_failed
+title: "PV em Estado Failed"
+explanation: |
+  O PersistentVolume falhou durante o processo de reclaim (recycle ou delete). O armazenamento
+  subjacente não pôde ser limpo pelo provisionador.
+
+  Causas comuns:
+    - Armazenamento subjacente (EBS, NFS) foi deletado manualmente fora do Kubernetes.
+    - O provisionador não tem permissões IAM/RBAC para deletar o volume.
+    - Problema de conectividade de rede com o backend de armazenamento.
+
+  Fluxo de resolução:
+    1. Verifique os eventos do PV e a política de reclaim.
+    2. Se os dados não são necessários, altere a política de reclaim para Retain e limpe manualmente.
+    3. Delete o PV com falha do Kubernetes.
+    4. Se o armazenamento subjacente ainda existe, recrie o PV com a referência correta.
+    5. Verifique o estado do volume.
+commands:
+  - "kubectl describe pv {name}"
+  - "kubectl get pv {name} -o jsonpath='{.spec.persistentVolumeReclaimPolicy}'"
+  - "kubectl patch pv {name} -p '{\"spec\":{\"persistentVolumeReclaimPolicy\":\"Retain\"}}'"
+  - "kubectl patch pv {name} -p '{\"spec\":{\"claimRef\":null}}'"
+  - "kubectl delete pv {name}"
+  - "kubectl get pv"
+windows_commands:
+  - "kubectl describe pv {name}"
+  - "kubectl get pv {name} -o jsonpath='{.spec.persistentVolumeReclaimPolicy}'"
+  - "kubectl patch pv {name} -p '{\"spec\":{\"persistentVolumeReclaimPolicy\":\"Retain\"}}'"
+  - "kubectl patch pv {name} -p '{\"spec\":{\"claimRef\":null}}'"
+  - "kubectl delete pv {name}"
+  - "kubectl get pv"

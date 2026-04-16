@@ -1,0 +1,20 @@
+﻿key: rbac_cluster_empty_binding
+title: "ClusterRoleBinding Has No Subjects"
+explanation: |
+  This ClusterRoleBinding exists but binds to no subjects. It provides no permissions and
+  should be cleaned up or properly configured.
+
+  Resolution flow:
+    1. Check if this binding was supposed to have subjects.
+    2. Either add the intended subject or delete the empty binding.
+    3. Verify the change.
+commands:
+  - "kubectl get clusterrolebinding {name} -o yaml"
+  - "kubectl patch clusterrolebinding {name} -p '{\"subjects\":[{\"kind\":\"ServiceAccount\",\"name\":\"<sa-name>\",\"namespace\":\"<namespace>\"}]}'"
+  - "kubectl delete clusterrolebinding {name}"
+  - "kubectl get clusterrolebindings | grep {name}"
+windows_commands:
+  - "kubectl get clusterrolebinding {name} -o yaml"
+  - "kubectl patch clusterrolebinding {name} -p '{\"subjects\":[{\"kind\":\"ServiceAccount\",\"name\":\"<sa-name>\",\"namespace\":\"<namespace>\"}]}'"
+  - "kubectl delete clusterrolebinding {name}"
+  - "kubectl get clusterrolebindings"

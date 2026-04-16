@@ -3,11 +3,13 @@ package tui
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/jorgegabrielti/nautikube/internal/config"
 	"github.com/jorgegabrielti/nautikube/internal/diagnosis"
 	"github.com/jorgegabrielti/nautikube/internal/k8s"
 	"github.com/jorgegabrielti/nautikube/internal/scanner"
@@ -19,7 +21,8 @@ import (
 type viewState int
 
 const (
-	stateSetup viewState = iota
+	stateInitConfig viewState = iota
+	stateSetup
 	stateConnecting
 	stateScanning
 	stateResults
@@ -68,6 +71,14 @@ type model struct {
 	reportMenuCursor   int // 0=full, 1=current issue (scope selection)
 	reportScope        int // confirmed scope: 0=full, 1=current issue
 	reportFormatCursor int // 0=TXT, 1=CSV, 2=PDF
+	// init config
+	initStep        int // 0=lang, 1=severity, 2=output, 3=retention
+	initCursor      int
+	initLang        string
+	initSev         string
+	initOutput      string
+	initRetention   int       // history retention in days
+	initReturnState viewState // screen to return to after reconfiguration
 }
 
 func newModel(opts Options, contexts []k8s.ContextInfo) model {
@@ -88,18 +99,35 @@ func newModel(opts Options, contexts []k8s.ContextInfo) model {
 		}
 	}
 
-	return model{
-		opts:        opts,
-		state:       state,
-		spinner:     sp,
-		contexts:    contexts,
-		setupCursor: setupCursor,
+	// If no config file exists, show initial configuration screen first.
+	cfgPath, _ := config.Path()
+	needInit := false
+	if cfgPath != "" {
+		if _, err := os.Stat(cfgPath); os.IsNotExist(err) {
+			needInit = true
+		}
 	}
+
+	m := model{
+		opts:          opts,
+		state:         state,
+		spinner:       sp,
+		contexts:      contexts,
+		setupCursor:   setupCursor,
+		initLang:      "en",
+		initSev:       "",
+		initOutput:    "table",
+		initRetention: 90,
+	}
+	if needInit {
+		m.state = stateInitConfig
+	}
+	return m
 }
 
 // Init starts the spinner and launches the connect check.
 func (m model) Init() tea.Cmd {
-	if m.state == stateSetup {
+	if m.state == stateSetup || m.state == stateInitConfig {
 		return nil
 	}
 	return tea.Batch(m.spinner.Tick, doConnect(m.opts))
@@ -136,7 +164,7 @@ func doScan(opts Options, client kubernetes.Interface) tea.Cmd {
 	return func() tea.Msg {
 		ctx := context.Background()
 
-		kb, err := diagnosis.NewKnowledgeBase()
+		kb, err := diagnosis.NewKnowledgeBase(opts.Lang)
 		if err != nil {
 			return scanDoneMsg{err: fmt.Errorf("failed to load knowledge base: %w", err)}
 		}
@@ -181,7 +209,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case cmdDoneMsg:
 		m.cmdRunning = false
 		if msg.output == "" {
-			m.cmdOutput = []string{"(no output)"}
+			m.cmdOutput = []string{t(m.opts.Lang, "no_output")}
 		} else {
 			m.cmdOutput = strings.Split(strings.ReplaceAll(msg.output, "\r\n", "\n"), "\n")
 		}
@@ -202,6 +230,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		switch m.state {
+		case stateInitConfig:
+			return m.updateInitConfig(msg)
 		case stateSetup:
 			return m.updateSetup(msg)
 		case stateResults:
@@ -270,6 +300,16 @@ func (m model) updateResults(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 	case "c":
 		return m.switchContext()
+	case "s":
+		m.initStep = 0
+		m.initCursor = 0
+		cfg := config.Load()
+		m.initLang = cfg.Language
+		m.initSev = cfg.Severity
+		m.initOutput = cfg.Output
+		m.initRetention = cfg.HistoryRetention
+		m.initReturnState = stateResults
+		m.state = stateInitConfig
 	}
 	return m, nil
 }
@@ -294,6 +334,16 @@ func (m model) updateDetail(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.state = stateReportMenu
 	case "c":
 		return m.switchContext()
+	case "s":
+		m.initStep = 0
+		m.initCursor = 0
+		cfg := config.Load()
+		m.initLang = cfg.Language
+		m.initSev = cfg.Severity
+		m.initOutput = cfg.Output
+		m.initRetention = cfg.HistoryRetention
+		m.initReturnState = stateDetail
+		m.state = stateInitConfig
 	default:
 		// Keys 1-9: run the Nth remediation command
 		if len(msg.String()) == 1 && msg.String() >= "1" && msg.String() <= "9" {
@@ -315,6 +365,8 @@ func (m model) updateDetail(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 // View renders the current state.
 func (m model) View() string {
 	switch m.state {
+	case stateInitConfig:
+		return m.viewInitConfig()
 	case stateSetup:
 		return m.viewSetup()
 	case stateConnecting, stateScanning:
@@ -357,6 +409,161 @@ func (m model) switchContext() (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+func (m model) updateInitConfig(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	options := m.initOptions()
+	switch msg.String() {
+	case "q", "ctrl+c":
+		return m, tea.Quit
+	case "up", "k":
+		if m.initCursor > 0 {
+			m.initCursor--
+		}
+	case "down", "j":
+		if m.initCursor < len(options)-1 {
+			m.initCursor++
+		}
+	case "enter", " ":
+		sel := options[m.initCursor]
+		switch m.initStep {
+		case 0:
+			m.initLang = sel
+			m.initStep = 1
+			m.initCursor = 0
+		case 1:
+			m.initSev = sel
+			m.initStep = 2
+			m.initCursor = 0
+		case 2:
+			m.initOutput = sel
+			m.initStep = 3
+			m.initCursor = 0
+			// Pre-select current retention option.
+			retOpts := m.initOptions()
+			for i, o := range retOpts {
+				if o == fmt.Sprintf("%d", m.initRetention) {
+					m.initCursor = i
+					break
+				}
+			}
+		case 3:
+			// Parse retention value.
+			switch sel {
+			case "0":
+				m.initRetention = 0
+			case "30":
+				m.initRetention = 30
+			case "90":
+				m.initRetention = 90
+			case "180":
+				m.initRetention = 180
+			case "365":
+				m.initRetention = 365
+			case "-1":
+				m.initRetention = -1
+			}
+			// Save config and proceed.
+			cfg := config.Config{
+				Language:         m.initLang,
+				Severity:         m.initSev,
+				Output:           m.initOutput,
+				HistoryRetention: m.initRetention,
+			}
+			_ = config.Save(cfg)
+			// Apply to opts so downstream uses the chosen language.
+			m.opts.Lang = m.initLang
+			// Return to previous screen if reconfiguring, otherwise proceed.
+			if m.initReturnState != stateInitConfig {
+				ret := m.initReturnState
+				m.initReturnState = stateInitConfig
+				m.state = ret
+				if ret == stateResults || ret == stateDetail {
+					// Re-scan with new language.
+					m.state = stateConnecting
+					m.problems = nil
+					m.cursor = 0
+					return m, tea.Batch(m.spinner.Tick, doConnect(m.opts))
+				}
+				return m, nil
+			}
+			// First-time setup: proceed to context selection or connect.
+			if len(m.contexts) > 1 {
+				m.state = stateSetup
+				return m, nil
+			}
+			m.state = stateConnecting
+			return m, tea.Batch(m.spinner.Tick, doConnect(m.opts))
+		}
+	}
+	return m, nil
+}
+
+func (m model) initOptions() []string {
+	switch m.initStep {
+	case 0:
+		return []string{"en", "pt"}
+	case 1:
+		return []string{"", "critical", "high", "medium", "low"}
+	case 2:
+		return []string{"table", "json", "yaml"}
+	case 3:
+		return []string{"0", "30", "90", "180", "365", "-1"}
+	}
+	return nil
+}
+
+// retentionLabel returns a human-readable label for a retention option value.
+func (m model) retentionLabel(lang, val string) string {
+	switch val {
+	case "0":
+		return t(lang, "ret_disabled")
+	case "30":
+		return t(lang, "ret_30")
+	case "90":
+		return t(lang, "ret_90")
+	case "180":
+		return t(lang, "ret_180")
+	case "365":
+		return t(lang, "ret_365")
+	case "-1":
+		return t(lang, "ret_unlimited")
+	}
+	return val
+}
+
+func (m model) viewInitConfig() string {
+	l := m.opts.Lang
+	var sb strings.Builder
+	sb.WriteString(m.banner())
+	sb.WriteString(titleStyle.Render("  " + t(l, "init_title")))
+	sb.WriteString("\n\n")
+
+	stepLabels := []string{t(l, "step_lang"), t(l, "step_severity"), t(l, "step_output"), t(l, "step_retention")}
+	sb.WriteString(subtitleStyle.Render(fmt.Sprintf("  Step %d/4: %s", m.initStep+1, stepLabels[m.initStep])))
+	sb.WriteString("\n\n")
+
+	options := m.initOptions()
+	for i, opt := range options {
+		label := opt
+		if label == "" {
+			label = t(l, "sev_all")
+		}
+		// Retention step: show human-readable labels.
+		if m.initStep == 3 {
+			label = m.retentionLabel(l, opt)
+		}
+		if i == m.initCursor {
+			sb.WriteString(selectedStyle.Render(fmt.Sprintf("  ▸ %s", label)))
+		} else {
+			sb.WriteString(normalRowStyle.Render(fmt.Sprintf("    %s", label)))
+		}
+		sb.WriteString("\n")
+	}
+
+	sb.WriteString("\n")
+	sb.WriteString(helpStyle.Render(t(l, "help_init")))
+	return sb.String()
+}
+
 func (m model) updateSetup(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "q", "ctrl+c":
@@ -374,14 +581,25 @@ func (m model) updateSetup(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.opts.Context = selected.Name
 		m.state = stateConnecting
 		return m, tea.Batch(m.spinner.Tick, doConnect(m.opts))
+	case "s":
+		m.initStep = 0
+		m.initCursor = 0
+		cfg := config.Load()
+		m.initLang = cfg.Language
+		m.initSev = cfg.Severity
+		m.initOutput = cfg.Output
+		m.initRetention = cfg.HistoryRetention
+		m.initReturnState = stateSetup
+		m.state = stateInitConfig
 	}
 	return m, nil
 }
 
 func (m model) viewSetup() string {
+	l := m.opts.Lang
 	var sb strings.Builder
 	sb.WriteString(m.banner())
-	sb.WriteString(titleStyle.Render("  Select a Kubernetes context:"))
+	sb.WriteString(titleStyle.Render("  " + t(l, "setup_title")))
 	sb.WriteString("\n\n")
 
 	for i, ctx := range m.contexts {
@@ -402,58 +620,60 @@ func (m model) viewSetup() string {
 		sb.WriteString("\n")
 	}
 
-	sb.WriteString(helpStyle.Render("  [↑/↓] navigate  [enter] select  [q] quit"))
+	sb.WriteString(helpStyle.Render(t(l, "help_setup")))
 	return sb.String()
 }
 
 func (m model) viewProgress() string {
+	l := m.opts.Lang
 	var sb strings.Builder
 	sb.WriteString(m.banner())
 
 	ctxName := m.opts.Context
 	if ctxName == "" {
-		ctxName = "current context"
+		ctxName = t(l, "current_context")
 	}
 	ns := m.opts.Namespace
 	if ns == "" {
-		ns = "all namespaces"
+		ns = t(l, "all_namespaces")
 	}
 
 	switch m.state {
 	case stateConnecting:
-		sb.WriteString(fmt.Sprintf("  %s Connecting to cluster (%s)...\n", m.spinner.View(), ctxName))
-		sb.WriteString(subtitleStyle.Render(fmt.Sprintf("    Scanning resources (%s)", ns)))
+		sb.WriteString(fmt.Sprintf("  %s %s (%s)...\n", m.spinner.View(), t(l, "connecting"), ctxName))
+		sb.WriteString(subtitleStyle.Render(fmt.Sprintf("    %s (%s)", t(l, "scanning_res"), ns)))
 		sb.WriteString("\n")
 	case stateScanning:
 		sb.WriteString(infoStyle.Render("  ✓"))
-		sb.WriteString(fmt.Sprintf(" Connected to cluster (%s)\n", ctxName))
-		sb.WriteString(fmt.Sprintf("  %s Scanning resources (%s)...\n", m.spinner.View(), ns))
+		sb.WriteString(fmt.Sprintf(" %s (%s)\n", t(l, "connected"), ctxName))
+		sb.WriteString(fmt.Sprintf("  %s %s (%s)...\n", m.spinner.View(), t(l, "scanning_res"), ns))
 	}
 
 	sb.WriteString("\n")
-	sb.WriteString(helpStyle.Render("  ctrl+c to quit"))
+	sb.WriteString(helpStyle.Render("  ctrl+c"))
 	return sb.String()
 }
 
 func (m model) viewResults() string {
+	l := m.opts.Lang
 	var sb strings.Builder
 
 	// Header
 	ns := m.opts.Namespace
 	if ns == "" {
-		ns = "all namespaces"
+		ns = t(l, "all_namespaces")
 	}
 	sb.WriteString(m.banner())
-	sb.WriteString(subtitleStyle.Render(fmt.Sprintf("Namespace: %s  |  Problems found: %d", ns, len(m.problems))))
+	sb.WriteString(subtitleStyle.Render(fmt.Sprintf("%s: %s  |  %s: %d", t(l, "ns_label"), ns, t(l, "problems_found"), len(m.problems))))
 	sb.WriteString("\n\n")
 
 	if len(m.problems) == 0 {
-		sb.WriteString(infoStyle.Render("  No problems detected. Cluster looks healthy!"))
+		sb.WriteString(infoStyle.Render("  " + t(l, "no_problems")))
 		sb.WriteString("\n")
 	} else {
 		// Column header
 		header := fmt.Sprintf("  %-10s %-12s %-22s %-5s  %s",
-			"SEVERITY", "RESOURCE", "NAME", "SCORE", "ISSUE")
+			t(l, "col_severity"), t(l, "col_resource"), t(l, "col_name"), t(l, "col_score"), t(l, "col_issue"))
 		sb.WriteString(subtitleStyle.Render(header))
 		sb.WriteString("\n")
 		sb.WriteString(subtitleStyle.Render("  " + strings.Repeat("─", 80)))
@@ -483,17 +703,18 @@ func (m model) viewResults() string {
 
 		// Scroll hint
 		if len(m.problems) > m.visibleRows() {
-			sb.WriteString(subtitleStyle.Render(fmt.Sprintf("\n  Showing %d-%d of %d",
-				visibleStart+1, visibleEnd, len(m.problems))))
+			sb.WriteString(subtitleStyle.Render(fmt.Sprintf("\n  %s %d-%d %s %d",
+				t(l, "showing"), visibleStart+1, visibleEnd, t(l, "of"), len(m.problems))))
 			sb.WriteString("\n")
 		}
 	}
 
-	sb.WriteString(helpStyle.Render("  [↑/↓] navigate  [enter] detail  [e] export  [r] rescan  [c] context  [q] quit"))
+	sb.WriteString(helpStyle.Render(t(l, "help_results")))
 	return sb.String()
 }
 
 func (m model) viewDetail() string {
+	l := m.opts.Lang
 	if len(m.problems) == 0 || m.cursor >= len(m.problems) {
 		return ""
 	}
@@ -501,7 +722,7 @@ func (m model) viewDetail() string {
 
 	var sb strings.Builder
 	sb.WriteString(m.banner())
-	sb.WriteString(subtitleStyle.Render("Problem Detail"))
+	sb.WriteString(subtitleStyle.Render(t(l, "detail_title")))
 	sb.WriteString("\n")
 
 	field := func(key, val string) {
@@ -512,19 +733,19 @@ func (m model) viewDetail() string {
 		sb.WriteString("\n")
 	}
 
-	field("Severity", string(p.Severity))
-	field("Resource", p.Resource)
-	field("Namespace", p.Namespace)
-	field("Name", p.Name)
-	field("Score", fmt.Sprintf("%d", p.Score))
-	field("Issue", p.Issue)
+	field(t(l, "field_severity"), string(p.Severity))
+	field(t(l, "field_resource"), p.Resource)
+	field(t(l, "field_namespace"), p.Namespace)
+	field(t(l, "field_name"), p.Name)
+	field(t(l, "field_score"), fmt.Sprintf("%d", p.Score))
+	field(t(l, "field_issue"), p.Issue)
 
 	if p.OffendingProperty != "" {
-		field("Offending Property", p.OffendingProperty)
+		field(t(l, "field_offending"), p.OffendingProperty)
 	}
 	if p.Explanation != "" {
 		sb.WriteString("\n  ")
-		sb.WriteString(detailKeyStyle.Render("Explanation:"))
+		sb.WriteString(detailKeyStyle.Render(t(l, "field_explanation") + ":"))
 		sb.WriteString("\n")
 		for _, line := range wrapText(p.Explanation, m.width-6) {
 			sb.WriteString("    ")
@@ -534,7 +755,7 @@ func (m model) viewDetail() string {
 	}
 	if len(p.Remediation) > 0 {
 		sb.WriteString("\n  ")
-		sb.WriteString(detailKeyStyle.Render("Remediation:"))
+		sb.WriteString(detailKeyStyle.Render(t(l, "field_remediation") + ":"))
 		sb.WriteString("\n")
 		for i, cmd := range p.Remediation {
 			label := fmt.Sprintf("[%d]", i+1)
@@ -547,7 +768,7 @@ func (m model) viewDetail() string {
 	}
 	if len(p.Details) > 0 {
 		sb.WriteString("\n  ")
-		sb.WriteString(detailKeyStyle.Render("Details:"))
+		sb.WriteString(detailKeyStyle.Render(t(l, "field_details") + ":"))
 		sb.WriteString("\n")
 		for _, d := range p.Details {
 			sb.WriteString("    ")
@@ -556,11 +777,11 @@ func (m model) viewDetail() string {
 		}
 	}
 
-	nav := fmt.Sprintf("  Problem %d of %d", m.cursor+1, len(m.problems))
+	nav := fmt.Sprintf("  "+t(l, "problem_x_of_y"), m.cursor+1, len(m.problems))
 	sb.WriteString("\n")
 	sb.WriteString(subtitleStyle.Render(nav))
 	sb.WriteString("\n")
-	sb.WriteString(helpStyle.Render("  [↑/↓] next/prev  [1-9] run cmd  [e] export  [esc] back  [c] context  [r] rescan  [q] quit"))
+	sb.WriteString(helpStyle.Render(t(l, "help_detail")))
 	return sb.String()
 }
 
@@ -583,19 +804,20 @@ func (m model) updateOutput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) viewOutput() string {
+	l := m.opts.Lang
 	var sb strings.Builder
 	sb.WriteString(m.banner())
 
 	if m.cmdRunning {
 		sb.WriteString("\n  ")
 		sb.WriteString(m.spinner.View())
-		sb.WriteString(" Running...\n\n  ")
+		sb.WriteString(" " + t(l, "running") + "\n\n  ")
 		sb.WriteString(detailValStyle.Render(m.cmdTitle))
 		sb.WriteString("\n")
 		return sb.String()
 	}
 
-	sb.WriteString(subtitleStyle.Render("Command Output"))
+	sb.WriteString(subtitleStyle.Render(t(l, "cmd_output")))
 	sb.WriteString("\n  ")
 	sb.WriteString(detailKeyStyle.Render("$"))
 	sb.WriteString(" ")
@@ -620,7 +842,7 @@ func (m model) viewOutput() string {
 	}
 
 	sb.WriteString("\n")
-	sb.WriteString(helpStyle.Render("  [↑/↓] scroll  [esc] back  [q] quit"))
+	sb.WriteString(helpStyle.Render(t(l, "help_output")))
 	return sb.String()
 }
 
@@ -696,19 +918,20 @@ func (m model) updateReportFormat(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) viewReportFormat() string {
+	l := m.opts.Lang
 	var sb strings.Builder
 	sb.WriteString(m.banner())
-	scopeLabel := "Full report"
+	scopeLabel := t(l, "full_report")
 	if m.reportScope == 1 {
-		scopeLabel = "Current issue"
+		scopeLabel = t(l, "current_issue")
 	}
-	sb.WriteString(subtitleStyle.Render(fmt.Sprintf("Export Format — %s", scopeLabel)))
+	sb.WriteString(subtitleStyle.Render(fmt.Sprintf("%s — %s", t(l, "export_format"), scopeLabel)))
 	sb.WriteString("\n\n")
 
 	formats := []string{
-		"TXT  — plain text",
-		"CSV  — spreadsheet (Excel / Google Sheets)",
-		"PDF  — formatted document",
+		t(l, "txt_desc"),
+		t(l, "csv_desc"),
+		t(l, "pdf_desc"),
 	}
 	for i, f := range formats {
 		label := "  [ ] "
@@ -724,19 +947,20 @@ func (m model) viewReportFormat() string {
 		sb.WriteString("\n")
 	}
 
-	sb.WriteString(helpStyle.Render("  [↑/↓] select  [enter] confirm  [esc] back  [q] quit"))
+	sb.WriteString(helpStyle.Render(t(l, "help_report")))
 	return sb.String()
 }
 
 func (m model) viewReportMenu() string {
+	l := m.opts.Lang
 	var sb strings.Builder
 	sb.WriteString(m.banner())
-	sb.WriteString(subtitleStyle.Render("Export Report"))
+	sb.WriteString(subtitleStyle.Render(t(l, "export_report")))
 	sb.WriteString("\n\n")
 
 	options := []string{
-		fmt.Sprintf("Full report  (%d issues)", len(m.problems)),
-		"Current issue only",
+		fmt.Sprintf("%s  (%d %s)", t(l, "full_report"), len(m.problems), t(l, "issues")),
+		t(l, "current_issue"),
 	}
 
 	for i, opt := range options {
@@ -753,60 +977,62 @@ func (m model) viewReportMenu() string {
 		sb.WriteString("\n")
 	}
 
-	sb.WriteString(helpStyle.Render("  [↑/↓] select  [enter] confirm  [esc] back  [q] quit"))
+	sb.WriteString(helpStyle.Render(t(l, "help_report")))
 	return sb.String()
 }
 
 func (m model) viewReportSaved() string {
+	l := m.opts.Lang
 	var sb strings.Builder
 	sb.WriteString(m.banner())
 	if strings.HasPrefix(m.reportPath, "Error:") {
-		sb.WriteString(errorStyle.Render("  Export failed"))
+		sb.WriteString(errorStyle.Render("  " + t(l, "export_failed")))
 		sb.WriteString("\n\n  ")
 		sb.WriteString(detailValStyle.Render(m.reportPath))
 	} else {
-		sb.WriteString(infoStyle.Render("  ✓ Report saved"))
+		sb.WriteString(infoStyle.Render("  " + t(l, "report_saved")))
 		sb.WriteString("\n\n  ")
 		sb.WriteString(detailValStyle.Render(m.reportPath))
 	}
 	sb.WriteString("\n\n")
-	sb.WriteString(helpStyle.Render("  any key to continue"))
+	sb.WriteString(helpStyle.Render("  " + t(l, "any_key")))
 	return sb.String()
 }
 
 func (m model) viewError() string {
+	l := m.opts.Lang
 	var sb strings.Builder
 	sb.WriteString(m.banner())
 
 	ctxName := m.opts.Context
 	if ctxName == "" {
-		ctxName = "current context"
+		ctxName = t(l, "current_context")
 	}
 	ns := m.opts.Namespace
 	if ns == "" {
-		ns = "all namespaces"
+		ns = t(l, "all_namespaces")
 	}
 
 	switch m.errStep {
 	case "connect":
 		sb.WriteString(errorStyle.Render("  ✗"))
-		sb.WriteString(fmt.Sprintf(" Connection failed (%s)\n", ctxName))
-		sb.WriteString(subtitleStyle.Render(fmt.Sprintf("    Scanning resources (%s)", ns)))
+		sb.WriteString(fmt.Sprintf(" %s (%s)\n", t(l, "conn_failed"), ctxName))
+		sb.WriteString(subtitleStyle.Render(fmt.Sprintf("    %s (%s)", t(l, "scanning_res"), ns)))
 		sb.WriteString("\n")
 	case "scan":
 		sb.WriteString(infoStyle.Render("  ✓"))
-		sb.WriteString(fmt.Sprintf(" Connected to cluster (%s)\n", ctxName))
+		sb.WriteString(fmt.Sprintf(" %s (%s)\n", t(l, "connected"), ctxName))
 		sb.WriteString(errorStyle.Render("  ✗"))
-		sb.WriteString(fmt.Sprintf(" Scan failed (%s)\n", ns))
+		sb.WriteString(fmt.Sprintf(" %s (%s)\n", t(l, "scan_failed"), ns))
 	default:
-		sb.WriteString(errorStyle.Render("  ✗ Error"))
+		sb.WriteString(errorStyle.Render("  ✗ " + t(l, "error")))
 		sb.WriteString("\n")
 	}
 
 	sb.WriteString("\n  ")
 	sb.WriteString(detailValStyle.Render(m.err.Error()))
 	sb.WriteString("\n\n")
-	sb.WriteString(helpStyle.Render("  [r] retry  [c] context  [q] quit"))
+	sb.WriteString(helpStyle.Render(t(l, "help_error")))
 	return sb.String()
 }
 

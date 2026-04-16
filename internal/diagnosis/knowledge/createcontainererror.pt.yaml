@@ -1,0 +1,30 @@
+key: "createcontainererror"
+title: "CreateContainerError"
+explanation: |
+  O runtime do container (containerd/CRI-O) falhou ao criar o container. ConfigMaps e
+  Secrets existem, mas algo no nível do runtime deu errado.
+
+  Causas comuns:
+    - Comando ou entrypoint inválido especificado no spec do container.
+    - Permissão negada ao montar volumes (SELinux, AppArmor, filesystem read-only).
+    - Montagem de PVC falhou no nível do node (disco não anexado, NFS inacessível).
+    - Conflito de SecurityContext (runAsNonRoot mas imagem roda como root).
+
+  Fluxo de resolução:
+    1. Leia os eventos para obter a mensagem de erro do CRI.
+    2. Corrija o spec do container (imagem, comando, securityContext, volumeMounts).
+    3. Faça redeploy e verifique se o container inicia com sucesso.
+commands:
+  - "kubectl describe pod {pod} -n {namespace} | grep -A10 'Events:'"
+  - "kubectl get pod {pod} -n {namespace} -o jsonpath='{.spec.containers[0].command}'"
+  - "kubectl get pod {pod} -n {namespace} -o jsonpath='{.spec.containers[0].securityContext}'"
+  - "kubectl patch deployment/{name} -n {namespace} --type=strategic -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"{name}\",\"securityContext\":{\"runAsNonRoot\":false}}]}}}}'"
+  - "kubectl rollout restart deployment/{name} -n {namespace}"
+  - "kubectl rollout status deployment/{name} -n {namespace} --timeout=120s"
+windows_commands:
+  - "kubectl describe pod {pod} -n {namespace}"
+  - "kubectl get pod {pod} -n {namespace} -o jsonpath='{.spec.containers[0].command}'"
+  - "kubectl get pod {pod} -n {namespace} -o jsonpath='{.spec.containers[0].securityContext}'"
+  - "kubectl patch deployment/{name} -n {namespace} --type=strategic -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"{name}\",\"securityContext\":{\"runAsNonRoot\":false}}]}}}}'"
+  - "kubectl rollout restart deployment/{name} -n {namespace}"
+  - "kubectl rollout status deployment/{name} -n {namespace} --timeout=120s"

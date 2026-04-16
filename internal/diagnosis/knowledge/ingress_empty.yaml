@@ -1,7 +1,0 @@
-key: ingress_empty
-title: Ingress has no rules or default backend
-explanation: |
-  The Ingress resource is defined but does not route traffic to any backends. It lacks both rules and a default backend, making it ineffective for traffic routing.
-commands:
-  - "kubectl describe ingress {name} -n {namespace}"
-  - "kubectl get ingress {name} -n {namespace} -o yaml"

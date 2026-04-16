@@ -1,0 +1,27 @@
+key: cluster-node-skew
+title: "Divergência de Versão dos Nodes Detectada"
+explanation: |
+  Os nodes no cluster estão rodando versões diferentes do kubelet. O Kubernetes permite que
+  kubelets estejam até 3 versões menores atrás do API server, mas versões mistas aumentam
+  o risco de comportamento incompatível e complicam o troubleshooting.
+
+  Causas comuns:
+    - Um upgrade rolling foi iniciado mas não completado.
+    - Grupos de auto-scaling usando AMI/imagem de máquina desatualizada.
+    - Nodes gerenciados manualmente que não foram atualizados.
+
+  Fluxo de resolução:
+    1. Identifique quais nodes estão em versões mais antigas.
+    2. Drene os nodes desatualizados um por vez para mover workloads com segurança.
+    3. Atualize o node (atualize AMI, execute kubeadm upgrade ou substitua o node).
+    4. Faça uncordon e verifique se o node reintegra com a versão correta.
+commands:
+  - "kubectl get nodes -o custom-columns=NAME:.metadata.name,VERSION:.status.nodeInfo.kubeletVersion,OS:.status.nodeInfo.osImage --sort-by='.status.nodeInfo.kubeletVersion'"
+  - "kubectl drain {name} --ignore-daemonsets --delete-emptydir-data --timeout=120s"
+  - "kubectl uncordon {name}"
+  - "kubectl get nodes -o custom-columns=NAME:.metadata.name,VERSION:.status.nodeInfo.kubeletVersion"
+windows_commands:
+  - "kubectl get nodes -o custom-columns=NAME:.metadata.name,VERSION:.status.nodeInfo.kubeletVersion,OS:.status.nodeInfo.osImage --sort-by='.status.nodeInfo.kubeletVersion'"
+  - "kubectl drain {name} --ignore-daemonsets --delete-emptydir-data --timeout=120s"
+  - "kubectl uncordon {name}"
+  - "kubectl get nodes -o custom-columns=NAME:.metadata.name,VERSION:.status.nodeInfo.kubeletVersion"

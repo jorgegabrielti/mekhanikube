@@ -1,0 +1,35 @@
+key: "pod-pending"
+title: "Pod Preso em Estado Pending"
+explanation: |
+  O scheduler não consegue colocar este pod em nenhum node. Ele permanecerá Pending até que
+  a restrição seja resolvida.
+
+  Causas comuns e correções:
+    1. CPU/Memória insuficiente — nenhum node tem a capacidade solicitada. Escale o cluster ou
+       reduza os resource requests do pod.
+    2. NodeSelector/Affinity — nenhum node corresponde aos labels requeridos. Adicione o label
+       a um node ou relaxe as regras de affinity.
+    3. Taints — todos os nodes candidatos têm taints que o pod não tolera. Remova o taint
+       ou adicione uma toleration ao spec do pod.
+    4. PVC não vinculado — uma claim de volume não pode ser satisfeita. Verifique StorageClass e disponibilidade de PV.
+
+  Fluxo de resolução:
+    1. Leia os eventos do scheduler para identificar o motivo exato da rejeição.
+    2. Aplique a correção direcionada baseada na causa.
+    3. Verifique se o pod transiciona para Running.
+commands:
+  - "kubectl describe pod {pod} -n {namespace} | grep -A10 'Events:'"
+  - "kubectl get nodes -o custom-columns=NAME:.metadata.name,CPU:.status.allocatable.cpu,MEM:.status.allocatable.memory,TAINTS:.spec.taints[*].key"
+  - "kubectl get pvc -n {namespace} -o wide"
+  - "kubectl set resources deployment/{name} -n {namespace} --requests=cpu=100m,memory=128Mi"
+  - "kubectl label node <node-name> <key>=<value>"
+  - "kubectl taint nodes <node-name> <key>:NoSchedule-"
+  - "kubectl get pod {pod} -n {namespace} -o wide"
+windows_commands:
+  - "kubectl describe pod {pod} -n {namespace}"
+  - "kubectl get nodes -o custom-columns=NAME:.metadata.name,CPU:.status.allocatable.cpu,MEM:.status.allocatable.memory,TAINTS:.spec.taints[*].key"
+  - "kubectl get pvc -n {namespace} -o wide"
+  - "kubectl set resources deployment/{name} -n {namespace} --requests=cpu=100m,memory=128Mi"
+  - "kubectl label node <node-name> <key>=<value>"
+  - "kubectl taint nodes <node-name> <key>:NoSchedule-"
+  - "kubectl get pod {pod} -n {namespace} -o wide"

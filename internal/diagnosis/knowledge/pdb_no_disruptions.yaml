@@ -1,8 +1,0 @@
-key: pdb_no_disruptions
-title: PDB blocks all disruptions
-explanation: |
-  The PodDisruptionBudget has 'DisruptionsAllowed' set to 0. This typically happens when the number of ready pods is exactly equal to the 'minAvailable' requirement or the number of unavailable pods has reached 'maxUnavailable'.
-  This state blocks Kubernetes maintenance operations like node drains for upgrades or scaling.
-commands:
-  - "kubectl describe pdb {name} -n {namespace}"
-  - "kubectl get pods -l $(kubectl get pdb {name} -n {namespace} -o jsonpath='{.spec.selector.matchLabels}' | jq -r 'to_entries | map(\"\\(.key)=\\(.value)\") | join(\",\")') -n {namespace}"

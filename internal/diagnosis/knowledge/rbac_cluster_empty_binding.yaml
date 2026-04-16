@@ -1,7 +1,0 @@
-key: rbac_cluster_empty_binding
-title: ClusterRoleBinding has no subjects
-explanation: |
-  This ClusterRoleBinding exists but does not bind the ClusterRole to any subjects. It is ineffective and should be removed if it's not being actively managed by an external tool.
-commands:
-  - "kubectl describe clusterrolebinding {name}"
-  - "kubectl get clusterrolebinding {name} -o yaml"

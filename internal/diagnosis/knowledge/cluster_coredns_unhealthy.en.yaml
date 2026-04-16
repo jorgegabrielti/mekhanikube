@@ -1,0 +1,29 @@
+﻿key: cluster-coredns-unhealthy
+title: "CoreDNS Pods Unhealthy"
+explanation: |
+  CoreDNS pods exist but none are in a healthy Running+Ready state. DNS resolution is broken.
+
+  Common causes:
+    - CrashLooping due to bad Corefile configuration.
+    - Resource limits too low causing OOMKill.
+    - ConfigMap with Corefile contains syntax errors.
+
+  Resolution flow:
+    1. Check CoreDNS pod statuses and logs.
+    2. Inspect the CoreDNS ConfigMap (Corefile) for syntax errors.
+    3. Fix the configuration and restart CoreDNS.
+    4. Verify DNS resolution is restored.
+commands:
+  - "kubectl get pods -n kube-system -l k8s-app=kube-dns -o wide"
+  - "kubectl logs -n kube-system -l k8s-app=kube-dns --tail=50"
+  - "kubectl get configmap coredns -n kube-system -o yaml"
+  - "kubectl rollout restart deployment/coredns -n kube-system"
+  - "kubectl rollout status deployment/coredns -n kube-system --timeout=120s"
+  - "kubectl run dns-test --rm -it --image=busybox:1.36 --restart=Never -- nslookup kubernetes.default"
+windows_commands:
+  - "kubectl get pods -n kube-system -l k8s-app=kube-dns -o wide"
+  - "kubectl logs -n kube-system -l k8s-app=kube-dns --tail=50"
+  - "kubectl get configmap coredns -n kube-system -o yaml"
+  - "kubectl rollout restart deployment/coredns -n kube-system"
+  - "kubectl rollout status deployment/coredns -n kube-system --timeout=120s"
+  - "kubectl run dns-test --rm -it --image=busybox:1.36 --restart=Never -- nslookup kubernetes.default"

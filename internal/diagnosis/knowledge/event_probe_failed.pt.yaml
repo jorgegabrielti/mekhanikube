@@ -1,0 +1,31 @@
+key: "event-probe-failed"
+title: "Falha na Health Probe"
+explanation: |
+  Uma liveness ou readiness probe está falhando repetidamente:
+    - Falha de readiness: Pod removido dos endpoints do Service (sem tráfego roteado para ele).
+    - Falha de liveness: Pod é terminado e reiniciado pelo kubelet.
+
+  Causas comuns:
+    - Aplicação lenta para iniciar — initialDelaySeconds muito curto.
+    - Endpoint/porta da probe mal configurados.
+    - Timeout da probe muito agressivo para o tempo real de resposta.
+
+  Fluxo de resolução:
+    1. Identifique qual probe está falhando e sua configuração.
+    2. Verifique se a aplicação está realmente saudável (logs, curl manual).
+    3. Ajuste o timing da probe (aumente initialDelaySeconds, periodSeconds, timeoutSeconds).
+    4. Verifique se as probes passam consistentemente.
+commands:
+  - "kubectl describe pod {pod} -n {namespace} | grep -A5 'Liveness:\\|Readiness:'"
+  - "kubectl get events -n {namespace} --field-selector involvedObject.name={name},reason=Unhealthy --sort-by='.lastTimestamp'"
+  - "kubectl logs {pod} -n {namespace} --tail=100"
+  - "kubectl patch deployment/{name} -n {namespace} --type=strategic -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"{name}\",\"livenessProbe\":{\"initialDelaySeconds\":60,\"periodSeconds\":15,\"timeoutSeconds\":5,\"failureThreshold\":5},\"readinessProbe\":{\"initialDelaySeconds\":30,\"periodSeconds\":10,\"timeoutSeconds\":5,\"failureThreshold\":3}}]}}}}'"
+  - "kubectl rollout status deployment/{name} -n {namespace} --timeout=120s"
+  - "kubectl get pods -n {namespace} -l app={name}"
+windows_commands:
+  - "kubectl describe pod {pod} -n {namespace}"
+  - "kubectl get events -n {namespace} --field-selector involvedObject.name={name},reason=Unhealthy --sort-by='.lastTimestamp'"
+  - "kubectl logs {pod} -n {namespace} --tail=100"
+  - "kubectl patch deployment/{name} -n {namespace} --type=strategic -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"{name}\",\"livenessProbe\":{\"initialDelaySeconds\":60,\"periodSeconds\":15,\"timeoutSeconds\":5,\"failureThreshold\":5},\"readinessProbe\":{\"initialDelaySeconds\":30,\"periodSeconds\":10,\"timeoutSeconds\":5,\"failureThreshold\":3}}]}}}}'"
+  - "kubectl rollout status deployment/{name} -n {namespace} --timeout=120s"
+  - "kubectl get pods -n {namespace} -l app={name}"
